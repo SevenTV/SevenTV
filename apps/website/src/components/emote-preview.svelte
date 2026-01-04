@@ -17,7 +17,7 @@
 	type Props = {
 		data: Emote;
 		emoteSetEmote?: EmoteSetEmote;
-		emoteSet?: EmoteSetKind;
+		setKind?: EmoteSetKind;
 		index?: number;
 		bg?: "medium" | "light";
 		emoteOnly?: boolean;
@@ -29,7 +29,7 @@
 	let {
 		data,
 		emoteSetEmote,
-		emoteSet,
+		setKind,
 		index = 0,
 		bg = "medium",
 		emoteOnly = false,
@@ -41,8 +41,8 @@
 
 	let flags = $derived(
 		emoteSetEmote
-			? emoteSetEmoteToFlags(emoteSetEmote, $defaultEmoteSet, $editableEmoteSets)
-			: emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets),
+			? emoteSetEmoteToFlags(emoteSetEmote, $defaultEmoteSet, $editableEmoteSets, setKind)
+			: emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets, setKind),
 	);
 
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
@@ -81,7 +81,7 @@
 	class:emote-only={emoteOnly}
 	class:selected={selectionMode && selected}
 	draggable={!selected}
-	class:grayedOut={!data.flags.approvedPersonal && emoteSet == EmoteSetKind.Personal}
+	class:grayedOut={!data.flags.approvedPersonal && setKind == EmoteSetKind.Personal}
 	style={highlight
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}

@@ -68,13 +68,14 @@
 		emote: EmoteSetEmote,
 		defaultSet?: string,
 		editableEmoteSets?: EmoteSet[],
+		setKind?: EmoteSetKind,
 	): string[] {
 		let flags: string[] = [];
 
 		if (emote.alias !== emote.emote?.defaultName) flags.push("renamed");
 
 		if (emote.emote) {
-			flags = flags.concat(emoteToFlags(emote.emote, defaultSet, editableEmoteSets));
+			flags = flags.concat(emoteToFlags(emote.emote, defaultSet, editableEmoteSets, setKind));
 		}
 
 		return flags;
@@ -84,6 +85,7 @@
 		emote: Emote,
 		defaultSet?: string,
 		editableEmoteSets?: EmoteSet[],
+		setKind?: EmoteSetKind,
 	): string[] {
 		const flags: string[] = [];
 
@@ -109,7 +111,7 @@
 
 		if (emote.deleted) flags.push("deleted");
 
-		if (typeof emote?.flags?.approvedPersonal != "undefined" && !emote.flags.approvedPersonal)
+		if (typeof emote?.flags?.approvedPersonal != "undefined" && !emote.flags.approvedPersonal && setKind == EmoteSetKind.Personal)
 			flags.push("personal_use_pending");
 
 		return flags;

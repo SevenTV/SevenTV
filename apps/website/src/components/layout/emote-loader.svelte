@@ -127,7 +127,7 @@
 			<EmotePreview
 				data={data.emote}
 				emoteSetEmote={data.emoteSetEmote}
-				emoteSet={setKind}
+				{setKind}
 				index={i}
 				emoteOnly={$emotesLayout === "small-grid"}
 				{selectionMode}
