@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Emote, EmoteSetEmote } from "$/gql/graphql";
+	import { EmoteSetKind, type Emote, type EmoteSetEmote } from "$/gql/graphql";
 	import Flags, {
 		emoteToFlags,
 		determineHighlightColor,
@@ -17,6 +17,7 @@
 	type Props = {
 		data: Emote;
 		emoteSetEmote?: EmoteSetEmote;
+		setKind?: EmoteSetKind;
 		index?: number;
 		bg?: "medium" | "light";
 		emoteOnly?: boolean;
@@ -28,6 +29,7 @@
 	let {
 		data,
 		emoteSetEmote,
+		setKind,
 		index = 0,
 		bg = "medium",
 		emoteOnly = false,
@@ -39,8 +41,8 @@
 
 	let flags = $derived(
 		emoteSetEmote
-			? emoteSetEmoteToFlags(emoteSetEmote, $defaultEmoteSet, $editableEmoteSets)
-			: emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets),
+			? emoteSetEmoteToFlags(emoteSetEmote, $defaultEmoteSet, $editableEmoteSets, setKind)
+			: emoteToFlags(data, $defaultEmoteSet, $editableEmoteSets, setKind),
 	);
 
 	let highlight = $derived(determineHighlightColor(flags, ignoredFlagsForHighlight));
@@ -79,6 +81,7 @@
 	class:emote-only={emoteOnly}
 	class:selected={selectionMode && selected}
 	draggable={!selected}
+	class:grayedOut={!data.flags.approvedPersonal && setKind == EmoteSetKind.Personal}
 	style={highlight
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
@@ -160,6 +163,10 @@
 
 			width: 100%;
 			height: 100%;
+		}
+		
+		&.grayedOut > :global(picture > img) {
+			filter: grayscale(100%) opacity(50%);
 		}
 
 		&.emote-only > :global(picture) {

@@ -151,7 +151,7 @@
 													}
 													flags {
 														# animated
-														# approvedPersonal
+														approvedPersonal
 														defaultZeroWidth
 														# deniedPersonal
 														# nsfw
@@ -408,6 +408,7 @@
 			bind:this={loader}
 			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
 			scrollable={false}
+			setKind={data.kind}
 		/>
 	</div>
 </div>

@@ -4,6 +4,7 @@
 		EmoteSearchResult,
 		EmoteSetEmote,
 		EmoteSetEmoteSearchResult,
+		EmoteSetKind,
 	} from "$/gql/graphql";
 	import { emotesLayout } from "$/lib/layout";
 	import EmotePreview from "../emote-preview.svelte";
@@ -19,11 +20,12 @@
 	interface Props {
 		load: (page: number, perPage: number) => Promise<EmoteSearchResult | EmoteSetEmoteSearchResult>;
 		scrollable?: boolean;
+		setKind?: EmoteSetKind;
 		selectionMode?: boolean;
 		selectionMap?: { [key: string]: boolean };
 	}
 
-	let { load, scrollable, selectionMode = false, selectionMap = $bindable({}) }: Props = $props();
+	let { load, scrollable, setKind, selectionMode = false, selectionMap = $bindable({}) }: Props = $props();
 
 	interface Results {
 		items: { emote: Emote; emoteSetEmote?: EmoteSetEmote }[];
@@ -125,6 +127,7 @@
 			<EmotePreview
 				data={data.emote}
 				emoteSetEmote={data.emoteSetEmote}
+				{setKind}
 				index={i}
 				emoteOnly={$emotesLayout === "small-grid"}
 				{selectionMode}
