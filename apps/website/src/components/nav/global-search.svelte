@@ -282,10 +282,12 @@
 					{/if}
 					{#if results.users.items}
 						<span class="label">Users</span>
+						<div class="users-scroll-wrapper">
+							{#each results.users.items as result}
+								<ChannelPreview user={result} size={2} />
+							{/each}
+						</div>
 					{/if}
-					{#each results.users.items as result}
-						<ChannelPreview user={result} size={2} />
-					{/each}
 				</div>
 			{/if}
 		{/await}
@@ -325,6 +327,12 @@
 		}
 	}
 
+	.users-scroll-wrapper {
+		max-height: 43vh;
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+	
 	@keyframes expand-down {
 		from {
 			height: 2rem;
