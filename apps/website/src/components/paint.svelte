@@ -162,6 +162,10 @@
 	.paint {
 		display: grid;
 		justify-items: start;
+
+		// Fix long names with paints causing overflow
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.layer {

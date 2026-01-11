@@ -14,6 +14,7 @@ export function load({ fetch, params }: LayoutLoadEvent) {
 							id
 							connections {
 								platform
+        						platformId
 								platformUsername
 								platformDisplayName
 							}
