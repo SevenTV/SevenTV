@@ -23,8 +23,6 @@
 			}
 
 			goto(newPath);
-		} else if (trendingMetric) {
-			trendingMetric = "";
 		}
 	});
 </script>
@@ -38,7 +36,7 @@
 			{/snippet}
 		</TabLink>
 		<TabLink
-			href="/emotes/trending"
+			href={"/emotes/trending" + (trendingMetric ? `/${trendingMetric}` : "")}
 			title={$t("common.trending")}
 			matcher={(page, href) => (href ? page.url.pathname.startsWith(href) : false)}
 			responsive
