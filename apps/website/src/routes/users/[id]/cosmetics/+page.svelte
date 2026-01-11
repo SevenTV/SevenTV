@@ -15,6 +15,7 @@
 	import HideOn from "$/components/hide-on.svelte";
 	import type { Layout } from "$/lib/layout";
 	import Radio from "$/components/input/radio.svelte";
+	import SegmentedControl from "$/components/input/segmented-control.svelte";
 	import { setActiveBadge, setActivePaint } from "$/lib/userMutations";
 
 	let { data }: { data: PageData } = $props();
@@ -237,6 +238,7 @@
 	let paintQuery = $state("");
 	let paintFilter = $state<string>("");
 	let paintsLayout = $state<Layout>("big-grid");
+	let showUsername = $state(false);
 
 	let badgeQuery = $state("");
 	let badgesLayout = $state<Layout>("big-grid");
@@ -403,6 +405,13 @@
 						{/if}
 					</h1>
 					<div class="buttons">
+						<SegmentedControl
+							bind:value={showUsername}
+							options={[
+								{ value: false, label: "Paint Name" },
+								{ value: true, label: "Username" },
+							]}
+						/>
 						{#if inventory.paintFilters.length > 0}
 							<Select
 								bind:selected={paintFilter}
@@ -453,7 +462,7 @@
 								style="font-size: 0.875rem; font-weight: 500;"
 								enableDialog={!editingEnabled || paint.paint.id === activePaint}
 							>
-								{#if paintMouseOver === paint.paint.id}
+								{#if showUsername !== (paintMouseOver === paint.paint.id)}
 									{#await data.streamed.userRequest.value}
 										{paintName}
 									{:then data}
