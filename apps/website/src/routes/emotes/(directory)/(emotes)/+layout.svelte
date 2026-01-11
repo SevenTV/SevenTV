@@ -23,6 +23,8 @@
 			}
 
 			goto(newPath);
+		} else if (trendingMetric) {
+			trendingMetric = "";
 		}
 	});
 </script>
