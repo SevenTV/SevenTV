@@ -1,7 +1,7 @@
 <script lang="ts">
 	// PaintBrush
 	// import disabled for now
-	import { Gift, Star, Ticket } from "phosphor-svelte";
+	import { Gift, Star } from "phosphor-svelte";
 	import TabLink from "$/components/tab-link.svelte";
 	import { t } from "svelte-i18n";
 	import type { Snippet } from "svelte";
