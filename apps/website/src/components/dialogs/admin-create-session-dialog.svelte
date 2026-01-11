@@ -47,7 +47,8 @@
 		<h1>{$t("dialogs.admin.session.title")}</h1>
 		<hr />
 		<label>
-			{$t("pages.admin.users.id.actions.sessions.expiration")} {Intl.DateTimeFormat().resolvedOptions().timeZone} time
+			{$t("pages.admin.users.id.actions.sessions.expiration")}
+			{Intl.DateTimeFormat().resolvedOptions().timeZone} time
 			<input type="datetime-local" required bind:value={expiration} />
 		</label>
 		{#snippet loadingSpinner()}
@@ -61,7 +62,9 @@
 		{/if}
 		<div class="buttons">
 			{#if !token}
-				<Button submit primary icon={loading ? loadingSpinner : undefined}>{$t("pages.admin.users.id.actions.sessions.create")}</Button>
+				<Button submit primary icon={loading ? loadingSpinner : undefined}
+					>{$t("pages.admin.users.id.actions.sessions.create")}</Button
+				>
 			{:else}
 				<Button secondary onclick={() => token && window.navigator.clipboard.writeText(token)}>
 					{$t("pages.admin.users.id.actions.sessions.copy_token")}
