@@ -92,7 +92,7 @@
 					<Checkbox value={true} disabled>Manage Billing</Checkbox>
 					<Checkbox value={true} disabled>Manage Profile</Checkbox>
 					<Checkbox value={true} disabled>Manage Editors</Checkbox>
-					<Checkbox value={true} disabled>Manage Personal Emote Set</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.manage_personal_emotes")}</Checkbox>
 				{:else}
 					<Checkbox bind:value={permissions.user.manageBilling}>Manage Billing</Checkbox>
 					<Checkbox bind:value={permissions.user.manageProfile}>Manage Profile</Checkbox>
