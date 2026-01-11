@@ -1,25 +1,28 @@
-<script lang="ts" generics="T">
+<script lang="ts" module>
 	import type { Snippet } from "svelte";
-	import { crossfade } from "svelte/transition";
-	import { cubicInOut } from "svelte/easing";
 
-	export type SegmentedControlOption<T> = {
-		value: T;
+	export type SegmentedControlOption = {
+		value: string | number | boolean;
 		label?: string;
 		icon?: Snippet;
 	};
+</script>
+
+<script lang="ts">
+	import { crossfade } from "svelte/transition";
+	import { cubicInOut } from "svelte/easing";
 
 	let {
 		value = $bindable(),
 		options,
-	}: { value: T; options: SegmentedControlOption<T>[] } = $props();
+	}: { value: string | number | boolean; options: SegmentedControlOption[] } = $props();
 
 	const [send, receive] = crossfade({
 		duration: 200,
 		easing: cubicInOut,
 	});
 
-	function handleClick(option: T) {
+	function handleClick(option: string | number | boolean) {
 		value = option;
 	}
 </script>
