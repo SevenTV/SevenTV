@@ -142,6 +142,10 @@ pub struct ChatterinoConfig {
 	/// Current beta version (without the 'v' prefix, [None] if there's no beta version)
 	#[default(None)]
 	pub beta_version: Option<String>,
+
+	/// Is the Windows on ARM release still prefixed with "Experimental-"
+	#[default(true)]
+	pub windows_on_arm_is_experimental: bool,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
