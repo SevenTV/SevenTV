@@ -138,8 +138,10 @@
 		<hr />
 		{#if subInfo.activePeriod?.giftedBy}
 			<p>
-				{$t("dialogs.subscription.gifted_by")} {subInfo.activePeriod.giftedBy.mainConnection
-					?.platformDisplayName}. {$t("dialogs.subscription.cancel_notice")}
+				{$t("dialogs.subscription.gifted_by")}
+				{subInfo.activePeriod.giftedBy.mainConnection?.platformDisplayName}. {$t(
+					"dialogs.subscription.cancel_notice",
+				)}
 			</p>
 		{:else}
 			<p>

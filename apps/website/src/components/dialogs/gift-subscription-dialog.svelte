@@ -58,7 +58,8 @@
 		<hr />
 		{#if recipient}
 			<p>
-				{$t("dialogs.gift.gift_to")} <UserName user={recipient} />.
+				{$t("dialogs.gift.gift_to")}
+				<UserName user={recipient} />.
 			</p>
 		{:else}
 			<UserSearch

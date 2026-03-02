@@ -193,10 +193,10 @@
 			{$t("pages.store.events.cs2.streamers.info")}
 		</p>
 		<p>
-			{$t("pages.store.events.cs2.streamers.watch")} <a
-				href="https://twitch.tv/7tvapp"
-				aria-label="7tvapp Twitch Channel"
-				>{$t("pages.store.events.cs2.streamers.twitch_channel")} <ArrowSquareOut style="vertical-align: text-top;" /></a
+			{$t("pages.store.events.cs2.streamers.watch")}
+			<a href="https://twitch.tv/7tvapp" aria-label="7tvapp Twitch Channel"
+				>{$t("pages.store.events.cs2.streamers.twitch_channel")}
+				<ArrowSquareOut style="vertical-align: text-top;" /></a
 			>, {$t("pages.store.events.cs2.streamers.streamer_pov")}
 		</p>
 		<p>{$t("pages.store.events.cs2.cosmetics")}</p>

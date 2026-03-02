@@ -77,7 +77,9 @@
 			>
 				{$t("pages.admin.special_events.attributes.create")}
 			</Button>
-			<Button secondary onclick={() => (mode = "hidden")}>{$t("pages.admin.special_events.attributes.cancel")}</Button>
+			<Button secondary onclick={() => (mode = "hidden")}
+				>{$t("pages.admin.special_events.attributes.cancel")}</Button
+			>
 		</div>
 	</form>
 </Dialog>
