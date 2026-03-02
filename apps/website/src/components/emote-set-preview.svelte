@@ -5,6 +5,9 @@
 	import Flags, { determineHighlightColor, emoteSetToFlags } from "./flags.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
 
+	// NEW: import the set context menu
+	import SetContextMenu from "./set-context-menu.svelte";
+
 	type Props = {
 		data: EmoteSet;
 		bg?: "medium" | "light";
@@ -13,29 +16,31 @@
 	let { data, bg = "medium" }: Props = $props();
 
 	let flags = $derived(emoteSetToFlags(data, $user, $defaultEmoteSet));
-
 	let highlight = $derived(determineHighlightColor(flags));
 
 	let usage = $derived.by(() => {
 		if (!data.capacity) return undefined;
-
 		if (data.emotes.totalCount === 0) return 0;
-
 		return Math.round((data.emotes.totalCount / data.capacity) * 100);
 	});
 
 	let emotePreviews = $derived(
-		data.emotes.items.filter((emote) => emote.emote).map((emote) => emote.emote!),
+		data.emotes.items.filter((emote) => emote.emote).map((emote) => emote.emote!)
 	);
 
 	let placeholderCount = $derived.by(() => {
 		let slots = 12;
-		if (data.capacity) {
-			slots = Math.min(data.capacity, slots);
-		}
-
+		if (data.capacity) slots = Math.min(data.capacity, slots);
 		return Math.max(slots - emotePreviews.length, 0);
 	});
+
+	let contextPosition = $state<{ x: number; y: number } | undefined>(undefined);
+
+	function openContextMenu(e: MouseEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		contextPosition = { x: e.clientX, y: e.clientY };
+	}
 </script>
 
 <a
@@ -45,6 +50,7 @@
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
+	oncontextmenu={openContextMenu}
 >
 	<div class="emotes" style:grid-template-columns="repeat({Math.min(data.capacity ?? 6, 6)}, 1fr)">
 		{#each emotePreviews as emote, i}
@@ -55,7 +61,6 @@
 				style="max-height: 2rem; overflow: hidden"
 			/>
 		{/each}
-		<!-- Fill remaining slots (if any) with placeholders -->
 		{#each Array(placeholderCount) as _}
 			<div class="placeholder"></div>
 		{/each}
@@ -70,39 +75,32 @@
 	{/if}
 </a>
 
+<SetContextMenu setId={data.id} bind:position={contextPosition} />
+
 <style lang="scss">
 	.emote-set {
 		color: var(--text);
 		text-decoration: none;
-
 		display: grid;
 		align-items: start;
 		grid-template-rows: 1fr auto auto;
 		gap: 0.5rem;
-
 		padding: 1rem;
 		border: 1px solid transparent;
 		border-radius: 0.25rem;
 		cursor: pointer;
-
 		border-color: var(--highlight);
-
-		&:hover,
-		&:focus-visible {
-			border-color: var(--highlight-active);
-		}
+		&:hover, &:focus-visible { border-color: var(--highlight-active); }
 	}
 
 	.emotes {
 		grid-column: span 2;
 		align-self: stretch;
 		margin-bottom: 0.5rem;
-
 		display: grid;
 		justify-items: center;
 		align-items: center;
 		gap: 0.5rem;
-
 		& > .placeholder {
 			width: 2rem;
 			height: 2rem;
@@ -121,36 +119,21 @@
 
 	.usage {
 		position: relative;
-
 		grid-column: span 2;
-
 		display: flex;
 		justify-content: center;
-
 		& > progress[value] {
 			position: absolute;
 			width: 100%;
 			height: 100%;
-
 			background-color: var(--bg-light);
-
-			&::-webkit-progress-bar {
-				background-color: var(--bg-light);
-			}
-
-			&::-moz-progress-bar {
-				background-color: var(--secondary);
-			}
-
-			&::-webkit-progress-value {
-				background-color: var(--secondary);
-			}
+			&::-webkit-progress-bar { background-color: var(--bg-light); }
+			&::-moz-progress-bar { background-color: var(--secondary); }
+			&::-webkit-progress-value { background-color: var(--secondary); }
 		}
-
 		& > span {
 			z-index: 1;
 			padding: 0.3rem;
-
 			text-align: center;
 			font-size: 0.75rem;
 			font-weight: 500;
