@@ -32,6 +32,10 @@ let eventApi:
 
 const ports: MessagePort[] = [];
 
+const RECONNECT_BASE_DELAY_MS = 1000;
+const RECONNECT_MAX_DELAY_MS = 30000;
+let reconnectAttempts = 0;
+
 onconnect = (event) => {
 	debug("new worker port connected");
 	const port = event.ports[0];
@@ -151,7 +155,7 @@ function subscribe(type: DispatchType, id: string, handlerId: string) {
 
 function unsubscribe(type: DispatchType, id: string, handlerId: string) {
 	if (!eventApi) {
-		eventApi = init();
+		return;
 	}
 
 	const handlers = eventApi.subscriptions.get(mapKey(type, id));
@@ -217,6 +221,7 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 	if (data.op === 1) {
 		const hello = data as HelloMessage;
 		debug(`got hello from ${hello.d.instance.name}, session: ${hello.d.session_id}`);
+		reconnectAttempts = 0;
 
 		if (eventApi) {
 			eventApi.open_socket = this;
@@ -240,12 +245,7 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 	if (data.op === 4) {
 		debug("reconnect requested");
 		this.close();
-
-		// Retry after 1 second
-		setTimeout(() => {
-			eventApi = init();
-		}, 1000);
-
+		reconnectWithBackoff();
 		return;
 	}
 
@@ -256,16 +256,22 @@ function onMessage(this: WebSocket, event: MessageEvent) {
 	}
 }
 
+function reconnectWithBackoff() {
+	const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempts), RECONNECT_MAX_DELAY_MS);
+	reconnectAttempts++;
+	warn(`reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+	setTimeout(() => {
+		eventApi = init();
+	}, delay);
+}
+
 function onClose(this: WebSocket, event: CloseEvent) {
 	if (event.wasClean) {
 		log(`ws connection closed cleanly`, event.code, event.reason);
+		reconnectAttempts = 0;
 	} else {
 		warn(`ws connection closed`, event.code, event.reason);
-
-		// Retry after 1 second
-		setTimeout(() => {
-			eventApi = init();
-		}, 1000);
+		reconnectWithBackoff();
 	}
 
 	// Reset
