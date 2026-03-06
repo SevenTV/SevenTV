@@ -65,7 +65,8 @@
 		"profile": "Profile",
 		"pinned": "Pinned",
 		"settings": "Settings",
-		"delete_account": "Delete Account"
+		"delete_account": "Delete Account",
+		"offline_retry": "No internet connection — will retry automatically when online"
 	},
 	"labels": {
 		"enter_text": "Enter text",
