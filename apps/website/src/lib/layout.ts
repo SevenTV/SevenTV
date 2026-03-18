@@ -94,6 +94,21 @@ reducedMotion.subscribe((value) => {
 	}
 });
 
+export type FormatDate = "date-format-exact" | "date-format-relative";
+
+export const dateFormat = writable<FormatDate>(loadFormatDate());
+
+function loadFormatDate() {
+	const savedDateFormat = browser && window.localStorage.getItem("dateFormat");
+	if (savedDateFormat) return JSON.parse(savedDateFormat) as FormatDate;
+
+	return "date-format-relative";
+}
+
+dateFormat.subscribe((value) => {
+	if (browser && value) window.localStorage.setItem("dateFormat", JSON.stringify(value));
+});
+
 // Layout
 
 export type Layout = "small-grid" | "big-grid" | "list" | "gallery";

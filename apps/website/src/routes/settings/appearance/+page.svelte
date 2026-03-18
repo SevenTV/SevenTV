@@ -1,8 +1,16 @@
 <script lang="ts">
 	import Select from "$/components/input/select.svelte";
-	import { Faders, Moon, PersonSimpleCircle, PersonSimpleRun, Sun } from "phosphor-svelte";
+	import {
+		CalendarDots,
+		Clock,
+		Faders,
+		Moon,
+		PersonSimpleCircle,
+		PersonSimpleRun,
+		Sun,
+	} from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-	import { reducedMotion, theme } from "$/lib/layout";
+	import { reducedMotion, theme, dateFormat } from "$/lib/layout";
 	import { prefersReducedMotion } from "svelte/motion";
 	import { MediaQuery } from "svelte/reactivity";
 
@@ -68,6 +76,23 @@
 					{ value: "reduced-motion-disabled", label: "Disabled", icon: disabled },
 				]}
 				bind:selected={$reducedMotion}
+			/>
+		</div>
+		<hr />
+		<div class="setting">
+			<h3>Date Format</h3>
+			{#snippet enabled()}
+				<CalendarDots />
+			{/snippet}
+			{#snippet disabled()}
+				<Clock />
+			{/snippet}
+			<Select
+				options={[
+					{ value: "date-format-relative", label: "Relative", icon: disabled },
+					{ value: "date-format-exact", label: "Exact", icon: enabled },
+				]}
+				bind:selected={$dateFormat}
 			/>
 		</div>
 	</div>
