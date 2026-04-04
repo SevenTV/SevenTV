@@ -108,7 +108,8 @@
 	function getScoreDisplay(item: MakeRoomEmote): string {
 		const score = item.emote.scores[timeWindow as TimeWindow];
 		const period = timeWindowLabels[timeWindow];
-		return `+${score.toLocaleString()} channels ${period}`;
+		const prefix = score >= 0 ? "+" : "";
+		return `${prefix}${score.toLocaleString()} channels ${period}`;
 	}
 
 	let confirmDialogMode: DialogMode = $state("hidden");
