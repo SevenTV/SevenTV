@@ -3,9 +3,11 @@
 	import { type DialogMode } from "./dialog.svelte";
 	import Button from "../input/button.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
+	import MakeRoomDialog from "./make-room-dialog.svelte";
 	import { t } from "svelte-i18n";
-	import type { Emote } from "$/gql/graphql";
+	import type { Emote, EmoteSet } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
+	import { Broom } from "phosphor-svelte";
 	import { addEmoteToSet, removeEmoteFromSet, renameEmoteInSet } from "$/lib/setMutations";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
@@ -55,6 +57,87 @@
 
 	let submitting = $state(false);
 
+	function isSetFull(setId: string): boolean {
+		const set = $editableEmoteSets.find((s) => s.id === setId);
+		return !!(
+			set &&
+			set.capacity &&
+			set.emotes.totalCount >= set.capacity &&
+			!originalState[setId]
+		);
+	}
+
+	// When a full set gets selected, deselect all non-full sets (and vice versa)
+	let prevPicked: { [key: string]: boolean } = {};
+
+	$effect(() => {
+		const justSelected = Object.keys(pickedEmoteSets).find(
+			(k) => pickedEmoteSets[k] && !prevPicked[k],
+		);
+
+		if (justSelected && isSetFull(justSelected)) {
+			// Deselect all other sets
+			for (const k of Object.keys(pickedEmoteSets)) {
+				if (k !== justSelected && pickedEmoteSets[k]) {
+					pickedEmoteSets[k] = false;
+				}
+			}
+		} else if (justSelected && !isSetFull(justSelected)) {
+			// Deselect any full sets
+			for (const k of Object.keys(pickedEmoteSets)) {
+				if (k !== justSelected && pickedEmoteSets[k] && isSetFull(k)) {
+					pickedEmoteSets[k] = false;
+				}
+			}
+		}
+
+		prevPicked = { ...pickedEmoteSets };
+	});
+
+	// Reset state when dialog opens
+	$effect(() => {
+		if (mode !== "hidden") {
+			submitting = false;
+			prevPicked = {};
+			pickedEmoteSets = Object.fromEntries(
+				Object.entries(originalState).map(([k, v]) => [k, v === alias]),
+			);
+		}
+	});
+
+	// Find selected sets that are full (user checked them but they're at capacity)
+	let selectedFullSets = $derived(
+		$editableEmoteSets.filter(
+			(set) =>
+				pickedEmoteSets[set.id] &&
+				!originalState[set.id] &&
+				set.capacity &&
+				set.emotes.totalCount >= set.capacity,
+		),
+	);
+
+	let hasSelectedFullSet = $derived(selectedFullSets.length > 0);
+	let lockedSetId = $derived(selectedFullSets.length > 0 ? selectedFullSets[0].id : undefined);
+
+	let makeRoomMode: DialogMode = $state("hidden");
+	let makeRoomSet: EmoteSet | undefined = $state(undefined);
+
+	function openMakeRoom() {
+		if (selectedFullSets.length > 0) {
+			makeRoomSet = selectedFullSets[0];
+			// Lock the parent dialog so mouseTrap doesn't close it
+			mode = "shown-without-close";
+			makeRoomMode = "shown";
+		}
+	}
+
+	// When make-room dialog closes, restore parent dialog to normal
+	$effect(() => {
+		if (makeRoomMode === "hidden" && mode === "shown-without-close") {
+			mode = "shown";
+		}
+	});
+
 	async function submit() {
 		submitting = true;
 
@@ -76,7 +159,14 @@
 
 {#snippet buttons()}
 	<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
-	{#if submitting}
+	{#if hasSelectedFullSet}
+		<Button primary onclick={openMakeRoom}>
+			{#snippet icon()}
+				<Broom />
+			{/snippet}
+			{$t("dialogs.make_room.button")}
+		</Button>
+	{:else if submitting}
 		<Button primary submit disabled>
 			{#snippet iconRight()}
 				<Spinner />
@@ -127,8 +217,13 @@
 		{toRename}
 		emote={data}
 		{alias}
+		{lockedSetId}
 	/>
 </EmoteDialog>
+
+{#if makeRoomSet}
+	<MakeRoomDialog bind:mode={makeRoomMode} emoteSet={makeRoomSet} />
+{/if}
 
 <style lang="scss">
 	.label {

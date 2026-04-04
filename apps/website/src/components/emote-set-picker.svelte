@@ -19,6 +19,7 @@
 		emote: Emote;
 		alias: string;
 		disabled?: boolean;
+		lockedSetId?: string;
 	}
 
 	let {
@@ -29,6 +30,7 @@
 		emote,
 		alias,
 		disabled = false,
+		lockedSetId,
 	}: Props = $props();
 
 	let searchQuery = $state("");
@@ -88,20 +90,16 @@
 		return value ? (JSON.parse(value) ?? undefined) : undefined;
 	}
 
-	function isDisabled(set: EmoteSet) {
-		if (disabled) {
-			return true;
-		}
-
-		return title(set) !== undefined;
-	}
-
 	function isConflictingName(set: EmoteSet) {
 		return set.emotes.items.some((e) => e.alias === alias && e.id !== emote.id);
 	}
 
+	function isCapacityReached(set: EmoteSet): boolean {
+		return !!(set.capacity && set.emotes.totalCount >= set.capacity);
+	}
+
 	function title(set: EmoteSet) {
-		if (!value[set.id] && set.capacity && set.emotes.totalCount >= set.capacity) {
+		if (!value[set.id] && isCapacityReached(set)) {
 			return "Capacity Reached";
 		}
 
@@ -110,6 +108,23 @@
 		}
 
 		return undefined;
+	}
+
+	function isDisabledForCapacity(set: EmoteSet) {
+		if (disabled) {
+			return true;
+		}
+
+		// When a full set is selected (locked), disable all other sets
+		if (lockedSetId && set.id !== lockedSetId) {
+			return true;
+		}
+
+		if (isConflictingName(set)) {
+			return true;
+		}
+
+		return false;
 	}
 </script>
 
@@ -153,7 +168,7 @@
 					<Checkbox
 						option
 						leftLabel={pickerLeftLabel}
-						disabled={isDisabled(set)}
+						disabled={isDisabledForCapacity(set)}
 						bind:value={value[set.id]}
 						style={`border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : toRename.includes(set.id) ? "var(--rename)" : undefined}`}
 						title={title(set)}

@@ -46,6 +46,16 @@ Work needs to be done to add support for other languages.
 Some strings but not all are already extracted into the [`src/locales`](../apps/website/src/locales) directory, but the actual translation files are missing.
 After that, to get help with translations, a new [Crowdin](https://crowdin.com/) project should be created to enable the community to help with translations. (This is how it worked on the old website)
 
+### Make Room (Emote Set Capacity Management)
+
+When a user tries to add an emote to a full emote set, a "Make Room" button appears in place of the "Confirm" button. Clicking it opens a dialog that displays all emotes in the set sorted by global popularity (using existing `EmoteScores` data from the API). Users can filter by popularity direction (least/most popular) and time window (today/this week/this month/all time), search by emote name, multi-select emotes, and remove them to free up slots quickly.
+
+Key files:
+- [`make-room-dialog.svelte`](../apps/website/src/components/dialogs/make-room-dialog.svelte) — The Make Room dialog component
+- [`makeRoomQuery.ts`](../apps/website/src/lib/makeRoomQuery.ts) — GraphQL query to fetch emote set emotes with scores
+- [`add-emote-dialog.svelte`](../apps/website/src/components/dialogs/add-emote-dialog.svelte) — Modified to show Make Room button when a full set is selected
+- [`emote-set-picker.svelte`](../apps/website/src/components/emote-set-picker.svelte) — Modified to allow selecting full sets and locking other sets
+
 ### Emote Set Batch Operations
 
 A highly requested feature is the ability to batch operations on emote sets.

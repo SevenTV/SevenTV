@@ -187,6 +187,20 @@
 			"confirm": "Confirm",
 			"confirm_changes": "{count, plural, one {Confirm 1 change} other {Confirm {count} changes}}"
 		},
+		"make_room": {
+			"button": "Make Room",
+			"title": "Make Room in {set}",
+			"search_placeholder": "Search emotes",
+			"time_window_daily": "Daily",
+			"time_window_weekly": "Weekly",
+			"time_window_monthly": "Monthly",
+			"time_window_all_time": "All Time",
+			"no_activity": "No activity",
+			"rank": "#{rank}",
+			"remove_selected": "{count, plural, one {Remove 1 emote} other {Remove {count} emotes}}",
+			"confirm_remove": "{count, plural, one {Remove 1 emote?} other {Remove {count} emotes?}}",
+			"removing": "Removing..."
+		},
 		"emote_ticket": {
 			"emote_queue": "Emote queue",
 			"activity": "Activity",
