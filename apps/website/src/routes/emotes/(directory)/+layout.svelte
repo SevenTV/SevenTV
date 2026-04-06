@@ -168,4 +168,13 @@
 		flex-direction: column;
 		gap: 1rem;
 	}
+
+	.emotes-side-bar-layout {
+		height: 100%;
+		min-height: 100vh;
+	}
+
+	.emotes-side-bar-layout > .side-bar {
+		min-height: calc(100vh - 2.5rem);
+	}
 </style>

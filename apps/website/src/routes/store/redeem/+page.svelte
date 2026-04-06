@@ -115,8 +115,13 @@
 	}
 
 	.grid {
-		max-width: 25rem;
+		max-width: 70rem;
 		margin-top: 1rem;
+		margin-inline: auto;
+	}
+
+	.grid > :global(*) {
+		max-width: 25rem;
 		margin-inline: auto;
 	}
 
