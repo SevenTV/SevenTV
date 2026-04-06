@@ -168,4 +168,15 @@
 		flex-direction: column;
 		gap: 1rem;
 	}
+
+	// Ensure sidebar has proper height from the start
+	.emotes-side-bar-layout {
+		height: 100vh;
+		min-height: 100vh;
+	}
+
+	.emotes-side-bar-layout > .side-bar {
+		height: calc(100vh - 2.5rem);
+		min-height: calc(100vh - 2.5rem);
+	}
 </style>
