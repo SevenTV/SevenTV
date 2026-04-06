@@ -115,7 +115,7 @@
 	}
 
 	.grid {
-		max-width: 25rem;
+		max-width: 70rem;
 		margin-top: 1rem;
 		margin-inline: auto;
 	}
