@@ -169,7 +169,6 @@
 		gap: 1rem;
 	}
 
-	// Ensure sidebar has proper height from the start
 	.emotes-side-bar-layout {
 		height: 100%;
 		min-height: 100vh;
