@@ -120,6 +120,11 @@
 		margin-inline: auto;
 	}
 
+	.grid > :global(*) {
+		max-width: 25rem;
+		margin-inline: auto;
+	}
+
 	.redeem {
 		display: flex;
 		flex-direction: column;
