@@ -1,3 +1,7 @@
+use emote_copy::seventv_router;
+	let app = Router::new()
+		.merge(seventv_router());
+
 use global::Global;
 use scuffle_bootstrap_telemetry::TelemetrySvc;
 use scuffle_signal::SignalSvc;
@@ -6,6 +10,7 @@ mod config;
 mod connections;
 mod cron;
 mod dataloader;
+mod emote_copy;
 mod global;
 mod http;
 mod image_processor;
