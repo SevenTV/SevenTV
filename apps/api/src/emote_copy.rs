@@ -223,6 +223,7 @@ async fn copy_emote_set(
     Ok(new_set_id)
 }
 
+// added mod emote_copy to main.rs 
 
 #[derive(Deserialize)]
 struct CopyRequest {
@@ -254,3 +255,4 @@ async fn copy_handler(Json(payload): Json<CopyRequest>) -> String {
 pub fn seventv_router() -> Router {
     Router::new().route("/copy-set", post(copy_handler))
 }
+// router added to main.rs
