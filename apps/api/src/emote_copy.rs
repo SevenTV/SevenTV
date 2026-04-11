@@ -5,6 +5,7 @@ use std::{collections::HashSet, env};
 use tokio::time::{sleep, Duration};
 use thiserror::Error;
 
+const API_URL: &str = "https://7tv.io/v3/gql";
 
 #[derive(Error, Debug)]
 pub enum SevenTvError {
@@ -14,15 +15,14 @@ pub enum SevenTvError {
     #[error("Invalid response")]
     InvalidResponse,
 
-    #[error("Missing field")]
+    #[error("Missing field in response")]
     MissingField,
 
-    #[error("Missing env variable")]
+    #[error("Env error: {0}")]
     MissingEnv(#[from] std::env::VarError),
 }
 
-
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 struct Emote {
     id: String,
     name: String,
@@ -45,15 +45,12 @@ struct EmoteSet {
     emotes: Vec<Emote>,
 }
 
-
-const API_URL: &str = "https://7tv.io/v3/gql";
-
-async fn gql_request<T: for<'de> Deserialize<'de>>(
+async fn gql(
     client: &Client,
     token: &str,
     query: &str,
     variables: serde_json::Value,
-) -> Result<T, SevenTvError> {
+) -> Result<serde_json::Value, SevenTvError> {
     let res = client
         .post(API_URL)
         .bearer_auth(token)
@@ -64,7 +61,7 @@ async fn gql_request<T: for<'de> Deserialize<'de>>(
         .send()
         .await?;
 
-    Ok(res.json::<T>().await?)
+    Ok(res.json().await?)
 }
 
 async fn get_emote_set(
@@ -85,10 +82,18 @@ async fn get_emote_set(
         }
     "#;
 
-    let res: EmoteSetResponse =
-        gql_request(client, token, query, serde_json::json!({ "id": set_id })).await?;
+    let json = gql(
+        client, 
+        token, 
+        query, 
+        serde_json::json!({ "id": set_id }),
+    )
+    .await?;
 
-    Ok(res.data.emote_set)
+    let parsed: EmoteSetResponse =
+        serde_json::from_value(json).map_err(|_| SevenTvError::InvalidResponse)?;
+
+    Ok(parsed.data.emote_set)
 }
 
 async fn create_set(
@@ -104,14 +109,19 @@ async fn create_set(
         }
     "#;
 
-    let res: serde_json::Value =
-        gql_request(client, token, query, serde_json::json!({ "name": name })).await?;
+    let json = gql(
+        client,
+        token,
+        query,
+        serde_json::json!({ "name": name }),
+    )
+    .await?;
 
-    let id = res["data"]["create_emote_set"]["id"]
-        .as_str()
-        .ok_or(SevenTvError::MissingField)?
-        .to_string();
-
+    let id = match json["data"]["create_emote_set"]["id"].as_str() {
+        Some(id) => id.to_string(),
+        None => return Err(SevenTvError::MissingField),
+    };
+    
     Ok(id)
 }
 
@@ -132,7 +142,7 @@ async fn add_emote(
         }
     "#;
 
-    gql_request::<serde_json::Value>(
+    gql(
         client,
         token,
         query,
@@ -147,13 +157,13 @@ async fn add_emote(
     Ok(())
 }
 
-async fn fallback_upload(
+async fn reupload_emote(
     client: &Client,
     token: &str,
     set_id: &str,
     emote: &Emote,
 ) -> Result<(), SevenTvError> {
-    let urls = vec![
+    let urls = [
         format!("https://cdn.7tv.app/emote/{}/4x.gif", emote.id),
         format!("https://cdn.7tv.app/emote/{}/4x.webp", emote.id),
     ];
@@ -169,7 +179,10 @@ async fn fallback_upload(
         }
     }
 
-    let bytes = bytes.ok_or(SevenTvError::InvalidResponse)?;
+    let bytes = match bytes {
+        Some(b) => b,
+        None => return Err(SevenTvError::InvalidResponse),
+    };
 
     let form = multipart::Form::new()
         .text("name", emote.name.clone())
@@ -184,16 +197,17 @@ async fn fallback_upload(
 
     let json: serde_json::Value = res.json().await?;
 
-    let new_id = json["id"]
-        .as_str()
-        .ok_or(SevenTvError::MissingField)?;
+    let new_id = match json["id"].as_str() {
+        Some(id) => id,
+        None => return Err(SevenTvError::MissingField),
+    };
 
     add_emote(client, token, set_id, new_id, &emote.name).await?;
 
     Ok(())
 }
 
-async fn copy_emote_set(
+async fn clone_set(
     client: &Client,
     token: &str,
     source_set_id: &str,
@@ -205,19 +219,18 @@ async fn copy_emote_set(
     let mut seen = HashSet::new();
 
     for emote in source.emotes {
-        if seen.contains(&emote.name) {
+        if !seen.insert(emote.name.clone()) {
             continue;
         }
 
-        seen.insert(emote.name.clone());
+        println!("copying emote: {}", emote.name);
 
-        let result = add_emote(client, token, &new_set_id, &emote.id, &emote.name).await;
-
-        if result.is_err() {
-            fallback_upload(client, token, &new_set_id, &emote).await?;
+        if let Err(_) = add_emote(client, token, &new_set_id, &emote.id, &emote.name).await {
+            eprintln!("fallback upload for {}", emote.name);
+            reupload_emote(client, token, &new_set_id, &emote).await?;
         }
 
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(150)).await;
     }
 
     Ok(new_set_id)
@@ -239,7 +252,7 @@ async fn copy_handler(Json(payload): Json<CopyRequest>) -> String {
         Err(_) => return "Missing SEVENTV_TOKEN".into(),
     };
 
-    match copy_emote_set(
+    match clone_set(
         &client,
         &token,
         &payload.source_set_id,
