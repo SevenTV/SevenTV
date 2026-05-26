@@ -1325,7 +1325,7 @@ type User {
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
-	inventory: UserInventory!
+	inventory(includeInaccessible: Boolean): UserInventory!
 	mainConnection: UserConnection
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!

@@ -8,6 +8,7 @@
 		SealCheck,
 		Smiley,
 		X,
+		ArrowSquareOut,
 	} from "phosphor-svelte";
 	import Button from "../input/button.svelte";
 	import UserSearch from "../user-search.svelte";
@@ -92,7 +93,7 @@
 								ownedEmoteSets {
 									id
 								}
-								inventory {
+								inventory(includeInaccessible: true) {
 									badges {
 										to {
 											badge {
@@ -294,7 +295,7 @@
 		<UserProfilePicture user={data} size={4.75 * 16}></UserProfilePicture>
 		<aside id="info">
 			<span class="name" style:color={data.highestRoleColor?.hex}>
-				<UserName user={data} enablePaintDialog />
+				<UserName user={data} enablePaintDialog /> <Button style="padding: 0.15rem;" title="Open In New Tab" href="/users/{data.id}" target="_blank"><ArrowSquareOut /></Button>
 			</span>
 			<small>ID: {data.id}</small>
 			<div class="roles">
