@@ -11,6 +11,7 @@
 		minlength?: number;
 		maxlength?: number;
 		disabled?: boolean;
+		stretch?: boolean;
 		children?: Snippet;
 		nonLabelChildren?: Snippet;
 		icon?: Snippet;
@@ -25,6 +26,7 @@
 		required = false,
 		minlength,
 		maxlength,
+		stretch,
 		disabled = false,
 		children,
 		nonLabelChildren,
@@ -45,7 +47,14 @@
 	}
 </script>
 
-<label class="input" class:big class:has-label={children} class:has-icon={icon} {...restProps}>
+<label
+	class="input"
+	class:big
+	class:stretch
+	class:has-label={children}
+	class:has-icon={icon}
+	{...restProps}
+>
 	{@render nonLabelChildren?.()}
 	{@render children?.()}
 	{#if icon}
@@ -115,6 +124,17 @@
 			--icon-left-padding: 1rem;
 			--gap: 0.75rem;
 			--input-block-padding: 0.6rem;
+		}
+
+		&.stretch {
+			display: flex;
+			width: 100%;
+
+			input,
+			textarea {
+				width: 100%;
+				box-sizing: border-box;
+			}
 		}
 
 		input,

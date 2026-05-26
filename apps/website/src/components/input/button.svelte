@@ -17,6 +17,7 @@
 		disabled?: boolean;
 		primary?: boolean;
 		secondary?: boolean;
+		danger?: boolean;
 		big?: boolean;
 		submit?: boolean;
 		hideOnMobile?: boolean;
@@ -31,6 +32,7 @@
 		href = null,
 		primary = false,
 		secondary = false,
+		danger = false,
 		big = false,
 		submit = false,
 		hideOnMobile = false,
@@ -49,6 +51,7 @@
 		class="button"
 		class:primary
 		class:secondary
+		class:danger
 		class:big
 		class:has-text={children}
 		class:icon-only={!children && (icon || iconRight)}
@@ -68,6 +71,7 @@
 		class="button"
 		class:primary
 		class:secondary
+		class:danger
 		class:big
 		class:has-text={children}
 		class:icon-only={!children && (icon || iconRight)}
@@ -164,6 +168,27 @@
 
 				&:active {
 					background-color: var(--primary-active);
+				}
+			}
+		}
+
+		&.danger {
+			background-color: var(--danger);
+			color: var(--danger-text);
+			border-color: var(--danger-border);
+
+			&:disabled {
+				background-color: var(--danger-disabled);
+			}
+
+			&:not(:disabled) {
+				&:hover,
+				&:focus-visible {
+					background-color: var(--danger-hover);
+				}
+
+				&:active {
+					background-color: var(--danger-active);
 				}
 			}
 		}

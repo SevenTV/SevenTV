@@ -13,6 +13,7 @@
 		icon?: Snippet;
 		popup?: boolean;
 		searchlimit?: number;
+		query?: string;
 	} & ComponentProps<typeof TextInput>;
 
 	let {
@@ -21,10 +22,9 @@
 		icon: providedIcon,
 		popup = false,
 		searchlimit = 5,
+		query = $bindable(""),
 		...restProps
 	}: Props = $props();
-
-	let query = $state("");
 
 	let timeout: NodeJS.Timeout | number | undefined; // not reactive
 
