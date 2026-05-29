@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, UserPermission};
+use shared::database::role::RoleId;
 use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
@@ -268,6 +269,15 @@ pub async fn handle_callback(
 			return Err(TransactionError::Custom(ApiError::forbidden(
 				ApiErrorCode::LackingPrivileges,
 				"not allowed to login",
+			)));
+		}
+
+		let no_perms_role_id: RoleId = "01GHVA0W78000DYB7VMB9MMHQV".parse().expect("Invalid Role ID format");
+
+		if full_user.computed.roles.contains(&no_perms_role_id) {
+			return Err(TransactionError::Custom(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"you are banned from using this service",
 			)));
 		}
 

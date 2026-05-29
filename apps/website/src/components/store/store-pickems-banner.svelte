@@ -1,27 +1,39 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
-	// import csMoneyIcon from "$assets/csmoneyiconpickems.png?url";
+	import pickemsLogo from "$assets/pickems-logo.png?url";
 
 	interface Props {
 		title: string;
 		title2: string;
+		title3?: string;
 		gradientColor?: string;
 		children?: Snippet;
 	}
 
-	let { title, title2, gradientColor = "#9227cf", children }: Props = $props();
+	let { title, title2, title3, gradientColor = "#9227cf", children }: Props = $props();
 </script>
 
 <section class="banner" style="--gradient-color: {gradientColor}">
 	<span>
 		<h1>{title}</h1>
 		<h2>{title2}</h2>
+		<h3>{title3}</h3>
 	</span>
-	<!-- <img src={csMoneyIcon} alt="CS Money Icon" class="csmoney-banner-image" /> -->
+	<img src={pickemsLogo} alt="CS Money Icon" class="csmoney-banner-image" />
 	{@render children?.()}
 </section>
 
 <style lang="scss">
+	.csmoney-banner-image {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		width: 9rem;
+		height: auto;
+		@media screen and (max-width: 600px) {
+			display: none;
+		}
+	}
 	.banner {
 		position: relative;
 		z-index: 0;
@@ -70,7 +82,7 @@
 			background-clip: text;
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
-			font-family: Inter;
+			font-family: Inter, sans-serif;
 			font-size: 1.5rem;
 		}
 

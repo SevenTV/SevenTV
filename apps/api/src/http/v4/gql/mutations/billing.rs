@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use async_graphql::Context;
+use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
 };
@@ -552,10 +553,40 @@ impl BillingMutation {
 		&self,
 		ctx: &Context<'_>,
 		#[graphql(validator(min_length = 1, max_length = 24))] code: String,
+		captcha_token: String,
 	) -> Result<RedeemResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// // reCAPTCHA verification
+		// let secret_key = &global.config.api.recaptcha_secret_key;
+		//     let client = reqwest::Client::new();
+
+		// let verify_res: serde_json::Value = client
+		//     .post("https://www.google.com/recaptcha/api/siteverify")
+		//     .form(&[
+		//         ("secret", secret_key),
+		//         ("response", &captcha_token),
+		//     ])
+		//     .send()
+		//     .await
+		//     .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha check failed"))?
+		//     .json()
+		//     .await
+		//     .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha parse failed"))?;
+
+		// let score = verify_res["score"].as_f64().unwrap_or(0.0);
+		// let success = verify_res["success"].as_bool().unwrap_or(false);
+
+		// // Block if it's a bot (aka score < 0.5)
+		// if !success || score < 0.5 {
+		//     return Err(ApiError::bad_request(
+		//         ApiErrorCode::BadRequest,
+		//         "bot activity detected",
+		//     ));
+		// }
+
 		let session = ctx
 			.data::<Session>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
@@ -563,6 +594,7 @@ impl BillingMutation {
 		let user_id = session
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
 		if self.user_id != user_id {
 			return Err(ApiError::bad_request(
 				ApiErrorCode::BadRequest,
@@ -579,7 +611,7 @@ impl BillingMutation {
 			.to_string();
 		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
-		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url).await?;
+		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url, captcha_token).await?;
 
 		Ok(RedeemResponse { checkout_url })
 	}
@@ -791,6 +823,206 @@ impl BillingMutation {
 			CheckoutSessionMetadata::Pickems {
 				user_id: recipient.id,
 				product_id: pickems_id,
+			}
+			.to_stripe(),
+		);
+
+		// We don't need the safe client here because this won't be retried
+		let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+			.await
+			.map_err(|e| {
+				tracing::error!(error = %e, "failed to create checkout session");
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+			})?
+			.url
+			.ok_or_else(|| {
+				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+			})?;
+
+		Ok(SubscribeResponse {
+			checkout_url: session_url,
+		})
+	}
+
+	// Bundles
+	#[graphql(
+		guard = "PermissionGuard::one(UserPermission::Billing).and(RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1))"
+	)]
+	async fn buy_bundle(
+		&self,
+		ctx: &Context<'_>,
+		bundle_id: ProductId,
+		special_event_id: SpecialEventId,
+	) -> Result<SubscribeResponse, ApiError> {
+		let global: &Arc<Global> = ctx
+			.data()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+		let session = ctx
+			.data::<Session>()
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+
+		let user_id = session
+			.user_id()
+			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
+		let is_gift = self.user_id != user_id;
+
+		let authed_user = session.user()?;
+
+		let recipient: &FullUser = if is_gift {
+			&global
+				.user_loader
+				.load(global, self.user_id)
+				.await
+				.map_err(|_| {
+					tracing::error!("failed to load user");
+					ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user")
+				})?
+				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?
+		} else {
+			authed_user
+		};
+
+		if !authed_user.has(UserPermission::Billing) {
+			return Err(ApiError::forbidden(
+				ApiErrorCode::LackingPrivileges,
+				"this user isn't allowed to use billing features",
+			));
+		}
+
+		let customer_id = match authed_user.stripe_customer_id.clone() {
+			Some(id) => id,
+			None => {
+				// We don't need the safe client here because this won't be retried
+				find_or_create_customer(global, global.stripe_client.client().await, authed_user.id, None).await?
+			}
+		};
+
+		let success_url = global
+			.config
+			.api
+			.website_origin
+			.join(&format!("/store?success=1&bundle=1&event_id={}", special_event_id))
+			.unwrap()
+			.to_string();
+		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
+
+		// Create the checkout session params
+		let mut line_items: Vec<stripe::CreateCheckoutSessionLineItems> = vec![];
+		let mut params = stripe::CreateCheckoutSession {
+			customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
+				address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
+				..Default::default()
+			}),
+			automatic_tax: Some(stripe::CreateCheckoutSessionAutomaticTax {
+				enabled: true,
+				..Default::default()
+			}),
+			currency: Some(stripe::Currency::EUR),
+			customer: Some(customer_id.into()),
+			// expire the session 4 hours from now so we can restore unused redeem codes in the checkout.session.expired handler
+			expires_at: Some((chrono::Utc::now() + chrono::Duration::hours(4)).timestamp()),
+			success_url: Some(&success_url),
+			cancel_url: Some(&cancel_url),
+			..Default::default()
+		};
+
+		let bundle_product = global
+			.product_by_id_loader
+			.load(bundle_id)
+			.await
+			.map_err(|_| {
+				tracing::error!("failed to find bundle product");
+				ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find bundle product")
+			})?
+			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "bundle product not found"))?;
+
+		// Product can only be bought if not owned
+		if recipient.computed.entitlements.products.contains(&bundle_product.id) {
+			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "bundle product already owned"));
+		}
+
+		// // If a varaint is passed and the user has not subscription, then add it
+		// let add_subscription = subscription_price_id.is_some()
+		// 	&& global
+		// 		.active_subscription_period_by_user_id_loader
+		// 		.load(authed_user.id)
+		// 		.await
+		// 		.map_err(|()| {
+		// 			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load subscription period")
+		// 		})?
+		// 		.is_none();
+
+		// if add_subscription {
+		// 	params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+		// 	params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
+		// 		metadata: Some(
+		// 			SubscriptionMetadata {
+		// 				user_id: authed_user.id,
+		// 				customer_id: None,
+		// 			}
+		// 			.to_stripe(),
+		// 		),
+		// 		..Default::default()
+		// 	});
+
+		// 	let subscription_line = stripe::CreateCheckoutSessionLineItems {
+		// 		price: Some(subscription_price_id.unwrap().to_string()),
+		// 		quantity: Some(1),
+		// 		..Default::default()
+		// 	};
+
+		// 	line_items.push(subscription_line);
+
+		// 	params.discounts = Some(vec![stripe::CreateCheckoutSessionDiscounts {
+		// 		coupon: pickems_product.discount,
+		// 		..Default::default()
+		// 	}]);
+		// } else {
+
+			params.mode = Some(stripe::CheckoutSessionMode::Payment);
+			params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
+				enabled: true,
+				invoice_data: None,
+			});
+
+			// if is_gift {
+			// 	params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
+			// 		description: Some(format!(
+			// 			"Gifting Pick'ems Pass for {} (7TV:{})",
+			// 			recipient
+			// 				.connections
+			// 				.first()
+			// 				.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
+			// 				.unwrap_or_else(|| "Unknown User".to_owned()),
+			// 			recipient.id
+			// 		)),
+			// 		..Default::default()
+			// 	});
+			// }
+		// }
+
+		// Create the bundle product line
+		let bundle_line = stripe::CreateCheckoutSessionLineItems {
+			price_data: Some(stripe::CreateCheckoutSessionLineItemsPriceData {
+				product: Some(bundle_product.provider_id.to_string()),
+				unit_amount: bundle_product.currency_prices.get(&bundle_product.default_currency).copied(),
+				currency: bundle_product.default_currency,
+				..Default::default()
+			}),
+			quantity: Some(1),
+			..Default::default()
+		};
+
+		line_items.push(bundle_line);
+		params.line_items = Some(line_items);
+
+		//Metadata that the webhook listener will user to apply the product to the user
+		params.metadata = Some(
+			CheckoutSessionMetadata::CosmeticBundle {
+				user_id: recipient.id,
+				product_id: bundle_product.id,
+				special_event_id: special_event_id,
 			}
 			.to_stripe(),
 		);

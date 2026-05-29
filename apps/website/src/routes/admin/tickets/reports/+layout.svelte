@@ -57,14 +57,16 @@
 			{/snippet}
 		</TabLink>
 		<TabLink
-			title="{$t('pages.admin.tickets.reports_options.closed')} ({$t('common.not-implemented')})"
+			title="{$t('pages.admin.tickets.reports_options.closed')} ({$t(
+				'pages.admin.tickets.emotes.not_implemented',
+			)})"
 			href="javascript:void(0)"
 			responsive
 		>
 			<Checks />
 			{#snippet active()}
 				<Checks weight="fill" />
-				<span>{$t("common.not-implemented")}</span>
+				<span>{$t("pages.admin.tickets.emotes.not_implemented")}</span>
 			{/snippet}
 		</TabLink>
 	</div>

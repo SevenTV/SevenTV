@@ -41,10 +41,45 @@ pub async fn redeem_code_inner(
 	code: String,
 	success_url: String,
 	cancel_url: String,
+	captcha_token: String,
 ) -> Result<Option<String>, ApiError> {
 	let authed_user = session.user()?;
 
 	let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
+
+
+	// check if cpatcha token wasn't passed then return API error
+	if captcha_token.is_empty() {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "captcha token is required. use new website"));
+	}
+
+	// reCAPTCHA verification
+    let secret_key = &global.config.api.recaptcha_secret_key;
+	    let client = reqwest::Client::new();
+    
+    let verify_res: serde_json::Value = client
+        .post("https://www.google.com/recaptcha/api/siteverify")
+        .form(&[
+            ("secret", secret_key),
+            ("response", &captcha_token),
+        ])
+        .send()
+        .await
+        .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha check failed"))?
+        .json()
+        .await
+        .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha parse failed"))?;
+
+    let score = verify_res["score"].as_f64().unwrap_or(0.0);
+    let success = verify_res["success"].as_bool().unwrap_or(false);
+
+    // Block if it's a bot (aka score < 0.5)
+    if !success || score < 0.5 {
+        return Err(ApiError::bad_request(
+            ApiErrorCode::BadRequest,
+            "bot activity detected",
+        ));
+    }
 
 	let code = RedeemCode::collection(&global.db)
 		.find_one_and_update(
@@ -293,6 +328,7 @@ pub async fn grant_entitlements(
 #[derive(Debug, serde::Deserialize)]
 pub struct RedeemRequest {
 	code: String,
+	captcha_token: String,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -320,6 +356,13 @@ pub async fn redeem(
 		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "redeem code is too long"));
 	}
 
+	let captcha_token = body.captcha_token.clone();
+
+	// check if captcha token wasn't passed then return API error
+	if captcha_token.is_empty() {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "captcha token is required. use new website"));
+	}
+
 	let success_url = global
 		.config
 		.api
@@ -336,7 +379,7 @@ pub async fn redeem(
 		.to_string();
 
 	req.http(&global, async {
-		let authorize_url = redeem_code_inner(&global, &session, body.code, success_url, cancel_url).await?;
+		let authorize_url = redeem_code_inner(&global, &session, body.code, success_url, cancel_url, captcha_token).await?;
 		Ok::<_, ApiError>(Json(RedeemResponse { authorize_url }))
 	})
 	.await

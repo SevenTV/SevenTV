@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV管理员",
+    "trending_emotes": "热门表情符",
+    "top_emotes": "最热表情符",
+    "global_emotes": "通用表情符",
+    "new_emotes": "新表情符",
+    "bookmarked_emotes": "已收藏的表情符",
+    "bookmarked_emote_sets": "已收藏的表情符组合",
+    "bookmarked_users": "已收藏的用户",
+    "account_settings": "帐号设置",
+    "editor_settings": "编辑者设置",
+    "notification_settings": "通知设置",
+    "blocked_settings": "黑名单设置",
+    "billing_settings": "账单设置",
+    "admin_emote_public_listing": "表情符公开展示请求",
+    "admin_emote_personal_use": "表情符私人使用请求",
+    "admin_emote_resolved": "已处理的表情符申请"
+  },
+  "page_errors": {
+    "not_found": "您要查找的页面不存在。",
+    "forbidden": "您没有查看此页面的权限。",
+    "unauthorized": "您无权查看此页面。",
+    "unexpected": "您可以尝试刷新页面。如果问题仍然存在，请联系我们。",
+    "generic": "出现错误。",
+    "emote_set_load": "加载表情符组合失败",
+    "emote_set_not_found": "未找到此表情符组合",
+    "user": "加载用户失败"
+  },
+  "words": {
+    "from": "从",
+    "to": "至",
+    "with": "与",
+    "by": "由"
+  },
+  "common": {
+    "sign_in": "登录",
+    "sign_out": "登出",
+    "go_back": "返回",
+    "super_admin": "超级管理员",
+    "skip_to_content": "直接展示内容",
+    "emotes": "{count, plural, one {表情符} other {表情符}}",
+    "emote_sets": "{count, plural, one {表情符组合} other {表情符组合}}",
+    "users": "{count, plural, one {用户} other {用户}}",
+    "channels": "{count, plural, one {频道} other {频道}}",
+    "followers": "{count, plural, one {关注者} other {关注者}}",
+    "items": "{count, plural, one {项目} other {项目}}",
+    "subscriptions": "{count, plural, one {订阅} other {订阅}}",
+    "payment_methods": "{count, plural, one {支付方式} other {支付方式}}",
+    "date": "日期",
+    "help": "帮助",
+    "for": "为",
+    "error": "错误",
+    "loading": "加载中……",
+    "paint_bundles": "涂装包",
+    "notifications": "通知",
+    "connections": "关联",
+    "direct_messages": "私信",
+    "mod_comments": "管理员评论",
+    "profile_picture": "头像",
+    "suggested_emotes": "建议的表情符",
+    "personal_emotes": "个人表情符",
+    "no_more_emotes": "",
+    "no_emotes": "没有表情",
+    "your_subscription": "你的订阅",
+    "theme": "主题",
+    "language": "语言",
+    "developer_portal": "开发者平台",
+    "faq": "常见问题",
+    "faq_short": "常见问题与解答",
+    "privacy": "隐私权政策",
+    "tos": "服务条款",
+    "trending": "热门",
+    "top": "最热",
+    "global": "通用",
+    "new": "最新",
+    "Weekly": "本周",
+    "Monthly": "本月",
+    "Today": "今日",
+    "news": "新闻",
+    "Default_set": "默认组合",
+    "following": "关注",
+    "activity": "动态",
+    "analytics": "数据分析",
+    "statistics": "统计数据",
+    "contact": "联系我们",
+    "cosmetics": "装饰",
+    "editors": "编辑者",
+    "active": "在线",
+    "profile": "个人资料",
+    "pinned": "置顶",
+    "settings": "设置",
+    "delete_account": "删除账号"
+  },
+  "labels": {
+    "enter_text": "输入文字",
+    "redeem": "输入代码",
+    "search": "搜索",
+    "refetch": "重新获取",
+    "manage_connections": "管理关联",
+    "manage_editors": "管理编辑者",
+    "none": "无",
+    "search_user": "搜索用户",
+    "search_country": "搜索国家",
+    "search_emote_set": "搜索表情符组合",
+    "search_users": "{count, plural, one {搜索用户} other {搜索用户}}",
+    "tags": "标签",
+    "close": "关闭",
+    "contribute": "贡献",
+    "enter_tags": "输入标签",
+    "tag_limit_reached": "标签上限 {limit} 已达到",
+    "filters": "筛选",
+    "no_filters": "无筛选",
+    "emote_name": "表情符名称",
+    "copy_link": "复制链接",
+    "create_emote_set": "创建新组合",
+    "emote_set_name": "表情符组合名称",
+    "emote_attribution": "表情符来源",
+    "select": "选定",
+    "selection_mode": "选定模式",
+    "edit": "编辑",
+    "capacity": "容量",
+    "enable": "启用",
+    "disable": "停用",
+    "disabled": "未启用",
+    "more": "更多",
+    "actions": "操作",
+    "download": "下载",
+    "report": "举报",
+    "delete": "删除",
+    "time_select": {
+      "week": "本周",
+      "month": "本月",
+      "year": "本年"
+    },
+    "gift": "送礼",
+    "follow": "关注",
+    "connect": "连接",
+    "disconnect": "断开连接",
+    "email": "电子邮箱",
+    "password": "密码",
+    "all": "全部",
+    "other": "其它",
+    "cancel": "取消",
+    "confirm": "确认",
+    "proceed": "继续",
+    "save": "保存",
+    "remove": "移除",
+    "accept": "接受",
+    "deny": "拒绝",
+    "enter": "输入"
+  },
+  "themes": {
+    "system": "系统",
+    "dark": "深色",
+    "light": "浅色"
+  },
+  "flags": {
+    "global": "通用",
+    "trending": "热门",
+    "overlaying": "覆盖层",
+    "default": "默认",
+    "personal": "个人",
+    "listed": "公开的",
+    "unlisted": "未公开的",
+    "personal_use": "个人使用",
+    "deleted": "已删除",
+    "private": "私有",
+    "personal_use_approved": "批准用于个人使用",
+    "personal_use_denied": "拒绝用于个人使用",
+    "personal_use_pending": "个人使用审核中",
+    "renamed": "已更名",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "待审核",
+      "accepted": "已接受",
+      "rejected": "已拒绝",
+      "you_accepted": "您已接受",
+      "you_rejected": "您已拒绝"
+    }
+  },
+  "notifications": {
+    "system": "系统",
+    "approved_for_public": "您的表情符 {emote} 已获得公开展示的批准。"
+  },
+  "sub_info": {
+    "plan": "方案",
+    "free": "免费",
+    "gifted_by": "赠礼来自",
+    "ends": "订阅结束",
+    "total": "总计",
+    "credits": "订阅积分"
+  },
+  "file_limits": {
+    "max_size": "{size} 最大文件大小",
+    "max_resolution": "{width}x{height} 最大分辨率",
+    "max_frames": "{count} 最大帧数",
+    "resolution_error": "分辨率不得超过 {width}x{height}",
+    "duration_error": "时长不得超过 {duration} 秒"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "登录7TV",
+      "subtitle": "登录或创建账号以继续操作",
+      "continue_with": "使用 {platform} 账号继续操作",
+      "trouble": "登录遇到问题？",
+      "legal_yapping": "登录即表示您同意我们的",
+      "and": "及",
+      "linking_new": "如果您已有 7TV 账号并计划绑定新关联，请先使用现有账号登录再于设定中添加新关联",
+      "settings": "设置"
+    },
+    "search": {
+      "emotes": "表情符",
+      "users": "用户"
+    },
+    "upload": {
+      "title": "上传表情符",
+      "untitled": "未命名",
+      "chat": "发送消息",
+      "drag_drop": "拖动并放置来上传，或",
+      "browse_files": "浏览文件",
+      "accept_rules": "我接受用户守则",
+      "discard": "舍弃",
+      "upload_guidelines": "表情符上传守则",
+      "upload": "上传"
+    },
+    "emote_set": {
+      "title": "使用中的表情符组合",
+      "create": "创建表情符组合",
+      "name": "表情符组合名称",
+      "label": "名称",
+      "confirm": "创建",
+      "copy_set": "复制组合",
+      "special": "特殊",
+      "favourite_sets": {
+        "title": "收藏的表情符组合",
+        "add": "添加并重新命名至全部",
+        "remove": "从全部移除"
+      },
+      "mass_select_feature": {
+        "add": "添加到表情符组合",
+        "remove": "从表情符组合中移除",
+        "amount_selected_label": "/20 已选"
+      },
+      "default_emote_set": {
+        "remove": "从 {set} 移除表情符",
+        "add": "添加表情符到 {set}",
+        "conflicting_name": "名称重复"
+      }
+    },
+    "manage_aliases": {
+      "title": "管理表情符别名",
+      "add_placeholder": "添加新别名.."
+    },
+    "rename_emote": {
+      "title": "在 {set} 中重命名表情符",
+      "input_placeholder": "新表情符名称",
+      "confirmation_message": "您确定要在 {set} 中重命名此表情符吗？",
+      "confirm": "重新命名"
+    },
+    "remove_emote_from_set": {
+      "title": "从 {set} 中移除表情符",
+      "warning_message": "您确定要从 {set} 中移除 {emote} 吗？",
+      "confirm": "移除"
+    },
+    "add_emote": {
+      "title": "添加 {emote} 到",
+      "change_name": "更改表情符名称",
+      "confirm": "确认",
+      "confirm_changes": "{count, plural, one {确认 1 项改动} other {确认 {count} 项改动}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "表情符队列",
+      "activity": "活动",
+      "comments": "评论"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "添加/移除表情符",
+      "edit_emote_alias": "编辑表情符别名",
+      "remove_emote": "从组合中移除表情符",
+      "open_in_new_tab": "在新标签页中打开",
+      "copy_emote_link": "复制表情符的网址"
+    },
+    "cart": {
+      "title": "您的购物车",
+      "duration": "持续时间",
+      "price": "价格",
+      "preview": "预览",
+      "purchase_as_gift": "作为礼物购买",
+      "total": "总计"
+    },
+    "editor": {
+      "permissions": "设置编辑权限",
+      "super_admin": "超级管理员",
+      "emote_sets": "表情符组合",
+      "admin": "管理员",
+      "emotes": "表情符",
+      "user": "用户",
+      "manage_personal_emotes": "管理个人表情符组合",
+      "confirm": "确认",
+      "no_editors": "无可用编辑人",
+      "permissions_details": {
+        "manage": "管理",
+        "create": "创建",
+        "transfer": "转移",
+        "manage_profile": "管理个人资料",
+        "manage_emotes": "管理表情符",
+        "manage_billing": "管理账单",
+        "manage_editors": "管理编辑者",
+        "view_billing": "查看账单信息"
+      }
+    },
+    "emote_info": {
+      "processing": "该表情符仍在处理中",
+      "refresh": "刷新",
+      "download": "下载"
+    },
+    "copy_emotes": {
+      "title": "复制选中表情符至"
+    },
+    "default_set": {
+      "title": "默认表情符组合"
+    },
+    "delete_account": {
+      "warning": "警告",
+      "warning_message": "此操作将永久删除您的账号，并且此操作无法被撤销。",
+      "choose_reasons": "请选择删除账号的原因",
+      "reasons": {
+        "no_longer_use": "我不再使用 7TV",
+        "privacy_concerns": "个人隐私的担忧",
+        "not_useful": "不实用",
+        "other": "其它"
+      },
+      "confirm_username": "请输入您的用户名以继续"
+    },
+    "delete_emote_or_set": {
+      "title": "删除 {name}",
+      "warning_message_emote": "此操作将永久删除您的表情符，并且此操作无法被撤销。",
+      "warning_message_set": "此操作将永久删除您的表情符组合，并且此操作无法被撤销。",
+      "reason": "原因",
+      "reason_for_deletion": "删除原因"
+    },
+    "edit_emote": {
+      "title": "编辑 {emote}"
+    },
+    "edit_emote_set": {
+      "title": "编辑表情符组合",
+      "show_on_profile": "在个人资料中展示",
+      "publicly_listed": "公开列出"
+    },
+    "remove_emote": {
+      "title": "从 {set} 移除选中的表情"
+    },
+    "report_emote": {
+      "title": "举报表情",
+      "choose_reasons": "选择原因",
+      "reasons": {
+        "my_work": "我是这个表情符的作者，但它被其他人上传",
+        "duplicate": "这个表情符已存在",
+        "sexual": "这个表情符包含色情或过度性暗示的图像",
+        "violance": "这个表情符展示极端暴力或血腥的内容",
+        "its_me": "这个表情符以我为原型且我不喜欢它",
+        "offensive": "我觉得这个表情符具有冒犯性",
+        "other": "其它"
+      },
+      "additional_info": "额外信息",
+      "disclaimer": "滥用举报功能可能导致您的访问权限被撤销。"
+    },
+    "transfer_emote": {
+      "title": "转移 {emote}",
+      "details": "本操作将转移 {emote}。",
+      "receipient": "表情符接收者",
+      "transfer": "转移"
+    },
+    "badge": {
+      "title": "徽章"
+    },
+    "subscription": {
+      "gifted_by": "您的订阅赠送者是",
+      "cancel_notice": "现在结束订阅您将即刻失去订阅权益。确定要结束订阅吗？",
+      "cancel_confirmation": "您确定要取消订阅吗？您将在当前计费周期结束后失去订阅权益。",
+      "confirm": "确认"
+    },
+    "error": {
+      "title": "错误"
+    },
+    "pickems": {
+      "gift": {
+        "title": "赠送赛事竞猜通行证",
+        "gift_to": "赠送赛事竞猜通行证给",
+        "recipient": "选择接收者",
+        "back": "返回",
+        "continue": "继续"
+      }
+    },
+    "gift": {
+      "title": "赠送 1",
+      "gift_to": "赠送 1 {variantUnit(variant)} 给",
+      "recipient": "选择接收者"
+    },
+    "paint": {
+      "title": "涂装"
+    },
+    "buttons": {
+      "back": "返回",
+      "continue": "继续"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "已上传"
+      },
+      "process": {
+        "start": "开始了一项新的处理任务",
+        "success": "处理成功",
+        "fail": "处理失败",
+        "cancel": "取消任务处理"
+      },
+      "change_name": {
+        "action": "已更名"
+      },
+      "merge": {
+        "action": "已合并"
+      },
+      "change_owner": {
+        "action": "已转移所有权"
+      },
+      "change_tags": {
+        "action": "将标签设为"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "已获准公开列出"
+        },
+        "removed_public": {
+          "action": "已取消公开列出"
+        },
+        "approved_personal": {
+          "action": "批准用于个人使用"
+        },
+        "rejected_personal": {
+          "action": "个人使用申请被拒绝"
+        },
+        "added_overlaying": {
+          "action": "已添加旗帜覆盖层"
+        },
+        "removed_overlaying": {
+          "action": "已移除旗帜覆盖层"
+        },
+        "added_private": {
+          "action": "已添加“私人”旗帜"
+        },
+        "removed_private": {
+          "action": "已移除“私人”旗帜"
+        }
+      },
+      "delete": {
+        "action": "已删除"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "动态",
+      "emote": {
+        "deleted_emote": "已删除表情符",
+        "deleted_set": "已删除表情符组合",
+        "by": "由",
+        "created": "已创建",
+        "changed_tags": "已更改标签",
+        "changed_capacity": "已更改容量",
+        "added": "已添加",
+        "removed": "已移除表情符",
+        "renamed": "已重命名表情符",
+        "in": "在",
+        "from": "从",
+        "to": "至",
+        "deleted": "已删除"
+      },
+      "user": {
+        "changed_paint": "已将当前涂装变更自",
+        "changed_badge": "已将当前徽章变更自",
+        "removed": "已移除",
+        "connection": "连接",
+        "changed_set": "已将当前表情符组合变更自",
+        "added": "已添加",
+        "no_badge": "无徽章",
+        "no_paint": "无涂装",
+        "deleted": "已删除"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "正在为您登录…",
+        "logged": "已登录",
+        "failed": "登录失败"
+      },
+      "state": {
+        "logging": "正在为您登录…",
+        "logged": "已登录",
+        "failed": {
+          "title": "登录失败",
+          "message": "请确保通过扩展程序打开此窗口"
+        }
+      }
+    },
+    "home": {
+      "title": "主页",
+      "features": {
+        "emote_slots": "1000个表情符额度",
+        "emote_slots_info": "每位用户都有1000个免费表情符额度。一站式满足您所有表情符需求。",
+        "emote_slots_button": "浏览表情库",
+        "emote_sets": "表情符组合",
+        "emote_sets_info": "您可灵活自定义表情符组合、分享给其他用户、或在多组合间快速切换在您频道应用的表情组。",
+        "emote_sets_button": "创建表情符组合",
+        "custom_emotes": "自定义表情符名称",
+        "custom_emotes_info": "不喜欢原作表情符名称？没问题! 您可自定义表情符在您频道内的名称。",
+        "custom_emotes_button": "浏览表情库",
+        "real-time": "实时更新",
+        "real-time_info": "您频道内的任何表情符改变都将对所有观众实时更新。无需刷新无需等待。",
+        "real-time_button": "下载7TV扩展",
+        "large_community": "庞大的用户群体",
+        "large_community_info": "7TV的百万表情库每日为两百多万用户提供服务。",
+        "large_community_button": "加入 Discord 群",
+        "next_gen": "先进的图像格式",
+        "next_gen_info": "我们使用更新、更高效的图像格式，例如 WebP 和 AVIF，以减少带宽使用。",
+        "next_gen_button": "下载7TV扩展"
+      }
+    },
+    "help": {
+      "title": "帮助"
+    },
+    "directory": {
+      "title": "目录",
+      "bookmarked": "已收藏",
+      "sorting": {
+        "title": "排序分类",
+        "alphabetical": "按字母顺序",
+        "upload_date": "上传时间"
+      },
+      "filters": {
+        "animated": "动态",
+        "static": "静态",
+        "overlaying": "覆盖层",
+        "personal_use": "个人使用",
+        "exact_match": "精准匹配"
+      },
+      "size": {
+        "title": "尺寸",
+        "any": "任意尺寸"
+      }
+    },
+    "landing": {
+      "start": "开启您的聊天之旅，海量表情符与丰富功能将提升您的交流体验。下载官方7TV扩展或其他第三方工具。",
+      "developers": {
+        "header": "源码可用",
+        "info": "我们的完整代码库已在 GitHub 上开放, 采用源码可用许可。任何人都可以查看和贡献。"
+      },
+      "download": {
+        "start": "开启您的聊天之旅，海量表情符与丰富功能将提升您的交流体验。下载官方7TV扩展或其他第三方工具。",
+        "extension": "网页扩展",
+        "stable": "稳定版本",
+        "nightly": "Nightly版本",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "移动应用程序"
+        },
+        "bots": {
+          "header": "聊天机器人"
+        }
+      },
+      "features": {
+        "header": "为什么选择 7TV？",
+        "info": "我们的平台提供多种实用功能, 能提升您的聊天体验。"
+      },
+      "footer": {
+        "affiliated": "7TV 与 Twitch, Kick, YouTube 或 Discord 无关联",
+        "privacy_policy": "隐私政策",
+        "tos": "服务条款"
+      },
+      "hero": {
+        "platform": "表情符平台",
+        "all": "为所有人而设",
+        "download": "下载",
+        "manage": "轻松管理您在 Twitch, Kick 或 YouTube 频道的海量表情，提升您的聊天体验。",
+        "more": "了解更多",
+        "xmas": {
+          "header": "圣诞订阅活动",
+          "info": "圣诞节期间，为任意用户赠送一份订阅，即可解锁特别徽章！",
+          "gift": "赠送订阅"
+        },
+        "nnys": {
+          "info": "参与 NNYS 2025 投票, 获取专属涂装、徽章和表情符组合。",
+          "vote": "参与 NNYS 2025 投票"
+        },
+        "cs2": {
+          "streamers": "35 位主播",
+          "tournament": "7TV 主办的锦标赛",
+          "event": "为期三天的活动",
+          "header": "选择您的赛事预测。赢取奖品。",
+          "info": "7TV 主办的 CS2 锦标赛",
+          "date": "2月29日 至 3月2日",
+          "pickems": "选择您的预测",
+          "pass": "获取通行证！",
+          "badges_paints": "赢取徽章和涂装。",
+          "description1": "xQc, OhnePixel, JasonTheWeen 等32位主播将齐聚一堂",
+          "description2": "在由7TV主办、为期三天的 CS2 单败淘汰赛中捉对厮杀。"
+        }
+      }
+    },
+    "discover": {
+      "title": "探索",
+      "uploads": "上传项目",
+      "followed": "已关注账号"
+    },
+    "store": {
+      "title": "商店",
+      "redeem": {
+        "title": "兑换",
+        "header": "兑换礼品码",
+        "subtitle": "兑换礼品码以解锁专属装饰和权益。",
+        "state": {
+          "idle": "空闲",
+          "loading": "加载中",
+          "success": "成功"
+        },
+        "code": "兑换码",
+        "shown": "显示",
+        "trial": "您已成功兑换试用订阅"
+      },
+      "purchase": {
+        "success": "已成功完成购买"
+      },
+      "subscription": {
+        "banner_title_subbed": "感谢您的支持",
+        "banner_title_unsubbed": "解锁专属福利",
+        "banner_subtitle_subbed": "请享受您的专属订阅者福利！",
+        "banner_subtitle_unsubbed": "订阅以提升您的聊天体验。",
+        "badge_progress": {
+          "title": "勋章进度",
+          "left": "剩余{duration}"
+        },
+        "benefits": {
+          "title": "订阅福利",
+          "animated_avatar": "动态头像",
+          "personal_emotes": "个人表情符",
+          "paints": "用户名涂装",
+          "sub_badge": "订阅者勋章",
+          "raffle_tickets": "奖券"
+        },
+        "raffle": "通用表情符抽奖",
+        "monthly_paints": "本月涂装",
+        "your_cosmetics": "您的装饰",
+        "your_paints": "您的涂装",
+        "beomce_a_subscriber": "成为订阅者",
+        "your_badges": "您的徽章",
+        "top_gifters": "送礼榜单",
+        "subscribe": "订阅",
+        "subscribed": "已订阅",
+        "cancel": "取消订阅",
+        "reactivate": "重新激活订阅",
+        "one_monhth": "一个月",
+        "one_year": "一年"
+      },
+      "paint_bundles": {
+        "coming_soon": "即将推出",
+        "banner_title": "让自己闪闪发光",
+        "banner_subtitle": "用户名涂装让您的自我表达多姿多彩。"
+      },
+      "events": {
+        "no_events": "暂无即将举行的活动",
+        "xmas": "2024 圣诞活动：赠送一份订阅即可解锁特别徽章",
+        "cs2": {
+          "tournament": "7TV 主办的 CS2 锦标赛",
+          "cosmetics": "想通过预测结果赢取装饰吗？点击下方！",
+          "twitch": "查看 TWITCH",
+          "bundle": "购买组合包",
+          "already_subscribed": "已订阅",
+          "subscribe": "今日 {price}, 之后 {recurring}",
+          "billing_cycle": "按一次性购买计费",
+          "pickems": {
+            "place": "选择您的预测",
+            "predict": "预测获胜者",
+            "purchase_pass": "购买通行证"
+          },
+          "pass": {
+            "title": "赛事竞猜通行证",
+            "get": "获取通行证",
+            "bundle": "通行证 + {variantName(variant)} 订阅组合包"
+          },
+          "schedule": {
+            "header": "赛事日程",
+            "stage": "阶段",
+            "best_of": "多局决胜制",
+            "start_time": "开始时间"
+          },
+          "streamers": {
+            "header": "主播介绍",
+            "info": "一群知名 Twitch 主播将从各自的社区组建队伍, 在CS式的单败淘汰赛中正面交锋。",
+            "watch": "前往观看主赛事",
+            "twitch_channel": "7TV Twitch 频道",
+            "streamer_pov": "或通过您喜爱的主播视角观看。"
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "管理员",
+      "overview": "总览",
+      "welcome": "欢迎回来",
+      "enjoy": "祝您审核愉快！",
+      "tickets": {
+        "title": "请求",
+        "emotes": {
+          "public_listing": "公开列表",
+          "personal_use": "个人使用",
+          "resolved": "已解决",
+          "not_implemented": "尚未实施"
+        },
+        "emote_table": {
+          "emote_name": "表情符名称",
+          "uploader": "上传者",
+          "country": "国家",
+          "tags_flags": "标签与旗帜",
+          "reviewed_by": "检视者为"
+        },
+        "reports": "举报",
+        "reports_options": {
+          "all": "全部",
+          "assigned": "已分配",
+          "closed": "已关闭"
+        },
+        "reports_table": {
+          "reported_by": "举报者",
+          "target": "目标",
+          "description": "描述",
+          "assigned_to": "已分配至",
+          "status": "状态",
+          "date": "日期",
+          "ticket_id": "单号",
+          "subject": "主题",
+          "details": "详情"
+        },
+        "reports_actions": {
+          "close": "标记为已关闭",
+          "assign_self": "自分配",
+          "add_comment": "添加评论"
+        }
+      },
+      "codes": {
+        "redeem": "兑换代码",
+        "add": "添加代码",
+        "filters": {
+          "header": "筛选：",
+          "remaining_uses": "剩余可用次数"
+        },
+        "search": {
+          "results": "找到 {results.totalCount} 个结果（共 {results.pageCount} 页）"
+        },
+        "attributes": {
+          "name": {
+            "name": "名称",
+            "description": "描述",
+            "tags": "标签",
+            "code": "代码",
+            "remaining_uses": "剩余可用次数",
+            "active_period": "有效期间",
+            "effect": "效果",
+            "subscription_effect": "订阅效果",
+            "created_by": "创建者",
+            "created_at": "创建时间",
+            "actions": "操作"
+          }
+        },
+        "period": {
+          "unlimited": "无限"
+        },
+        "trial": {
+          "days": "天试用期",
+          "no_trial": "非试用",
+          "none": "无"
+        },
+        "system": "系统"
+      },
+      "special_events": {
+        "header": "特别活动",
+        "create": "创建特殊活动",
+        "add": "添加特殊活动",
+        "results": "找到 {results.length} 个结果",
+        "attributes": {
+          "name": "名称",
+          "description": "描述",
+          "tags": "标签",
+          "created_by": "创建者",
+          "created_at": "创建时间",
+          "actions": "操作",
+          "create": "创建",
+          "cancel": "取消"
+        },
+        "system": "系统",
+        "no_events": "没有特殊活动"
+      },
+      "users": {
+        "id": {
+          "back": "返回",
+          "last_updated": "最后更新",
+          "search_last_update": "搜索最后更新",
+          "queued": "已加入更新队列",
+          "stripe": {
+            "customer": "Stripe 客户",
+            "view": "查看",
+            "no_customer": "未关联 Stripe 客户",
+            "roles": "角色"
+          },
+          "actions": {
+            "header": "操作",
+            "sessions": {
+              "header": "会话",
+              "create_session": "创建新会话",
+              "delete_all": "删除所有会话",
+              "expiration": "到期日期",
+              "token": "令牌",
+              "copy_token": "复制令牌",
+              "create": "创建",
+              "close": "关闭"
+            },
+            "connections": {
+              "header": "连接",
+              "kick": "手动关联 Kick",
+              "username": "Kick 用户名"
+            },
+            "entitlements": {
+              "header": "权限",
+              "create": "创建权限",
+              "assign": "手动分配权限",
+              "assign_to": "分配权限至",
+              "remove_all": "移除所有权限",
+              "view": "查看权限",
+              "showing": "显示分配给的权限"
+            }
+          },
+          "subscription": {
+            "header": "订阅",
+            "period": {
+              "header": "订阅周期",
+              "key": "密钥",
+              "value": "值",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "复制 ULID",
+              "uuid": "复制 UUID"
+            },
+            "provider": {
+              "id": "提供者 ID",
+              "view": "查看"
+            },
+            "product": {
+              "id": "产品 ID",
+              "view": "查看",
+              "start": "开始",
+              "end": "结束",
+              "is_trial": "是否为试用？",
+              "auto_renew": "自动续订？",
+              "gifted": {
+                "header": "已赠送？",
+                "yes": "是 – 由",
+                "no": "否"
+              },
+              "created_by": "创建者",
+              "redeem": "兑换代码",
+              "invoice": "发票",
+              "system": "系统",
+              "variant": "产品型号"
+            }
+          },
+          "not_found": "未找到用户"
+        },
+        "layout": {
+          "users": "用户"
+        },
+        "page": {
+          "manage": {
+            "header": "管理",
+            "single_user": "管理单个用户"
+          },
+          "actions": {
+            "header": "可用操作",
+            "sub_benefits_job": {
+              "header": "订阅福利任务",
+              "manually": "手动触发订阅任务, 以重新计算所有用户的权限和订阅福利。",
+              "rerun": "重新运行"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "使用表情符",
+      "add_to": "添加至……",
+      "transfer": "转移",
+      "merge": "合并",
+      "size": "尺寸",
+      "copy_link": "复制链接"
+    },
+    "user": {
+      "about": "关于",
+      "active_emotes": "使用中的表情符",
+      "uploaded": "已上传",
+      "uploaded_emotes": "已上传表情符"
+    },
+    "settings": {
+      "account": {
+        "title": "账号",
+        "profile": {
+          "details": "深入定制个人偏好来满足您的个人需求",
+          "display_name": "显示名称",
+          "display_name_description": "选择一个主要的连结账号来作为您的显示名称以及静态头像",
+          "profile_picture_description": "请选择一个头像来在所有平台展示",
+          "update_profile_picture": "上传头像"
+        },
+        "connections": {
+          "details": "管理和链接外部账户以简化访问并增强平台内的互操作性"
+        },
+        "security": {
+          "title": "安全性",
+          "details": "管理并定制您的账号安全设置",
+          "2fa": "二步验证",
+          "2fa_details": "使用二步验证（2FA）来增强您账号的安全性",
+          "email_details": "使用电子邮箱来接收验证码",
+          "authenticator_app": "验证器APP",
+          "authenticator_app_details": "安装一个APP来生成您的验证码",
+          "sign_out_everywhere": "在任意地点登出",
+          "sign_out_everywhere_details": "轻点鼠标就能确保您的账号安全以及在任意设备上登出",
+          "delete_account_details": "永久删除平台上的所有个人信息和相关数据，并停用您的帐户"
+        }
+      },
+      "appearance": {
+        "title": "外观",
+        "details": "更改界面风格",
+        "theme": {
+          "header": "主题",
+          "options": {
+            "system": "系统",
+            "dark": "深色",
+            "light": "浅色"
+          }
+        },
+        "motion": {
+          "header": "减少动态效果",
+          "options": {
+            "system": "系统",
+            "enabled": "启用",
+            "disbaled": "未启用"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "网站版面方向",
+          "options": {
+            "ltr": "由左至右",
+            "rtl": "由右至左"
+          }
+        }
+      },
+      "editors": {
+        "details": "管理和自定义您的编辑者或您编辑的频道",
+        "editing_for": "为...编辑",
+        "add_editor": "添加编辑者",
+        "not_allowed": "您没有权限管理该用户的编辑者"
+      },
+      "notifications": {
+        "details": "使用实时更新和通知，让用户了解网站或应用程序内的重要事件、消息和活动"
+      },
+      "blocked": {
+        "title": "已屏蔽",
+        "details": "管理您的已限制或禁止的内容，用户或活动",
+        "add_user": "添加屏蔽用户"
+      },
+      "billing": {
+        "title": "账单",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "使用订阅积分",
+          "use_credits_details": "您的订阅积分将会在您的下次扣款时被使用",
+          "cancelled": "已取消订阅",
+          "cancelled_details": "您的订阅已经被取消，您所享受的福利将过期于 {date}"
+        },
+        "history": {
+          "title": "账单历史",
+          "details": "查看与您的账户关联的所有支付活动，例如过去的账单和交易记录"
+        },
+        "payment_methods": {
+          "details": "检视并更新您的偏好支付方式",
+          "add_new": "添加新的",
+          "card": {
+            "title": "银行卡信息",
+            "ends_in": "结束于{digits}",
+            "expires": "过期于{month}/{year}",
+            "address": "地址",
+            "name": "姓名"
+          }
+        },
+        "table": {
+          "status": "状态",
+          "amount": "数目",
+          "invoice": "发票"
+        }
+      },
+      "user_table": {
+        "name": "名称",
+        "last_modified": "上次更改",
+        "permissions": "许可"
+      }
+    },
+    "link": {
+      "linking": "正在关联您的账户…",
+      "linking_successful": "账户关联成功",
+      "linking_failed": "关联失败"
+    },
+    "extension": {
+      "login": "正在为您登录…",
+      "login_successful": "已登录",
+      "login_failed": "登录失败",
+      "window": "请确保通过扩展程序打开此窗口"
+    }
+  }
+}

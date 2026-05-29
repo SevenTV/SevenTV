@@ -41,9 +41,9 @@ pub enum EntitlementNodeTypeInput {
 
 #[derive(async_graphql::InputObject)]
 pub struct EntitlementNodeInput {
-	#[graphql(name = "type")]
-	ty: EntitlementNodeTypeInput,
-	id: Id<()>,
+    #[graphql(name = "type")]
+    pub ty: EntitlementNodeTypeInput,
+    pub id: Id<()>,
 }
 
 impl From<EntitlementNodeInput> for EntitlementEdgeKind {

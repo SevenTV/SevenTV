@@ -54,8 +54,9 @@ type Billing {
 type BillingMutation {
 	cancelSubscription(productId: Id!): SubscriptionInfo!
 	getPickems(pickemsId: Id!, subscriptionPriceId: StripeProductId): SubscribeResponse!
+	buyBundle(bundleId: Id!, specialEventId: Id): SubscribeResponse!
 	reactivateSubscription(productId: Id!): SubscriptionInfo!
-	redeemCode(code: String!): RedeemResponse!
+	redeemCode(code: String!, captchaToken: String!): RedeemResponse!
 	subscribe(variantId: StripeProductId!): SubscribeResponse!
 }
 
@@ -419,6 +420,33 @@ type EntitlementEdgeOperation {
 	delete: Boolean!
 }
 
+type InventoryEntitlementEdgeAnyBadge {
+	"""
+	Whether this entitlement is directly connected to the user
+	"""
+	accessible: Boolean!
+	from: EntitlementNodeAny!
+	to: EntitlementNodeBadge!
+}
+
+type InventoryEntitlementEdgeAnyPaint {
+	"""
+	Whether this entitlement is directly connected to the user
+	"""
+	accessible: Boolean!
+	from: EntitlementNodeAny!
+	to: EntitlementNodePaint!
+}
+
+type InventoryEntitlementEdgeAnyProduct {
+	"""
+	Whether this entitlement is directly connected to the user
+	"""
+	accessible: Boolean!
+	from: EntitlementNodeAny!
+	to: EntitlementNodeProduct!
+}
+
 union EntitlementNodeAny =
 	| EntitlementNodeUser
 	| EntitlementNodeRole
@@ -485,6 +513,7 @@ enum EntitlementNodeTypeInput {
 	PAINT
 	ROLE
 	SPECIAL_EVENT
+	SUBSCRIPTION
 	SUBSCRIPTION_BENEFIT
 	USER
 }
@@ -830,27 +859,6 @@ enum Platform {
 	TWITCH
 }
 
-enum ReportStatus {
-	OPEN
-	ASSIGNED
-	CLOSED
-}
-
-type Report {
-	id: Id!
-	target_kind: Int!
-	target_id: Id!
-	actor_id: Id!
-	subject: String!
-	body: String!
-	priority: Int!
-	status: ReportStatus!
-	notes: [String!]!
-	actor: V3User!
-	assignees: [V3User!]!
-	created_at: DateTime!
-}
-
 type Price {
 	amount: Int!
 	currency: String!
@@ -899,72 +907,6 @@ type Query {
 	emotesByID(list: [Id!]!): [EmotePartial!]!
 }
 
-type ImageFile {
-	name: String!
-	format: String!
-	width: Int!
-	height: Int!
-	size: Int!
-}
-
-type ImageHost {
-	files: [ImageFile!]!
-	url: String!
-}
-
-type UserPartial {
-	display_name: String!
-	id: Id!
-	username: String!
-	avatar_url: String!
-	type: String!
-	biography: String!
-	created_at: DateTime!
-	style: UserStyle!
-	roles: [Id!]!
-	connections: [UserConnection!]!
-}
-
-type EmotePartial {
-	id: Id!
-	name: String!
-	tags: [String!]!
-	animated: Boolean!
-	owner_id: Id!
-	host: ImageHost!
-	listed: Boolean!
-	created_at: DateTime!
-	owner: UserPartial!
-	flags: [String!]!
-	state: String!
-}
-
-type ModRequestMessageList {
-	messages: [ModRequestMessage!]!
-	total: Int!
-}
-
-type ModRequestMessage {
-	id: Id!
-	kind: MessageKind!
-	author_id: Id
-	read: Boolean!
-	read_at: DateTime
-	target_kind: Int!
-	target_id: Id!
-	wish: String!
-	actor_country_name: String!
-	actor_country_code: String!
-	created_at: DateTime!
-}
-
-enum MessageKind {
-	EMOTE_COMMENT
-	MOD_REQUEST
-	INBOX
-	NEWS
-}
-
 enum Ranking {
 	TOP_ALL_TIME
 	TOP_DAILY
@@ -1008,7 +950,7 @@ type RedeemCodeOperation {
 }
 
 type RedeemCodeQuery {
-	redeemCode(id: Id!): RedeemCode
+	redeemCode(id: Id!, captchaToken: String!): RedeemCode
 	redeemCodes(
 		page: Int
 		perPage: Int
@@ -1322,7 +1264,7 @@ type User {
 	highestRoleColor: Color
 	highestRoleRank: Int!
 	id: Id!
-	inventory: UserInventory!
+	inventory(includeInaccessible: Boolean! = false): UserInventory!
 	mainConnection: UserConnection
 	ownedEmoteSets: [EmoteSet!]!
 	ownedEmotes: [Emote!]!
@@ -1337,41 +1279,6 @@ type User {
 	stripeCustomerId: CustomerId
 	style: UserStyle!
 	updatedAt: DateTime!
-}
-
-type V3User {
-	id: Id!
-	username: String!
-	display_name: String!
-	avatar_url: String!
-	biography: String
-	inbox_unread_count: Int
-	created_at: DateTime
-	style: UserStyle
-	editors: [UserEditor!]
-	editor_of: [UserEditor!]
-	cosmetics: [UserCosmetic!]
-	roles: [Id!]
-	emote_sets(entitled: Boolean): [EmoteSet!]
-	owned_emotes: [Emote!]
-	activity(limit: Int): [AuditLog!]
-	connections: [UserConnection!]
-	reports: [Report!]
-}
-
-type AuditLog {
-	id: Id!
-	actor_id: Id!
-	target_id: Id!
-	target_kind: Int!
-	created_at: DateTime!
-	reason: String!
-	actor: UserPartial!
-}
-
-type UserCosmetic {
-	id: Id!
-	selected: Boolean!
 }
 
 type UserConnection {
@@ -1448,9 +1355,9 @@ type UserEvent {
 }
 
 type UserInventory {
-	badges: [EntitlementEdgeAnyBadge!]!
-	paints: [EntitlementEdgeAnyPaint!]!
-	products: [EntitlementEdgeAnyProduct!]!
+	badges: [InventoryEntitlementEdgeAnyBadge!]!
+	paints: [InventoryEntitlementEdgeAnyPaint!]!
+	products: [InventoryEntitlementEdgeAnyProduct!]!
 }
 
 type UserMutation {
@@ -1518,6 +1425,119 @@ type UserStyle {
 	activeProfilePicture: UserProfilePicture
 	activeProfilePictureId: Id
 	pendingProfilePictureId: Id
+}
+
+enum ReportStatus {
+	OPEN
+	ASSIGNED
+	CLOSED
+}
+type Report {
+	id: Id!
+	target_kind: Int!
+	target_id: Id!
+	actor_id: Id!
+	subject: String!
+	body: String!
+	priority: Int!
+	status: ReportStatus!
+	notes: [String!]!
+	actor: V3User!
+	assignees: [V3User!]!
+	created_at: DateTime!
+}
+
+type ImageFile {
+	name: String!
+	format: String!
+	width: Int!
+	height: Int!
+	size: Int!
+}
+type ImageHost {
+	files: [ImageFile!]!
+	url: String!
+}
+type UserPartial {
+	display_name: String!
+	id: Id!
+	username: String!
+	avatar_url: String!
+	type: String!
+	biography: String!
+	created_at: DateTime!
+	style: UserStyle!
+	roles: [Id!]!
+	connections: [UserConnection!]!
+}
+type EmotePartial {
+	id: Id!
+	name: String!
+	tags: [String!]!
+	animated: Boolean!
+	owner_id: Id!
+	host: ImageHost!
+	listed: Boolean!
+	created_at: DateTime!
+	owner: UserPartial!
+	flags: [String!]!
+	state: String!
+}
+type ModRequestMessageList {
+	messages: [ModRequestMessage!]!
+	total: Int!
+}
+type ModRequestMessage {
+	id: Id!
+	kind: MessageKind!
+	author_id: Id
+	read: Boolean!
+	read_at: DateTime
+	target_kind: Int!
+	target_id: Id!
+	wish: String!
+	actor_country_name: String!
+	actor_country_code: String!
+	created_at: DateTime!
+}
+enum MessageKind {
+	EMOTE_COMMENT
+	MOD_REQUEST
+	INBOX
+	NEWS
+}
+
+type V3User {
+	id: Id!
+	username: String!
+	display_name: String!
+	avatar_url: String!
+	biography: String
+	inbox_unread_count: Int
+	created_at: DateTime
+	style: UserStyle
+	editors: [UserEditor!]
+	editor_of: [UserEditor!]
+	cosmetics: [UserCosmetic!]
+	roles: [Id!]
+	emote_sets(entitled: Boolean): [EmoteSet!]
+	owned_emotes: [Emote!]
+	activity(limit: Int): [AuditLog!]
+	connections: [UserConnection!]
+	reports: [Report!]
+}
+type AuditLog {
+	id: Id!
+	actor_id: Id!
+	target_id: Id!
+	target_kind: Int!
+	created_at: DateTime!
+	reason: String!
+	actor: UserPartial!
+}
+type UserCosmetic {
+	id: Id!
+	selected: Boolean!
 }
 
 directive @deprecated(

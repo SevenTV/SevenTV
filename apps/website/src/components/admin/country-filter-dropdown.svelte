@@ -4,6 +4,7 @@
 	import CountryFlag from "../country-flag.svelte";
 	import { countriesFilter } from "$/lib/tickets";
 	import { GROUPS } from "./CountriesFilter";
+	import type { CountryCode } from "./CountriesFilter";
 
 	let expanded = false;
 	let selectedGroups = new Set<string>();
@@ -41,7 +42,7 @@
 			<div class="country-link-list">
 				{#each GROUPS as group}
 					<button class="country-menu-button" onclick={() => toggleGroup(group)}>
-						<CountryFlag code={group.flag} name={group.name} height={1.2 * 16} />
+						<CountryFlag code={group.flag as CountryCode} name={group.name} height={1.2 * 16} />
 						{group.name}
 						<span style="flex-grow: 1;"></span>
 						{#if selectedGroups.has(group.name)}

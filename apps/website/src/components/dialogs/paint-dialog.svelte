@@ -7,12 +7,17 @@
 	interface Props {
 		mode: DialogMode;
 		paint: Paint;
+		dialogWidth?: number;
 	}
 
-	let { mode = $bindable("hidden"), paint }: Props = $props();
+	let { mode = $bindable("hidden"), paint, dialogWidth }: Props = $props();
+
+	if(!dialogWidth) {
+		dialogWidth = 30;
+	}
 </script>
 
-<Dialog width={30} bind:mode>
+<Dialog width={dialogWidth} bind:mode>
 	<div class="layout">
 		<h1>{$t("dialogs.paint.title")}</h1>
 		<hr />

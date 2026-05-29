@@ -55,13 +55,14 @@ impl EmoteSet {
 			})
 			.cloned()
 			.collect_vec();
-		let total_count = filtered.len() as u64;
 
 		let emotes = global
 			.emote_by_id_loader
 			.load_many_merged(filtered.iter().map(|e| e.id))
 			.await
 			.map_err(|()| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load emotes"))?;
+
+		let total_count = filtered.iter().filter(|e| emotes.get(e.id).is_some()).count() as u64;
 
 		if let Some(page) = page {
 			let chunk_size = per_page.map(|p| p as usize).unwrap_or(20);

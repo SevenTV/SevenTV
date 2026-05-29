@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Star } from "phosphor-svelte";
 	import type { Snippet } from "svelte";
 	import type { HTMLLabelAttributes } from "svelte/elements";
 
@@ -7,6 +8,10 @@
 		value?: boolean;
 		disabled?: boolean;
 		indeterminate?: boolean;
+		favIcon?: boolean;
+		favSetId?: string;
+		isFavAlready?: boolean;
+		handleEmoteSetIDInFavs?: (id: string) => void;
 		onclick?: (e: MouseEvent) => void;
 		leftLabel?: Snippet;
 		children?: Snippet;
@@ -17,6 +22,10 @@
 		value = $bindable(false),
 		disabled = false,
 		indeterminate = $bindable(false),
+		favIcon = false,
+		favSetId = undefined,
+		isFavAlready = false,
+		handleEmoteSetIDInFavs,
 		onclick,
 		leftLabel,
 		children,
@@ -30,14 +39,35 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<label class:option class:disabled {...restProps} onclick={handleClick}>
-	{@render leftLabel?.()}
-	<input type="checkbox" bind:checked={value} bind:indeterminate {onclick} {disabled} />
-	<span class="checkbox"></span>
-	{@render children?.()}
-</label>
+<div style="display: flex; align-items: center;">
+	<label class:option class:disabled {...restProps} onclick={handleClick}>
+		{@render leftLabel?.()}
+		<input type="checkbox" bind:checked={value} bind:indeterminate {onclick} {disabled} />
+		<span class="checkbox"></span>
+		{@render children?.()}
+	</label>
+	{#if favIcon}
+		<button
+			type="button"
+			class="fav-button"
+			aria-label="Toggle Favorite"
+			disabled={false}
+			tabindex="0"
+			onclick={(e) => {
+				e.stopPropagation();
+				handleEmoteSetIDInFavs?.(favSetId!);
+			}}
+		>
+			<Star aria-label="Favorite" weight={isFavAlready ? "fill" : "regular"} />
+		</button>
+	{/if}
+</div>
 
 <style lang="scss">
+	.fav-button {
+		margin-left: 0.5rem;
+		z-index: 5;
+	}
 	label {
 		cursor: pointer;
 		user-select: none;

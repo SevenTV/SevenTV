@@ -25,12 +25,12 @@
 	import { UserEditorState } from "$/gql/graphql";
 	import type { Snippet } from "svelte";
 	import UserName from "$/components/user-name.svelte";
+	import { onDestroy, onMount } from "svelte";
 	import { user } from "$/lib/auth";
 	import Badge from "$/components/badge.svelte";
 	import { filterRoles } from "$/lib/utils";
 	import { page } from "$app/stores";
 	import Error from "$/components/error.svelte";
-	import { onDestroy, onMount } from "svelte";
 
 	let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
@@ -68,14 +68,12 @@
 	});
 
 	let isCosmetics = $state($page.url.pathname.endsWith("/cosmetics"));
-
 	onMount(() => {
 		const unsubscribe = page.subscribe(($page) => {
 			if ($page.url.pathname.endsWith("/cosmetics")) {
 				document.title = `Cosmetics - ${$t("page_titles.suffix")}`;
 			} else {
 				const promise = data.streamed.userRequest.value;
-
 				promise
 					.then((userData) => {
 						const name = userData?.mainConnection?.platformDisplayName || "Unknown";
@@ -84,11 +82,9 @@
 					.catch(() => {
 						document.title = `Error - ${$t("page_titles.suffix")}`;
 					});
-
 				document.title = `Loading... - ${$t("page_titles.suffix")}`;
 			}
 		});
-
 		onDestroy(() => {
 			unsubscribe();
 		});
@@ -96,17 +92,13 @@
 </script>
 
 <svelte:head>
-	{#if isCosmetics}
-		<title>Cosmetics - {$t("page_titles.suffix")}</title>
-	{:else}
-		{#await data.streamed.userRequest.value}
-			<title>Loading... - {$t("page_titles.suffix")}</title>
-		{:then userData}
-			<title>{userData?.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
-		{:catch}
-			<title>Error - {$t("page_titles.suffix")}</title>
-		{/await}
-	{/if}
+	{#await data.streamed.userRequest.value}
+		<title>{$t("common.loading")} - {$t("page_titles.suffix")}</title>
+	{:then userData}
+		<title>{userData?.mainConnection?.platformDisplayName} - {$t("page_titles.suffix")}</title>
+	{:catch}
+		<title>{$t("common.error")} - {$t("page_titles.suffix")}</title>
+	{/await}
 </svelte:head>
 
 {#snippet desktopMenu()}
@@ -161,7 +153,9 @@
 							{#snippet icon()}
 								<Gear />
 							{/snippet}
-							Manage connections
+							<p title={$t("labels.manage_connections")} style="text-overflow: ellipsis; text-align: left; white-space: nowrap; overflow: hidden;">
+								{$t("labels.manage_connections")}
+							</p>
 						</Button>
 					{/if}
 				</div>
@@ -192,7 +186,7 @@
 					{/each}
 					{#await canManageEditors then manageEditors}
 						{#if manageEditors}
-							<TabLink title="Manage editors" href="/users/{data.id}/editors">
+							<TabLink title={$t("labels.manage_editors")} href="/users/{data.id}/editors">
 								<Gear />
 								{#snippet active()}
 									<Gear weight="fill" />
@@ -245,7 +239,7 @@
 				{#snippet icon()}
 					<Wrench />
 				{/snippet}
-				<span style="color:var(--text); flex-grow: 1;">Admin</span>
+				<span style="color:var(--text); flex-grow: 1;">{$t("pages.admin.title")}</span>
 				{#snippet iconRight()}
 					<CaretRight />
 				{/snippet}
@@ -311,7 +305,7 @@
 					{#snippet icon()}
 						<Wrench />
 					{/snippet}
-					<span style="color:var(--text); flex-grow: 1;">Admin</span>
+					<span style="color:var(--text); flex-grow: 1;">{$t("pages.admin.title")}</span>
 					{#snippet iconRight()}
 						<CaretRight />
 					{/snippet}
@@ -360,7 +354,7 @@
 {/snippet}
 
 {#if error}
-	<Error title="Failed to load user" details={error} />
+	<Error title={$t("page_errors.user")} details={error} />
 {:else}
 	{@render layout()}
 {/if}

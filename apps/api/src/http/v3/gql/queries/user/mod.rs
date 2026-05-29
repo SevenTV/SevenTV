@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_graphql::{ComplexObject, Context, Object};
 use itertools::Itertools;
+use shared::database::role::RoleId;
 use shared::database::user::{FullUser, UserId};
 use shared::old_types::cosmetic::{CosmeticBadgeModel, CosmeticKind, CosmeticPaintModel};
 use shared::old_types::object_id::GqlObjectId;

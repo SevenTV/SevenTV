@@ -4,6 +4,7 @@
 	import { UserEditorState } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
 	import type { PageData } from "./$types";
+	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
@@ -33,7 +34,7 @@
 			{/await}
 		</div>
 	{:else}
-		<p>You are not allowed to manage editors for this user</p>
+		<p>{$t("pages.settings.editors.not_allowed")}</p>
 	{/if}
 {/await}
 

@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Admin",
+    "trending_emotes": "Δημοφιλή Emotes",
+    "top_emotes": "Κορυφαία Emotes",
+    "global_emotes": "Παγκόσμια Emotes",
+    "new_emotes": "Νέα Emotes",
+    "bookmarked_emotes": "Αποθηκευμένα Emotes",
+    "bookmarked_emote_sets": "Αποθηκευμένα Σετ Emotes",
+    "bookmarked_users": "Αποθηκευμένοι Χρήστες",
+    "account_settings": "Ρυθμίσεις Λογαριασμού",
+    "editor_settings": "Ρυθμίσεις Editor",
+    "notification_settings": "Ρυθμίσεις Ειδοποιήσεων",
+    "blocked_settings": "Αποκλεισμένες Ρυθμίσεις",
+    "billing_settings": "Ρυθμίσεις Χρέωσης",
+    "admin_emote_public_listing": "Αιτήματα για Δημόσια Καταχώρηση Emotes",
+    "admin_emote_personal_use": "Αιτήματα για Emotes Προσωπικής Χρήσης",
+    "admin_emote_resolved": "Επιλυμένες Αιτήσεις Emotes"
+  },
+  "page_errors": {
+    "not_found": "Η σελίδα που ζητήσατε δε βρέθηκε.",
+    "forbidden": "Δεν έχετε άδεια να δείτε αυτή τη σελίδα.",
+    "unauthorized": "Δεν έχετε άδεια πρόσβασης σε αυτή τη σελίδα.",
+    "unexpected": "Μπορείτε να δοκιμάσετε να ανανεώσετε τη σελίδα. Εάν το πρόβλημα παραμένει, παρακαλούμε επικοινωνήστε μαζί μας.",
+    "generic": "Παρουσιάστηκε σφάλμα.",
+    "emote_set_load": "Αποτυχία φόρτωσης emote σετ",
+    "emote_set_not_found": "Δε βρέθηκε το emote σετ",
+    "user": "Αποτυχία φόρτωσης χρήστη"
+  },
+  "words": {
+    "from": "από",
+    "to": "σε",
+    "with": "με",
+    "by": "από"
+  },
+  "common": {
+    "sign_in": "Σύνδεση",
+    "sign_out": "Αποσύνδεση",
+    "go_back": "Επιστροφή",
+    "super_admin": "Super Admin",
+    "skip_to_content": "Μετάβαση στο περιεχόμενο",
+    "emotes": "{count, plural, one {Emote} other {Emotes}}",
+    "emote_sets": "{count, plural, one {Emote Σετ} other {Emote Σετ}}",
+    "users": "{count, plural, one {Χρήστης} other {Χρήστες}}",
+    "channels": "{count, plural, one {Κανάλι} other {Κανάλια}}",
+    "followers": "{count, plural, one {Ακόλουθος} other {Ακόλουθοι}}",
+    "items": "{count, plural, one {Αντικείμενο} other {Αντικείμενα}}",
+    "subscriptions": "{count, plural, one {Συνδρομή} other {Συνδρομές}}",
+    "payment_methods": "{count, plural, one {Τρόπος Πληρωμής} other {Τρόποι Πληρωμής}}",
+    "date": "Ημερομηνία",
+    "help": "Βοήθεια",
+    "for": "για",
+    "error": "Σφάλμα",
+    "loading": "Φόρτωση...",
+    "paint_bundles": "Πακέτα Paints",
+    "notifications": "Ειδοποιήσεις",
+    "connections": "Συνδέσεις",
+    "direct_messages": "Προσωπικά Μηνύματα",
+    "mod_comments": "Σχόλια Mod",
+    "profile_picture": "Εικόνα Προφίλ",
+    "suggested_emotes": "Προτεινόμενα Emotes",
+    "personal_emotes": "Προσωπικά Emotes",
+    "no_more_emotes": "Δε βρέθηκαν άλλα emotes",
+    "no_emotes": "Δε βρέθηκαν emotes",
+    "your_subscription": "Η συνδρομή σας",
+    "theme": "Θέμα",
+    "language": "Γλώσσα",
+    "developer_portal": "Πύλη Προγραμματιστή",
+    "faq": "Συχνές Ερωτήσεις",
+    "faq_short": "FAQ",
+    "privacy": "Πολιτική Απορρήτου",
+    "tos": "Όροι Χρήσης",
+    "trending": "Δημοφιλή",
+    "top": "Κορυφαία",
+    "global": "Παγκόσμια",
+    "new": "Νέα",
+    "Weekly": "Εβδομαδιαία",
+    "Monthly": "Μηνιαία",
+    "Today": "Σήμερα",
+    "news": "Ειδήσεις",
+    "Default_set": "Προεπιλεγμένο Σετ",
+    "following": "Ακολουθείς",
+    "activity": "Δραστηριότητα",
+    "analytics": "Αναλυτικά",
+    "statistics": "Στατιστικά",
+    "contact": "Επικοινωνία",
+    "cosmetics": "Cosmetics",
+    "editors": "Editors",
+    "active": "Ενεργό",
+    "profile": "Προφίλ",
+    "pinned": "Καρφιτσωμένο",
+    "settings": "Ρυθμίσεις",
+    "delete_account": "Διαγραφή Λογαριασμού"
+  },
+  "labels": {
+    "enter_text": "Γράψτε εδώ",
+    "redeem": "Εισάγετε τον κωδικό",
+    "search": "Αναζήτηση",
+    "refetch": "Ανανέωση",
+    "manage_connections": "Διαχείριση Συνδέσεων",
+    "manage_editors": "Διαχείριση Editors",
+    "none": "Κανένα",
+    "search_user": "Αναζήτηση Χρήστη",
+    "search_country": "Αναζήτηση Χώρας",
+    "search_emote_set": "Αναζήτηση Emote Σετ",
+    "search_users": "{count, plural, one {Αναζήτηση χρήστη} other {Αναζήτηση χρηστών}}",
+    "tags": "Tags",
+    "close": "Κλείσιμο",
+    "contribute": "Συνεισφορά",
+    "enter_tags": "Εισάγετε tags",
+    "tag_limit_reached": "Το όριο των {limit} tags έχει εξαντληθεί",
+    "filters": "Φίλτρα",
+    "no_filters": "Κανένα Φίλτρο",
+    "emote_name": "Όνομα Emote",
+    "copy_link": "Αντιγραφή Συνδέσμου",
+    "create_emote_set": "Δημιουργία Νέου Σετ",
+    "emote_set_name": "Όνομα Emote Σετ",
+    "emote_attribution": "Απόδοση Emote",
+    "select": "Επιλογή",
+    "selection_mode": "Λειτουργία Επιλογής",
+    "edit": "Επεξεργασία",
+    "capacity": "Χωρητικότητα",
+    "enable": "Ενεργοποίηση",
+    "disable": "Απενεργοποίηση",
+    "disabled": "Απενεργοποιημένο",
+    "more": "Περισσότερα",
+    "actions": "Ενέργειες",
+    "download": "Λήψη",
+    "report": "Αναφορά",
+    "delete": "Διαγραφή",
+    "time_select": {
+      "week": "Αυτή την εβδομάδα",
+      "month": "Αυτόν τον μήνα",
+      "year": "Αυτόν τον χρόνο"
+    },
+    "gift": "Δώρο",
+    "follow": "Ακολούθησε",
+    "connect": "Σύνδεση",
+    "disconnect": "Αποσύνδεση",
+    "email": "Email",
+    "password": "Κωδικός Πρόσβασης",
+    "all": "Όλα",
+    "other": "Άλλο",
+    "cancel": "Ακύρωση",
+    "confirm": "Επιβεβαίωση",
+    "proceed": "Συνέχεια",
+    "save": "Αποθήκευση",
+    "remove": "Αφαίρεση",
+    "accept": "Αποδοχή",
+    "deny": "Απόρριψη",
+    "enter": "Εισαγωγή"
+  },
+  "themes": {
+    "system": "Σύστημα",
+    "dark": "Σκοτεινό",
+    "light": "Φωτεινό"
+  },
+  "flags": {
+    "global": "Παγκόσμιο",
+    "trending": "Δημοφιλές",
+    "overlaying": "Επικαλυπτόμενο",
+    "default": "Προεπιλεγμένο",
+    "personal": "Προσωπικό",
+    "listed": "Καταχωρημένο",
+    "unlisted": "Μη καταχωρημένο",
+    "personal_use": "Προσωπική Χρήση",
+    "deleted": "Διαγράφηκε",
+    "private": "Ιδιωτικό",
+    "personal_use_approved": "Εγκρίθηκε για Προσωπική Χρήση",
+    "personal_use_denied": "Απαγορεύτηκε η Προσωπική Χρήση",
+    "personal_use_pending": "Αναμένεται Έγκριση για Προσωπική Χρήση",
+    "renamed": "Μετονομασμένο",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "Σε αναμονή",
+      "accepted": "Εγκρίθηκε",
+      "rejected": "Απορρίφθηκε",
+      "you_accepted": "Αποδεχθήκατε",
+      "you_rejected": "Απορρίψατε"
+    }
+  },
+  "notifications": {
+    "system": "Σύστημα",
+    "approved_for_public": "Το emote σας {emote} έχει εγκριθεί για δημόσια καταχώρηση."
+  },
+  "sub_info": {
+    "plan": "Πλάνο",
+    "free": "Δωρεάν",
+    "gifted_by": "Δώρο από",
+    "ends": "Λήγει",
+    "total": "Σύνολο",
+    "credits": "Πίστωση συνδρομής"
+  },
+  "file_limits": {
+    "max_size": "{size} μέγιστο μέγεθος αρχείου",
+    "max_resolution": "{width}x{height} μέγιστη ανάλυση",
+    "max_frames": "{count} μέγιστος αριθμός καρέ",
+    "resolution_error": "Η ανάλυση δεν πρέπει να υπερβαίνει {width}x{height}",
+    "duration_error": "Η διάρκεια πρέπει να είναι {duration} δευτερόλεπτα ή λιγότερο"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Συνδεθείτε στο 7TV",
+      "subtitle": "Συνδεθείτε ή δημιουργήστε έναν λογαριασμό για να συνεχίσετε",
+      "continue_with": "Συνέχεια με {platform}",
+      "trouble": "Πρόβλημα στη σύνδεση;",
+      "legal_yapping": "Με την εγγραφή σας, συμφωνείτε με τους",
+      "and": "και",
+      "linking_new": "Έχετε ήδη λογαριασμό 7TV και θέλετε να συνδέσετε νέο προφίλ; Συνδεθείτε με τον υπάρχοντα λογαριασμό σας και πρόσθεσε το νέο προφίλ στις",
+      "settings": "ρυθμίσεις"
+    },
+    "search": {
+      "emotes": "Emotes",
+      "users": "Χρήστες"
+    },
+    "upload": {
+      "title": "Ανέβασμα Emote",
+      "untitled": "Χωρίς τίτλο",
+      "chat": "Στείλτε μήνυμα",
+      "drag_drop": "Σύρετε και αφήστε για να ανεβάσετε, ή",
+      "browse_files": "Αναζήτηση Αρχείων",
+      "accept_rules": "Αποδέχομαι τους κανόνες και τις οδηγίες",
+      "discard": "Ακύρωση",
+      "upload_guidelines": "Κανόνες Ανεβάσματος Emote",
+      "upload": "Ανέβασμα"
+    },
+    "emote_set": {
+      "title": "Ενεργό Emote Σετ",
+      "create": "Δημιουργία Emote Σετ",
+      "name": "Όνομα Emote Σετ",
+      "label": "Όνομα",
+      "confirm": "Δημιουργία",
+      "copy_set": "Αντιγραφή Σετ",
+      "special": "Ειδικό",
+      "favourite_sets": {
+        "title": "Αγαπημένα Emote Σετ",
+        "add": "Προσθήκη και Μετονομασία σε όλα",
+        "remove": "Αφαίρεση από όλα"
+      },
+      "mass_select_feature": {
+        "add": "Προσθήκη στο Emote Σετ",
+        "remove": "Αφαίρεση από το Emote Σετ",
+        "amount_selected_label": "/20 Επιλεγμένα"
+      },
+      "default_emote_set": {
+        "remove": "Αφαίρεση Emote από το {set}",
+        "add": "Προσθήκη Emote στο {set}",
+        "conflicting_name": "Συγκρουόμενο Όνομα"
+      }
+    },
+    "manage_aliases": {
+      "title": "Διαχείριση Ονόματος Emote",
+      "add_placeholder": "Προσθήκη νέου ονόματος.."
+    },
+    "rename_emote": {
+      "title": "Μετονομασία Emote στο {set}",
+      "input_placeholder": "Νέο όνομα emote",
+      "confirmation_message": "Είστε σίγουροι ότι θέλετε να μετονομάσετε αυτό το emote στο {set};",
+      "confirm": "Μετονομασία"
+    },
+    "remove_emote_from_set": {
+      "title": "Κατάργηση Emote από το {set}",
+      "warning_message": "Είστε σίγουροι ότι θέλετε να αφαιρέσετε το {emote} από το {set};",
+      "confirm": "Αφαίρεση"
+    },
+    "add_emote": {
+      "title": "Προσθέστε το {emote} σε",
+      "change_name": "Αλλαγή ονόματος του emote",
+      "confirm": "Επιβεβαίωση",
+      "confirm_changes": "{count, plural, one {Επιβεβαίωση 1 αλλαγής} other {Επιβεβαίωση {count} αλλαγών}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Λίστα έγκρισης emote",
+      "activity": "Δραστηριότητα",
+      "comments": "Σχόλια"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Προσθήκη/Αφαίρεση Emote",
+      "edit_emote_alias": "Επεξεργασία Ονόματος Emote",
+      "remove_emote": "Αφαίρεση Emote Από το Σετ",
+      "open_in_new_tab": "Άνοιγμα σε Νέα Καρτέλα",
+      "copy_emote_link": "Αντιγραφή Συνδέσμου Emote"
+    },
+    "cart": {
+      "title": "Το Καλάθι σας",
+      "duration": "Διάρκεια",
+      "price": "Τιμή",
+      "preview": "Προεπισκόπηση",
+      "purchase_as_gift": "Αγορά ως δώρο",
+      "total": "Σύνολο"
+    },
+    "editor": {
+      "permissions": "Ορισμός Αδειών Editor",
+      "super_admin": "Super Admin",
+      "emote_sets": "Emote Σετ",
+      "admin": "Admin",
+      "emotes": "Emotes",
+      "user": "Χρήστης",
+      "manage_personal_emotes": "Διαχείριση Προσωπικού Emote Σετ",
+      "confirm": "Επιβεβαίωση",
+      "no_editors": "Δεν υπάρχουν editors για εμφάνιση",
+      "permissions_details": {
+        "manage": "Διαχείριση",
+        "create": "Δημιουργία",
+        "transfer": "Μεταφορά",
+        "manage_profile": "Διαχείριση Προφίλ",
+        "manage_emotes": "Διαχείριση Emotes",
+        "manage_billing": "Διαχείριση Χρέωσης",
+        "manage_editors": "Διαχείριση Editors",
+        "view_billing": "Προβολή Πληροφοριών Χρέωσης"
+      }
+    },
+    "emote_info": {
+      "processing": "Αυτό το emote βρίσκεται ακόμη σε επεξεργασία",
+      "refresh": "Ανανέωση",
+      "download": "Λήψη"
+    },
+    "copy_emotes": {
+      "title": "Αντιγραφή επιλεγμένων emotes στο"
+    },
+    "default_set": {
+      "title": "Προεπιλεγμένο Emote Σετ"
+    },
+    "delete_account": {
+      "warning": "Προειδοποίηση",
+      "warning_message": "Αυτή η ενέργεια θα διαγράψει οριστικά τον λογαριασμό σας. Δεν μπορείτε να αναιρέσετε αυτή την ενέργεια.",
+      "choose_reasons": "Επιλέξτε τους λόγους για τη διαγραφή λογαριασμού",
+      "reasons": {
+        "no_longer_use": "Δε χρησιμοποιώ πλέον το 7TV",
+        "privacy_concerns": "Ανησυχίες απορρήτου",
+        "not_useful": "Δεν είναι χρήσιμο",
+        "other": "Άλλο"
+      },
+      "confirm_username": "Εισάγετε το όνομα χρήστη σας για επιβεβαίωση"
+    },
+    "delete_emote_or_set": {
+      "title": "Διαγραφή {name}",
+      "warning_message_emote": "Αυτό θα διαγράψει μόνιμα το emote σας. Δεν μπορείτε να αναιρέσετε αυτή την ενέργεια.",
+      "warning_message_set": "Αυτό θα διαγράψει μόνιμα το emote σετ σας. Δεν μπορείτε να αναιρέσετε αυτή την ενέργεια.",
+      "reason": "Λόγος",
+      "reason_for_deletion": "Λόγος διαγραφής"
+    },
+    "edit_emote": {
+      "title": "Επεξεργασία {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Επεξεργασία Emote Σετ",
+      "show_on_profile": "Εμφάνιση στο Προφίλ",
+      "publicly_listed": "Δημοσίως Καταχωρημένο"
+    },
+    "remove_emote": {
+      "title": "Αφαίρεση επιλεγμένων emotes από {set}"
+    },
+    "report_emote": {
+      "title": "Αναφορά Emote",
+      "choose_reasons": "Επιλέξτε τους λόγους",
+      "reasons": {
+        "my_work": "Δημιούργησα αυτό το emote αλλά το ανέβασε κάποιος άλλος",
+        "duplicate": "Αυτό το emote υπάρχει ήδη",
+        "sexual": "Αυτό το emote περιέχει πορνογραφικό ή υπερβολικά σεξουαλικό περιεχόμενο",
+        "violance": "Αυτό το emote περιέχει ακραία βία ή αίμα",
+        "its_me": "Αυτό το emote απεικονίζει εμένα και δε μου αρέσει",
+        "offensive": "Βρίσκω προσβλητικό αυτό το emote",
+        "other": "Άλλο"
+      },
+      "additional_info": "Επιπλέον Πληροφορίες",
+      "disclaimer": "Η κατάχρηση της λειτουργίας αναφοράς μπορεί να οδηγήσει στην ανάκληση της πρόσβασής σας."
+    },
+    "transfer_emote": {
+      "title": "Μεταφορά {emote}",
+      "details": "Αυτό θα μεταφέρει το {emote}.",
+      "receipient": "Παραλήπτης Emote",
+      "transfer": "Μεταφορά"
+    },
+    "badge": {
+      "title": "Badge"
+    },
+    "subscription": {
+      "gifted_by": "Η συνδρομή σας ήταν δώρο από",
+      "cancel_notice": "Αν διακόψετε τώρα τη συνδρομή σας, θα χάσετε άμεσα τα προνόμιά της. Είστε σίγουροι ότι θέλετε να τη διακόψετε;",
+      "cancel_confirmation": "Είστε σίγουροι ότι θέλετε να ακυρώσετε τη συνδρομή σας; Θα χάσετε την πρόσβαση στα προνόμια της συνδρομής σας στο τέλος της τρέχουσας περιόδου χρέωσης.",
+      "confirm": "Επιβεβαίωση"
+    },
+    "error": {
+      "title": "Σφάλμα"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Κάντε δώρο το Pick'ems Pass",
+        "gift_to": "Κάντε δώρο το Pick'ems Pass σε",
+        "recipient": "Επιλέξτε παραλήπτη",
+        "back": "Πίσω",
+        "continue": "Συνέχεια"
+      }
+    },
+    "gift": {
+      "title": "Κάντε δώρο 1",
+      "gift_to": "Κάντε δώρο 1 {variantUnit(variant)} σε",
+      "recipient": "Επιλέξτε παραλήπτη"
+    },
+    "paint": {
+      "title": "Paint"
+    },
+    "buttons": {
+      "back": "Πίσω",
+      "continue": "Συνέχεια"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Ανέβηκε"
+      },
+      "process": {
+        "start": "Ξεκίνησε μια νέα εργασία επεξεργασίας",
+        "success": "Η επεξεργασία ολοκληρώθηκε με επιτυχία",
+        "fail": "Αποτυχία επεξεργασίας",
+        "cancel": "Η εργασία επεξεργασίας ακυρώθηκε"
+      },
+      "change_name": {
+        "action": "Μετονομάστηκε"
+      },
+      "merge": {
+        "action": "Συγχωνεύτηκε"
+      },
+      "change_owner": {
+        "action": "Μεταβιβάστηκε η ιδιοκτησία"
+      },
+      "change_tags": {
+        "action": "Ορίστηκαν ετικέτες"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Εγκρίθηκε για δημόσια καταχώρηση"
+        },
+        "removed_public": {
+          "action": "Αφαιρέθηκε από δημόσια καταχώρηση"
+        },
+        "approved_personal": {
+          "action": "Εγκρίθηκε για προσωπική χρήση"
+        },
+        "rejected_personal": {
+          "action": "Απορρίφθηκε για προσωπική χρήση"
+        },
+        "added_overlaying": {
+          "action": "Προστέθηκε επικαλυπτόμενο flag"
+        },
+        "removed_overlaying": {
+          "action": "Αφαιρέθηκε το επικαλυπτόμενο flag"
+        },
+        "added_private": {
+          "action": "Προστέθηκε ιδιωτικό flag"
+        },
+        "removed_private": {
+          "action": "Αφαιρέθηκε το ιδιωτικό flag"
+        }
+      },
+      "delete": {
+        "action": "Διαγράφηκε"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Δραστηριότητα",
+      "emote": {
+        "deleted_emote": "Διαγραμμένο Emote",
+        "deleted_set": "Διαγραμμένο Σετ",
+        "by": "από",
+        "created": "Δημιουργήθηκε",
+        "changed_tags": "Αλλαγή tags για",
+        "changed_capacity": "Αλλαγή χωρητικότητας για",
+        "added": "Προστέθηκε",
+        "removed": "Αφαιρέθηκε emote",
+        "renamed": "Μετονομάστηκε emote",
+        "in": "σε",
+        "from": "από",
+        "to": "σε",
+        "deleted": "Διαγράφηκε"
+      },
+      "user": {
+        "changed_paint": "Αλλαγή ενεργού paint από",
+        "changed_badge": "Αλλαγή ενεργού badge από",
+        "removed": "Αφαιρέθηκε",
+        "connection": "Σύνδεση",
+        "changed_set": "Αλλαγή ενεργού emote σετ από",
+        "added": "Προστέθηκε",
+        "no_badge": "Κανένα Badge",
+        "no_paint": "Κανένα Paint",
+        "deleted": "Διαγράφηκε"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Σύνδεση...",
+        "logged": "Συνδεθήκατε",
+        "failed": "Αποτυχία σύνδεσης"
+      },
+      "state": {
+        "logging": "Σύνδεση...",
+        "logged": "Συνδεθήκατε",
+        "failed": {
+          "title": "Η Σύνδεση Απέτυχε",
+          "message": "Βεβαιωθείτε ότι έχετε ανοίξει αυτό το παράθυρο μέσω της επέκτασης"
+        }
+      }
+    },
+    "home": {
+      "title": "Αρχική",
+      "features": {
+        "emote_slots": "1000 Emote Θέσεις",
+        "emote_slots_info": "Όλοι διαθέτουν 1000 προσαρμόσιμες emote θέσεις, εντελώς δωρεάν. Διατηρήστε όλα τα emotes σας σε ένα μέρος.",
+        "emote_slots_button": "Περιήγηση Emotes",
+        "emote_sets": "Emote Σετ",
+        "emote_sets_info": "Ομαδοποιήστε emotes σε προσαρμόσιμα σετ που μπορούν να μοιραστούν με άλλους χρήστες ή να χρησιμοποιηθούν γρήγορα στο κανάλι σας.",
+        "emote_sets_button": "Δημιουργία ενός Emote Σετ",
+        "custom_emotes": "Προσαρμόσιμα Ονόματα Emote",
+        "custom_emotes_info": "Δε σας αρέσει το όνομα που έδωσε ο δημιουργός σε ένα emote; Κανένα πρόβλημα, μπορείτε να το αλλάξετε μόνο για το δικό σας κανάλι.",
+        "custom_emotes_button": "Περιήγηση Emotes",
+        "real-time": "Ενημερώσεις σε Πραγματικό Χρόνο",
+        "real-time_info": "Η αλλαγή των emotes στο κανάλι σας γίνεται αμέσως, για όλους τους χρήστες. Δε χρειάζεται F5, δε χρειάζεται να περιμένετε.",
+        "real-time_button": "Κατεβάστε την Επέκταση",
+        "large_community": "Μεγάλη Κοινότητα",
+        "large_community_info": "Το 7TV εξυπηρετεί πάνω από 2.000.000 μοναδικούς χρήστες καθημερινά και διαθέτει μια βιβλιοθήκη με πάνω από 1.000.000 δημόσια emotes.",
+        "large_community_button": "Γίνετε μέλος στο Discord μας",
+        "next_gen": "Μορφές Εικόνας Επόμενης Γενιάς",
+        "next_gen_info": "Χρησιμοποιούμε νεότερες, βελτιστοποιημένες μορφές εικόνας, όπως WebP και AVIF, για να μειώσουμε τη χρήση εύρους ζώνης.",
+        "next_gen_button": "Κατεβάστε την Επέκταση"
+      }
+    },
+    "help": {
+      "title": "Βοήθεια"
+    },
+    "directory": {
+      "title": "Κατάλογος",
+      "bookmarked": "Αποθηκευμένα",
+      "sorting": {
+        "title": "Ταξινόμηση",
+        "alphabetical": "Αλφαβητικά",
+        "upload_date": "Ημερομηνία Ανάρτησης"
+      },
+      "filters": {
+        "animated": "Κινούμενο",
+        "static": "Στατικό",
+        "overlaying": "Επικαλυπτόμενο",
+        "personal_use": "Προσωπική Χρήση",
+        "exact_match": "Ακριβής Αντιστοίχιση"
+      },
+      "size": {
+        "title": "Μέγεθος",
+        "any": "Κάθε Μέγεθος"
+      }
+    },
+    "landing": {
+      "start": "Ξεκινήστε το ταξίδι σας με εκατοντάδες emotes και λειτουργίες που βελτιώνουν την εμπειρία συνομιλίας σας. Κατεβάστε την επίσημη 7TV επέκταση ή άλλα εργαλεία τρίτων.",
+      "developers": {
+        "header": "Διαθέσιμος Πηγαίος Κώδικας",
+        "info": "Ολόκληρος ο κώδικάς μας είναι διαθέσιμος στο GitHub με άδεια χρήσης πηγαίου κώδικα. Ο καθένας μπορεί να τον δει και να συνεισφέρει."
+      },
+      "download": {
+        "start": "Ξεκινήστε το ταξίδι σας με εκατοντάδες emotes και λειτουργίες που βελτιώνουν την εμπειρία συνομιλίας σας. Κατεβάστε την επίσημη 7TV επέκταση ή άλλα εργαλεία τρίτων.",
+        "extension": "Επέκταση Ιστού",
+        "stable": "Σταθερή Έκδοση",
+        "nightly": "Πειραματική Έκδοση",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Εφαρμογές για Κινητά"
+        },
+        "bots": {
+          "header": "Chat Bots"
+        }
+      },
+      "features": {
+        "header": "Γιατί 7TV?",
+        "info": "Η πλατφόρμα μας προσφέρει μια ποικιλία χρήσιμων λειτουργιών που θα βελτιώσουν την εμπειρία συνομιλίας σας."
+      },
+      "footer": {
+        "affiliated": "Το 7TV δε σχετίζεται με τα Twitch, Kick, YouTube ή Discord",
+        "privacy_policy": "Πολιτική Απορρήτου",
+        "tos": "Όροι Χρήσης"
+      },
+      "hero": {
+        "platform": "Η Emote Πλατφόρμα",
+        "all": "για Όλους",
+        "download": "Λήψη",
+        "manage": "Διαχειριστείτε εύκολα εκατοντάδες emotes για τα κανάλια σας στο Twitch, Kick ή YouTube. Βελτιώστε την εμπειρία συνομιλίας σας.",
+        "more": "Μάθετε περισσότερα",
+        "xmas": {
+          "header": "SUB EVENT ΧΡΙΣΤΟΥΓΕΝΝΩΝ",
+          "info": "Κάντε δώρο 1 συνδρομή σε κάποιον αυτά τα Χριστούγεννα και κερδίστε ένα ιδιαίτερο badge!",
+          "gift": "Κάντε δώρο μια συνδρομή"
+        },
+        "nnys": {
+          "info": "Ψηφίστε στο NNYS 2025 για να αποκτήσετε ένα αποκλειστικό paint, badge και emote σετ.",
+          "vote": "Ψηφίστε στο NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 STREAMERS",
+          "tournament": "ΔΙΟΡΓΑΝΩΣΗ ΤΟΥΡΝΟΥΑ ΑΠΟ ΤΟ 7TV",
+          "event": "3ΗΜΕΡΟ EVENT",
+          "header": "Τοποθετήστε τα Pick'ems σας. Κερδίστε δώρα.",
+          "info": "Διοργάνωση CS2 Τουρνουά από το 7TV",
+          "date": "29 Φεβρουαρίου - 2 Μαρτίου",
+          "pickems": "Τοποθετήστε τα Pick'ems σας",
+          "pass": "Αγοράστε το pass!",
+          "badges_paints": "Κερδίστε Badges & Paints.",
+          "description1": "xQc, οhnePixel, JasonTheWeen και 32 άλλοι streamers θα έρθουν αντιμέτωποι",
+          "description2": "σε ένα τριήμερο CS2 τουρνουά μονού αποκλεισμού με διοργάνωση από το 7TV."
+        }
+      }
+    },
+    "discover": {
+      "title": "Ανακαλύψτε",
+      "uploads": "Αναρτήσεις",
+      "followed": "Λογαριασμοί που ακολουθείτε"
+    },
+    "store": {
+      "title": "Κατάστημα",
+      "redeem": {
+        "title": "Εξαργύρωση",
+        "header": "Εξαργύρωση Κωδικού",
+        "subtitle": "Εξαργυρώστε έναν κωδικό δώρου για να ξεκλειδώσετε αποκλειστικά cosmetics και προνόμια.",
+        "state": {
+          "idle": "Αδράνεια",
+          "loading": "Φόρτωση",
+          "success": "Επιτυχία"
+        },
+        "code": "Κωδικός",
+        "shown": "εμφανίζεται",
+        "trial": "Η δοκιμαστική συνδρομή σας εξαργυρώθηκε με επιτυχία"
+      },
+      "purchase": {
+        "success": "Η αγορά σας ολοκληρώθηκε με επιτυχία"
+      },
+      "subscription": {
+        "banner_title_subbed": "Σας ευχαριστούμε για την υποστήριξη",
+        "banner_title_unsubbed": "Ξεκλειδώστε Ειδικά Προνόμια",
+        "banner_subtitle_subbed": "Απολαύστε τα ειδικά προνόμια συνδρομητή!",
+        "banner_subtitle_unsubbed": "Εγγραφείτε για να βελτιώσετε την εμπειρία συνομιλίας σας.",
+        "badge_progress": {
+          "title": "Πρόοδος Badge",
+          "left": "{duration} απομένουν"
+        },
+        "benefits": {
+          "title": "Προνόμια Συνδρομής",
+          "animated_avatar": "Κινούμενη Εικόνα Προφίλ",
+          "personal_emotes": "Προσωπικά Emotes",
+          "paints": "Paints Ονόματος",
+          "sub_badge": "Badge Συνδρομητή",
+          "raffle_tickets": "Εισιτήρια Κληρώσεων"
+        },
+        "raffle": "Κλήρωση Παγκοσμίου Emote",
+        "monthly_paints": "Μηνιαία Paints",
+        "your_cosmetics": "Τα Cosmetics σας",
+        "your_paints": "Τα Paints σας",
+        "beomce_a_subscriber": "Γίνετε Συνδρομητής",
+        "your_badges": "Τα Badges σας",
+        "top_gifters": "Κορυφαίοι Δωρητές",
+        "subscribe": "Εγγραφή",
+        "subscribed": "Εγγραφήκατε",
+        "cancel": "Ακύρωση Συνδρομής",
+        "reactivate": "Επανενεργοποίηση Συνδρομής",
+        "one_monhth": "1 Μήνας",
+        "one_year": "1 Χρόνος"
+      },
+      "paint_bundles": {
+        "coming_soon": "Σύντομα Διαθέσιμο",
+        "banner_title": "Δώστε λάμψη στο όνομα σας",
+        "banner_subtitle": "Τα Paints θα σας επιτρέψουν να εκφραστείτε σε κάθε απόχρωση."
+      },
+      "events": {
+        "no_events": "Δεν υπάρχουν επερχόμενες εκδηλώσεις",
+        "xmas": "EVENT ΧΡΙΣΤΟΥΓΈΝΝΩΝ 2024: ΚΑΝΤΕ ΔΩΡΟ 1 ΣΥΝΔΡΟΜΗ ΓΙΑ ΝΑ ΑΠΟΚΤΗΣΕΤΕ ΕΝΑ ΙΔΙΑΙΤΕΡΟ BADGE",
+        "cs2": {
+          "tournament": "Διοργάνωση CS2 Τουρνουά από το 7TV",
+          "cosmetics": "Θέλετε να κερδίσετε cosmetics από την πρόβλεψη του αποτελέσματος; Κάντε κλικ παρακάτω!",
+          "twitch": "ΠΡΟΒΟΛΗ TWITCH",
+          "bundle": "Αγορά Πακέτου",
+          "already_subscribed": "Είστε Συνδρομητής",
+          "subscribe": "{price} σήμερα, έπειτα {recurring}",
+          "billing_cycle": "Χρεώνεται ως αγορά μιας πληρωμής",
+          "pickems": {
+            "place": "Τοποθετήστε τα Pick'ems",
+            "predict": "Προβλέψτε τους νικητές",
+            "purchase_pass": "Αγορά Pass"
+          },
+          "pass": {
+            "title": "Pick'ems Pass",
+            "get": "Αποκτήστε το Pass",
+            "bundle": "Pass + {variantName(variant)} Πακέτο Συνδρομής"
+          },
+          "schedule": {
+            "header": "Πρόγραμμα Τουρνουά",
+            "stage": "Φάση",
+            "best_of": "Τα καλύτερα",
+            "start_time": "Ώρα Έναρξης"
+          },
+          "streamers": {
+            "header": "Γνωρίστε τους Streamers",
+            "info": "Ένα line-up από διακεκριμένους Twitch Streamers δημιουργούν μια ομάδα από τις κοινότητές τους, η οποία θα αναμετρηθεί σε ένα CS-Style τουρνουά μονού αποκλεισμού.",
+            "watch": "Παρακολουθήστε το main event στο",
+            "twitch_channel": "Κανάλι 7TV στο Twitch",
+            "streamer_pov": "ή μέσα από το POV του αγαπημένου σας streamer."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Admin",
+      "overview": "Επισκόπηση",
+      "welcome": "Καλώς ήρθες πίσω",
+      "enjoy": "Απόλαυσε το modding!",
+      "tickets": {
+        "title": "Εισιτήρια",
+        "emotes": {
+          "public_listing": "Δημόσια Καταχώρηση",
+          "personal_use": "Προσωπική Χρήση",
+          "resolved": "Επιλυμένα",
+          "not_implemented": "Μη Εφαρμοσμένο"
+        },
+        "emote_table": {
+          "emote_name": "Όνομα Emote",
+          "uploader": "Δημιουργός",
+          "country": "Χώρα",
+          "tags_flags": "Tags & Flags",
+          "reviewed_by": "Αναθεωρήθηκε από"
+        },
+        "reports": "Αναφορές",
+        "reports_options": {
+          "all": "Όλα",
+          "assigned": "Αναθετημένα",
+          "closed": "Κλειστά"
+        },
+        "reports_table": {
+          "reported_by": "Αναφέρθηκε από",
+          "target": "Στόχος",
+          "description": "Περιγραφή",
+          "assigned_to": "Ανατέθηκε σε",
+          "status": "Κατάσταση",
+          "date": "Ημερομηνία",
+          "ticket_id": "ID Εισιτηρίου",
+          "subject": "Θέμα",
+          "details": "Λεπτομέρειες"
+        },
+        "reports_actions": {
+          "close": "Επισήμανση ως Κλειστό",
+          "assign_self": "Ανάθεση στον Εαυτό",
+          "add_comment": "Προσθήκη σχολίου"
+        }
+      },
+      "codes": {
+        "redeem": "Εξαργύρωση Κωδικών",
+        "add": "Προσθήκη Κωδικών",
+        "filters": {
+          "header": "Φίλτρα:",
+          "remaining_uses": "Υπόλοιπες Χρήσεις"
+        },
+        "search": {
+          "results": "Βρέθηκαν {results.totalCount} αποτελέσματα ({results.pageCount} σελίδες)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Όνομα",
+            "description": "Περιγραφή",
+            "tags": "Tags",
+            "code": "Κωδικός",
+            "remaining_uses": "Υπόλοιπες Χρήσεις",
+            "active_period": "Ενεργή Περίοδος",
+            "effect": "Επίδραση",
+            "subscription_effect": "Επίδραση Συνδρομής",
+            "created_by": "Δημιουργήθηκε από",
+            "created_at": "Δημιουργήθηκε στις",
+            "actions": "Ενέργειες"
+          }
+        },
+        "period": {
+          "unlimited": "Απεριόριστη"
+        },
+        "trial": {
+          "days": "ημέρες δοκιμής",
+          "no_trial": "Χωρίς δοκιμή",
+          "none": "Κανένα"
+        },
+        "system": "Σύστημα"
+      },
+      "special_events": {
+        "header": "Ειδικές Εκδηλώσεις",
+        "create": "Δημιουργία Ειδικής Εκδήλωσης",
+        "add": "Προσθήκη Ειδικής Εκδήλωσης",
+        "results": "Βρέθηκαν {results.length} αποτελέσματα",
+        "attributes": {
+          "name": "Όνομα",
+          "description": "Περιγραφή",
+          "tags": "Tags",
+          "created_by": "Δημιουργήθηκε από",
+          "created_at": "Δημιουργήθηκε στις",
+          "actions": "Ενέργειες",
+          "create": "Δημιουργία",
+          "cancel": "Ακύρωση"
+        },
+        "system": "Σύστημα",
+        "no_events": "Δεν υπάρχουν ειδικές εκδηλώσεις"
+      },
+      "users": {
+        "id": {
+          "back": "Πίσω",
+          "last_updated": "Τελευταία Ενημέρωση στις",
+          "search_last_update": "Τελευταία Ενημέρωση Αναζήτησης στις",
+          "queued": "Σε αναμονή για ενημέρωση",
+          "stripe": {
+            "customer": "Πελάτης Stripe",
+            "view": "Προβολή",
+            "no_customer": "Δεν υπάρχει σχετικός πελάτης stripe",
+            "roles": "Ρόλοι"
+          },
+          "actions": {
+            "header": "Ενέργειες",
+            "sessions": {
+              "header": "Περίοδοι",
+              "create_session": "Δημιουργία Νέας Περιόδου",
+              "delete_all": "Διαγραφή Όλων των Περιόδων",
+              "expiration": "Ημερομηνία λήξης σε",
+              "token": "Token",
+              "copy_token": "Αντιγραφή Token",
+              "create": "Δημιουργία",
+              "close": "Κλείσιμο"
+            },
+            "connections": {
+              "header": "Συνδέσεις",
+              "kick": "Χειροκίνητη Σύνδεση Kick",
+              "username": "Όνομα Χρήστη Kick"
+            },
+            "entitlements": {
+              "header": "Δικαιώματα",
+              "create": "Δημιουργία Δικαιωμάτων",
+              "assign": "Χειροκίνητη Ανάθεση Δικαιωμάτων",
+              "assign_to": "Ανάθεση δικαιωμάτων σε",
+              "remove_all": "Αφαίρεση Όλων των Δικαιωμάτων",
+              "view": "Προβολή Δικαιωμάτων",
+              "showing": "Εμφάνιση δικαιωμάτων που έχουν ανατεθεί σε"
+            }
+          },
+          "subscription": {
+            "header": "Συνδρομή",
+            "period": {
+              "header": "Περίοδοι Συνδρομής",
+              "key": "Κλειδί",
+              "value": "Αξία",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Αντιγραφή ULID",
+              "uuid": "Αντιγραφή UUID"
+            },
+            "provider": {
+              "id": "ID Παρόχου",
+              "view": "Προβολή"
+            },
+            "product": {
+              "id": "ID Προϊόντος",
+              "view": "Προβολή",
+              "start": "Έναρξη",
+              "end": "Τέλος",
+              "is_trial": "Είναι δοκιμή;",
+              "auto_renew": "Αυτόματη ανανέωση;",
+              "gifted": {
+                "header": "Δώρο;",
+                "yes": "Ναι - Από",
+                "no": "Όχι"
+              },
+              "created_by": "Δημιουργήθηκε από",
+              "redeem": "Εξαργύρωση Κωδικού",
+              "invoice": "Τιμολόγιο",
+              "system": "Σύστημα",
+              "variant": "Παραλλαγή Προϊόντος"
+            }
+          },
+          "not_found": "Δεν βρέθηκε χρήστης"
+        },
+        "layout": {
+          "users": "Χρήστες"
+        },
+        "page": {
+          "manage": {
+            "header": "Διαχείριση",
+            "single_user": "Διαχείριση ενός χρήστη"
+          },
+          "actions": {
+            "header": "Ενέργειες",
+            "sub_benefits_job": {
+              "header": "Εργασία Προνομίων Συνδρομής",
+              "manually": "Ξεκινήστε χειροκίνητα την εργασία συνδρομής για να υπολογίσετε εκ νέου τα δικαιώματα και τα οφέλη συνδρομής για όλους τους χρήστες.",
+              "rerun": "Επανάληψη"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Χρήση Emote",
+      "add_to": "Προσθήκη σε…",
+      "transfer": "Μεταφορά",
+      "merge": "Συγχώνευση",
+      "size": "Μέγεθος",
+      "copy_link": "Αντιγραφή Συνδέσμου"
+    },
+    "user": {
+      "about": "Σχετικά με",
+      "active_emotes": "Ενεργά Emotes",
+      "uploaded": "Ανεβασμένα",
+      "uploaded_emotes": "Ανεβασμένα Emotes"
+    },
+    "settings": {
+      "account": {
+        "title": "Λογαριασμός",
+        "profile": {
+          "details": "Προσαρμόστε τις προτιμήσεις και διαχειριστείτε τις λεπτομέρειες ανάλογα με τις ανάγκες σας",
+          "display_name": "Όνομα Προβολής",
+          "display_name_description": "Επιλέξτε μια κύρια σύνδεση που θα χρησιμοποιηθεί για το όνομα προβολής και τη στατική εικόνα προφίλ σας",
+          "profile_picture_description": "Επιλέξτε μια εικόνα προφίλ που θα εμφανίζεται σε όλες τις πλατφόρμες",
+          "update_profile_picture": "Ενημέρωση Εικόνας Προφίλ"
+        },
+        "connections": {
+          "details": "Διαχειριστείτε και συνδέστε εξωτερικούς λογαριασμούς για να απλοποιήσετε την πρόσβαση και για την ενίσχυση της λειτουργικότητας εντός της πλατφόρμας"
+        },
+        "security": {
+          "title": "Ασφάλεια",
+          "details": "Διαχειριστείτε και προσαρμόστε την ασφάλεια του λογαριασμού σας",
+          "2fa": "Ταυτοποίηση Δύο Παραγόντων",
+          "2fa_details": "Ενισχύστε την ασφάλεια του λογαριασμού σας με την ταυτοποίηση δύο παραγόντων (2FA)",
+          "email_details": "Λάβετε κωδικό επαλήθευσης μέσω email",
+          "authenticator_app": "Εφαρμογή Authenticator",
+          "authenticator_app_details": "Εγκαταστήστε μια εφαρμογή για να δημιουργήσετε έναν κωδικό επαλήθευσης",
+          "sign_out_everywhere": "Αποσύνδεση Παντού",
+          "sign_out_everywhere_details": "Εξασφαλίστε την ασφάλεια και αποσυνδεθείτε από όλες τις συσκευές με ένα μόνο κλικ",
+          "delete_account_details": "Διαγράψτε μόνιμα όλες τις προσωπικές πληροφορίες και τα σχετικά δεδομένα από την πλατφόρμα, διαγράφοντας τον λογαριασμό σας"
+        }
+      },
+      "appearance": {
+        "title": "Εμφάνιση",
+        "details": "Αλλάξτε την εμφάνιση και την αισθητική",
+        "theme": {
+          "header": "Θέμα",
+          "options": {
+            "system": "Σύστημα",
+            "dark": "Σκοτεινό",
+            "light": "Φωτεινό"
+          }
+        },
+        "motion": {
+          "header": "Μειωμένη Κίνηση",
+          "options": {
+            "system": "Σύστημα",
+            "enabled": "Ενεργοποιημένο",
+            "disbaled": "Απενεργοποιημένο"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Διάταξη Κατεύθυνσης Ιστοσελίδας",
+          "options": {
+            "ltr": "Από αριστερά προς τα δεξιά",
+            "rtl": "Από δεξιά προς τα αριστερά"
+          }
+        }
+      },
+      "editors": {
+        "details": "Διαχειριστείτε και προσαρμόστε τους editor σας ή τα κανάλια για τα οποία είστε editor",
+        "editing_for": "Editor για",
+        "add_editor": "Προσθήκη Editor",
+        "not_allowed": "Δεν έχετε δικαίωμα να διαχειρίζεστε τους editors για αυτόν τον χρήστη"
+      },
+      "notifications": {
+        "details": "Ενημερώσεις και ειδοποιήσεις σε πραγματικό χρόνο, ώστε οι χρήστες να ενημερώνονται για σημαντικά γεγονότα, μηνύματα και δραστηριότητες εντός της ιστοσελίδας ή της εφαρμογής"
+      },
+      "blocked": {
+        "title": "Μπλοκαρισμένοι",
+        "details": "Διαχείριση του περιορισμένου ή απαγορευμένου περιεχομένου, των χρηστών ή των δραστηριοτήτων σας",
+        "add_user": "Προσθήκη μπλοκαρισμένου χρήστη"
+      },
+      "billing": {
+        "title": "Χρέωση",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Χρήση Credits Συνδρομής",
+          "use_credits_details": "Τα credits συνδρομής σας θα χρησιμοποιηθούν στην επόμενή σας χρέωση",
+          "cancelled": "Η συνδρομή ακυρώθηκε",
+          "cancelled_details": "Η συνδρομή σας ακυρώθηκε και τα προνόμια θα λήξουν στις {date}"
+        },
+        "history": {
+          "title": "Ιστορικό Χρεώσεων",
+          "details": "Δείτε όλες τις δραστηριότητες πληρωμών που σχετίζονται με τον λογαριασμό σας, όπως προηγούμενες χρεώσεις και συναλλαγές"
+        },
+        "payment_methods": {
+          "details": "Ελέγξτε και ενημερώστε τις προτιμώμενες μεθόδους πληρωμής σας",
+          "add_new": "Προσθήκη Νέας",
+          "card": {
+            "title": "Στοιχεία Κάρτας",
+            "ends_in": "Τελειώνει σε {digits}",
+            "expires": "Λήγει {month}/{year}",
+            "address": "Διεύθυνση",
+            "name": "Όνομα"
+          }
+        },
+        "table": {
+          "status": "Κατάσταση",
+          "amount": "Ποσό",
+          "invoice": "Τιμολόγιο"
+        }
+      },
+      "user_table": {
+        "name": "Όνομα",
+        "last_modified": "Τελευταία Ενημέρωση",
+        "permissions": "Άδειες"
+      }
+    },
+    "link": {
+      "linking": "Σύνδεση του λογαριασμού σας...",
+      "linking_successful": "Ο λογαριασμός συνδέθηκε με επιτυχία",
+      "linking_failed": "Η σύνδεση απέτυχε"
+    },
+    "extension": {
+      "login": "Σύνδεση...",
+      "login_successful": "Συνδεθήκατε",
+      "login_failed": "Αποτυχία σύνδεσης",
+      "window": "Βεβαιωθείτε ότι έχετε ανοίξει αυτό το παράθυρο μέσω της επέκτασης"
+    }
+  }
+}

@@ -3,7 +3,6 @@
 	import Spinner from "$/components/spinner.svelte";
 	import { Check, X } from "phosphor-svelte";
 	import { goto } from "$app/navigation";
-	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,24 +19,24 @@
 
 <svelte:head>
 	{#await login}
-		<title>{$t("pages.link.linking")}</title>
+		<title>Linking Your Account...</title>
 	{:then _}
-		<title>{$t("pages.link.linking_successful")}</title>
+		<title>Account Successfully Linked</title>
 	{:catch _}
-		<title>{$t("pages.link.linking_failed")}</title>
+		<title>Linking Failed</title>
 	{/await}
 </svelte:head>
 
 <div class="container">
 	{#await login}
 		<Spinner />
-		<h2>{$t("pages.link.linking")}</h2>
+		<h2>Linking Your Account...</h2>
 	{:then _}
 		<Check />
-		<h2>{$t("pages.link.linking_successful")}</h2>
+		<h2>Account Successfully Linked</h2>
 	{:catch e}
 		<X />
-		<h2>{$t("pages.link.linking_failed")}</h2>
+		<h2>Linking Failed</h2>
 		<p>{e}</p>
 	{/await}
 </div>

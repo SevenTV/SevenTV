@@ -1,19 +1,20 @@
-use std::ops::Deref;
-use std::sync::Arc;
-
-use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
-use shared::database::product::codes::RedeemCode;
-use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
-use shared::database::queries::{filter, update};
-use shared::database::MongoCollection;
-use tracing::Instrument;
-
 use crate::global::Global;
 use crate::http::egvault::metadata::{CheckoutSessionMetadata, CustomerMetadata, StripeMetadata};
 use crate::http::egvault::redeem::grant_entitlements;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::stripe_client::SafeStripeClient;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
+use shared::database::entitlement::{EntitlementEdge, EntitlementEdgeId, EntitlementEdgeKind};
+use shared::database::product::codes::RedeemCode;
+use shared::database::product::special_event::SpecialEventId;
+use shared::database::product::subscription::{ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod};
+use shared::database::product::SubscriptionProductId;
+use shared::database::queries::{filter, update};
+use shared::database::MongoCollection;
+use std::ops::Deref;
+use std::str::FromStr;
+use std::sync::Arc;
+use tracing::Instrument;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StripeRequest {
@@ -199,6 +200,71 @@ pub async fn completed(
 					id: EntitlementEdgeId {
 						from: EntitlementEdgeKind::User { user_id },
 						to: EntitlementEdgeKind::Product { product_id },
+						managed_by: None,
+					},
+				})
+				.await
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::StripeError,
+						"unable to create entitlement edge",
+					))
+				})?;
+
+			// glorp badge given as standard part of special event
+			let special_event_id = SpecialEventId::from_str("01K7D01MPH7B65MZCBTSW2FKHK").unwrap();
+
+			EntitlementEdge::collection(&global.db)
+				.insert_one(EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::User { user_id },
+						to: EntitlementEdgeKind::SpecialEvent { special_event_id },
+						managed_by: None,
+					},
+				})
+				.await
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::StripeError,
+						"unable to create entitlement edge",
+					))
+				})?;
+		}
+		// bundles
+		(
+			_,
+			CheckoutSessionMetadata::CosmeticBundle {
+				user_id,
+				product_id,
+				special_event_id,
+			},
+		) => {
+			EntitlementEdge::collection(&global.db)
+				.insert_one(EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::User { user_id },
+						to: EntitlementEdgeKind::Product { product_id },
+						managed_by: None,
+					},
+				})
+				.await
+				.map_err(|_| {
+					TransactionError::Custom(ApiError::not_found(
+						ApiErrorCode::StripeError,
+						"unable to create entitlement edge",
+					))
+				})?;
+				let subscription_product_id = SubscriptionProductId::from_str("01FEVKBBTGRAT7FCY276TNTJ4A").unwrap();
+			EntitlementEdge::collection(&global.db)
+				.insert_one(EntitlementEdge {
+					id: EntitlementEdgeId {
+						from: EntitlementEdgeKind::Subscription {
+							subscription_id: SubscriptionId {
+								product_id: subscription_product_id,
+								user_id: user_id,
+							},
+						},
+						to: EntitlementEdgeKind::SpecialEvent { special_event_id },
 						managed_by: None,
 					},
 				})

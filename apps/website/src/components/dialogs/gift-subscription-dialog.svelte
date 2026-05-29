@@ -58,11 +58,12 @@
 		<hr />
 		{#if recipient}
 			<p>
-				{$t("dialogs.gift.gift_to")} <UserName user={recipient} />.
+				{$t("dialogs.gift.gift_to", { values: { variant: variantUnit(variant) } })}
+				<UserName user={recipient} />.
 			</p>
 		{:else}
 			<UserSearch
-				placeholder="Search User"
+				placeholder={$t("labels.search_user")} 
 				onresultclick={(e, user) => {
 					e.preventDefault();
 					recipient = user;

@@ -7,7 +7,8 @@
 	import Button from "../input/button.svelte";
 	import Spinner from "../spinner.svelte";
 
-	let { userData = $bindable() }: { userData: Promise<User> } = $props();
+	let { userData = $bindable(), text = "Active Set" }: { userData: Promise<User>; text?: string } =
+		$props();
 
 	let activeEmoteSetDialog: DialogMode = $state("hidden");
 
@@ -36,16 +37,20 @@
 				editor.state === UserEditorState.Accepted &&
 				editor.permissions.user.manageProfile,
 		)}
-	<Button
-		secondary
-		onclick={hasPermission ? activeEmoteSetClick : undefined}
-		href={userData.style.activeEmoteSet
-			? `/emote-sets/${userData.style.activeEmoteSet.id}`
-			: undefined}
-	>
-		{#snippet icon()}
-			<Lightning />
-		{/snippet}
-		{userData?.style.activeEmoteSet?.name ?? "Active Set"}
-	</Button>
+	{#if !hasPermission && text === "Set Active Set"}
+		<br />
+	{:else}
+		<Button
+			secondary
+			onclick={hasPermission ? activeEmoteSetClick : undefined}
+			href={userData.style.activeEmoteSet
+				? `/emote-sets/${userData.style.activeEmoteSet.id}`
+				: undefined}
+		>
+			{#snippet icon()}
+				<Lightning />
+			{/snippet}
+			{userData?.style.activeEmoteSet?.name ?? text}
+		</Button>
+	{/if}
 {/await}

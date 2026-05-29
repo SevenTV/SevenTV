@@ -47,7 +47,7 @@
 	gradientColor="#27cfb1"
 />
 <section>
-	Coming soon...
+	{$t("pages.store.paint_bundles.coming_soon")}
 	<!-- <div class="header">
 		<h2>{$t("common.paint_bundles")}</h2>
 		<div class="buttons">

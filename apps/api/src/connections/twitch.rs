@@ -16,6 +16,7 @@ pub struct TwitchUserData {
 	pub login: String,
 	pub display_name: String,
 	pub profile_image_url: Option<String>,
+	pub email: Option<String>,
 }
 
 impl From<TwitchUserData> for PlatformUserData {
@@ -25,6 +26,7 @@ impl From<TwitchUserData> for PlatformUserData {
 			username: value.login,
 			display_name: value.display_name,
 			avatar: value.profile_image_url,
+			email: value.email,
 		}
 	}
 }

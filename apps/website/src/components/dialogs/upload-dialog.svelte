@@ -218,6 +218,13 @@
 						</div>
 					{/each}
 				</div>
+				<p
+					style="
+				    font-size: 0.75rem;
+				    color: var(--text-light);"
+				>
+					Preview resolutions do not represent final emote resolutions after processing
+				</p>
 				<div class="buttons">
 					<Button secondary onclick={toggleTheme}>
 						{#snippet icon()}
@@ -279,7 +286,7 @@
 					{/snippet}
 				</TextInput> -->
 				<Checkbox bind:value={zeroWidth}>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox bind:value={privateFlag}>Private</Checkbox>
+				<Checkbox bind:value={privateFlag}>{$t("flags.private")}</Checkbox>
 			</div>
 			{#snippet footerButtons()}
 				<div class="buttons">
@@ -302,6 +309,14 @@
 			{/snippet}
 			<div class="footer">
 				<Checkbox bind:value={acceptTerms}>{$t("dialogs.upload.accept_rules")}</Checkbox>
+				<a
+					href="https://help.7tv.app/en/articles/11072846-7tv-emote-upload-guidelines"
+					target="_blank"
+					rel="noopener noreferrer"
+					style="font-size: 0.875rem;"
+				>
+					{$t("dialogs.upload.upload_guidelines")}</a
+				>
 				{#if fileError}
 					{#await fileError then error}
 						{#if error}
