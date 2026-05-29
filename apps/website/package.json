@@ -10,7 +10,10 @@
 		"svelte:check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"svelte:check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write \"**/*\" -u",
-		"codegen": "graphql-codegen --config codegen.ts"
+		"codegen": "graphql-codegen --config codegen.ts",
+		"fmt:rust": "cargo fmt --all",
+		"lint:rust": "cargo fmt --all -- --check",
+		"lint:all": "pnpm run lint && pnpm run lint:rust"
 	},
 	"type": "module",
 	"devDependencies": {
