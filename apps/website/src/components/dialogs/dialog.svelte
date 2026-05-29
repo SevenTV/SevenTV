@@ -56,7 +56,7 @@
 		style="width: {width}rem"
 	>
 		{#if mode === "shown"}
-			<Button onclick={close} style="position: absolute; top: 0.5rem; right: 0.5rem;">
+			<Button onclick={close} style="position: absolute; top: 0.5rem; inset-inline-end: 0.5rem;">
 				{#snippet icon()}
 					<X />
 				{/snippet}
