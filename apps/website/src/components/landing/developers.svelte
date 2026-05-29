@@ -12,7 +12,7 @@
 		<p>
 			{$t("pages.landing.developers.info")}
 		</p>
-		<Button primary big href={PUBLIC_GITHUB_LINK}>Contribute</Button>
+		<Button primary big href={PUBLIC_GITHUB_LINK}>{$t("labels.contribute")}</Button>
 	</div>
 	<!-- <div class="column">
 		<Code size={2.5 * 16} />

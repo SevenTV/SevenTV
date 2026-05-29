@@ -5,6 +5,7 @@
 	import Select from "../input/select.svelte";
 	import Toggle from "../input/toggle.svelte";
 	import type { ButtonOptions } from "./emote-ticket.svelte";
+	import { expandedTickets } from "$/lib/tickets";
 
 	let {
 		actionsPosition = $bindable(),
@@ -34,6 +35,7 @@
 			<Toggle bind:value={buttonOptions.delete}>Show Delete</Toggle>
 			<Toggle bind:value={buttonOptions.unlist}>Show Unlist</Toggle>
 			<Toggle bind:value={buttonOptions.approve}>Show Approve</Toggle>
+			<Toggle bind:value={$expandedTickets}>Expand tickets</Toggle>
 		</div>
 	{/snippet}
 </DropDown>

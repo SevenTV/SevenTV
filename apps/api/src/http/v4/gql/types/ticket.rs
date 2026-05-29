@@ -144,6 +144,7 @@ impl From<shared::database::ticket::TicketMember> for TicketMember {
 }
 
 #[derive(async_graphql::SimpleObject)]
+#[allow(dead_code)]
 pub struct TicketMessage {
 	pub id: TicketMessageId,
 	pub ticket_id: TicketId,

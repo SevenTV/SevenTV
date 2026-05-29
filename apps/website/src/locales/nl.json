@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Beheerder",
+    "trending_emotes": "Trending Emotes",
+    "top_emotes": "Top Emotes",
+    "global_emotes": "Globale Emotes",
+    "new_emotes": "Nieuwe Emotes",
+    "bookmarked_emotes": "Emote Bladwijzers",
+    "bookmarked_emote_sets": "Emote Set Bladwijzers",
+    "bookmarked_users": "Gebruiker Bladwijzers",
+    "account_settings": "Accountinstellingen",
+    "editor_settings": "Bewerker Instellingen",
+    "notification_settings": "Meldingsinstellingen",
+    "blocked_settings": "Blokkeringsinstellingen",
+    "billing_settings": "Betalingsinstellingen",
+    "admin_emote_public_listing": "Aanvragen Publieke Emote-vermelding",
+    "admin_emote_personal_use": "Aanvragen Persoonlijk Emote-gebruik",
+    "admin_emote_resolved": "Opgeloste Emote-tickets"
+  },
+  "page_errors": {
+    "not_found": "De pagina die je zocht, kon niet worden gevonden.",
+    "forbidden": "Je hebt geen toestemming om deze pagina te bekijken.",
+    "unauthorized": "Je bent niet bevoegd om deze pagina te bekijken.",
+    "unexpected": "Je kunt proberen de pagina te vernieuwen. Als het probleem zich blijft voordoen, neem dan contact met ons op.",
+    "generic": "Er is een fout opgetreden.",
+    "emote_set_load": "Emote set laden mislukt",
+    "emote_set_not_found": "Emote set niet gevonden",
+    "user": "Gebruiker laden mislukt"
+  },
+  "words": {
+    "from": "van",
+    "to": "aan",
+    "with": "met",
+    "by": "door"
+  },
+  "common": {
+    "sign_in": "Inloggen",
+    "sign_out": "Uitloggen",
+    "go_back": "Ga terug",
+    "super_admin": "Superbeheerder",
+    "skip_to_content": "Naar inhoud overslaan",
+    "emotes": "{count, plural, one {Emote} other {Emotes}}",
+    "emote_sets": "{count, plural, one {Emote set} other {Emote sets}}",
+    "users": "{count, plural, one {Gebruiker} other {Gebruikers}}",
+    "channels": "{count, plural, one {Kanaal} other {Kanalen}}",
+    "followers": "{count, plural, one {Volger} other {Volgers}}",
+    "items": "{count, plural, one {Item} other {Items}}",
+    "subscriptions": "{count, plural, one {Abonnement} other {Abonnementen}}",
+    "payment_methods": "{count, plural, one {Betaalmethode} other {Betaalmethodes}}",
+    "date": "Datum",
+    "help": "Help",
+    "for": "voor",
+    "error": "Fout",
+    "loading": "Laden...",
+    "paint_bundles": "Verfbundels",
+    "notifications": "Meldingen",
+    "connections": "Connecties",
+    "direct_messages": "Directe Berichten",
+    "mod_comments": "Moderatoropmerkingen",
+    "profile_picture": "Profielfoto",
+    "suggested_emotes": "Aanbevolen emotes",
+    "personal_emotes": "Persoonlijke Emotes",
+    "no_more_emotes": "Geen emotes meer",
+    "no_emotes": "Geen emotes",
+    "your_subscription": "Jouw Abonnement",
+    "theme": "Thema",
+    "language": "Taal",
+    "developer_portal": "Ontwikkelaarsportaal",
+    "faq": "Veelgestelde Vragen",
+    "faq_short": "FAQ",
+    "privacy": "Privacybeleid",
+    "tos": "Algemene Voorwaarden",
+    "trending": "Trending",
+    "top": "Top",
+    "global": "Globaal",
+    "new": "Nieuw",
+    "Weekly": "Wekelijks",
+    "Monthly": "Maandelijks",
+    "Today": "Vandaag",
+    "news": "Nieuws",
+    "Default_set": "Standaard Set",
+    "following": "Volgend",
+    "activity": "Activiteit",
+    "analytics": "Analyse",
+    "statistics": "Statistieken",
+    "contact": "Contact",
+    "cosmetics": "Cosmetica",
+    "editors": "Bewerkers",
+    "active": "Actief",
+    "profile": "Profiel",
+    "pinned": "Vastgezet",
+    "settings": "Instellingen",
+    "delete_account": "Account Verwijderen"
+  },
+  "labels": {
+    "enter_text": "Voer tekst in",
+    "redeem": "Voer code in",
+    "search": "Zoeken",
+    "refetch": "Opnieuw ophalen",
+    "manage_connections": "Connecties beheren",
+    "manage_editors": "Bewerkers beheren",
+    "none": "Geen",
+    "search_user": "Gebruiker zoeken",
+    "search_country": "Land zoeken",
+    "search_emote_set": "Emote set zoeken",
+    "search_users": "{count, plural, one {Een gebruiker zoeken} other {Gebruikers zoeken}}",
+    "tags": "Tags",
+    "close": "Sluiten",
+    "contribute": "Bijdragen",
+    "enter_tags": "Voer tags in",
+    "tag_limit_reached": "Taglimiet van {limit} bereikt",
+    "filters": "Filters",
+    "no_filters": "Geen filters",
+    "emote_name": "Naam van emote",
+    "copy_link": "Link kopiëren",
+    "create_emote_set": "Nieuwe Set Aanmaken",
+    "emote_set_name": "Naam van emote set",
+    "emote_attribution": "Emote-toekenning",
+    "select": "Selecteren",
+    "selection_mode": "Selectiemodus",
+    "edit": "Bewerken",
+    "capacity": "Capaciteit",
+    "enable": "Inschakelen",
+    "disable": "Uitschakelen",
+    "disabled": "Uitgeschakeld",
+    "more": "Meer",
+    "actions": "Acties",
+    "download": "Downloaden",
+    "report": "Rapporteren",
+    "delete": "Verwijderen",
+    "time_select": {
+      "week": "Deze week",
+      "month": "Deze maand",
+      "year": "Dit jaar"
+    },
+    "gift": "Geef cadeau",
+    "follow": "Volgen",
+    "connect": "Verbinden",
+    "disconnect": "Verbinding verbreken",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "all": "Alles",
+    "other": "Andere",
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "proceed": "Doorgaan",
+    "save": "Opslaan",
+    "remove": "Verwijderen",
+    "accept": "Accepteren",
+    "deny": "Weigeren",
+    "enter": "Voer in"
+  },
+  "themes": {
+    "system": "Systeem",
+    "dark": "Donker",
+    "light": "Licht"
+  },
+  "flags": {
+    "global": "Globaal",
+    "trending": "Trending",
+    "overlaying": "Overlappend",
+    "default": "Standaard",
+    "personal": "Persoonlijk",
+    "listed": "Vermeld",
+    "unlisted": "Niet vermeld",
+    "personal_use": "Persoonlijk gebruik",
+    "deleted": "Verwijderd",
+    "private": "Privé",
+    "personal_use_approved": "Goedgekeurd voor persoonlijk gebruik",
+    "personal_use_denied": "Geweigerd voor persoonlijk gebruik",
+    "personal_use_pending": "In beoordeling voor persoonlijk gebruik",
+    "renamed": "Hernoemd",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "In afwachting",
+      "accepted": "Geaccepteerd",
+      "rejected": "Geweigerd",
+      "you_accepted": "Je hebt geaccepteerd",
+      "you_rejected": "Je hebt geweigerd"
+    }
+  },
+  "notifications": {
+    "system": "Systeem",
+    "approved_for_public": "Jouw emote {emote} is goedgekeurd voor publieke vermelding."
+  },
+  "sub_info": {
+    "plan": "Plan",
+    "free": "Gratis",
+    "gifted_by": "Cadeau gedaan door",
+    "ends": "Abonnement eindigt",
+    "total": "Totaal",
+    "credits": "Abonnementstegoed"
+  },
+  "file_limits": {
+    "max_size": "max bestandsgrootte: {size}",
+    "max_resolution": "max resolutie: {width}x{height}",
+    "max_frames": "max aantal frames: {count}",
+    "resolution_error": "De resolutie mag {width}x{height} niet overschrijden",
+    "duration_error": "De duur moet {duration} seconden of minder zijn"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Log in op 7TV",
+      "subtitle": "Log in of maak een account aan om door te gaan",
+      "continue_with": "Doorgaan met {platform}",
+      "trouble": "Problemen met inloggen?",
+      "legal_yapping": "Door in te loggen, ga je akkoord met onze",
+      "and": "en",
+      "linking_new": "Heb je al een 7TV account en ben je van plan om een nieuwe verbinding te koppelen? Log in met je bestaande verbinding en koppel de nieuwe in de",
+      "settings": "instellingen"
+    },
+    "search": {
+      "emotes": "Emotes",
+      "users": "Gebruikers"
+    },
+    "upload": {
+      "title": "Emote Uploaden",
+      "untitled": "Naamloos",
+      "chat": "Stuur een bericht",
+      "drag_drop": "Sleep hier om te uploaden, of",
+      "browse_files": "Kies bestand",
+      "accept_rules": "Ik accepteer de regels en richtlijnen",
+      "discard": "Verwerpen",
+      "upload_guidelines": "Emote-uploadrichtlijnen",
+      "upload": "Uploaden"
+    },
+    "emote_set": {
+      "title": "Actieve Emote Set",
+      "create": "Emote Set Aanmaken",
+      "name": "Naam van emote set",
+      "label": "Naam",
+      "confirm": "Aanmaken",
+      "copy_set": "Set Kopiëren",
+      "special": "Speciaal",
+      "favourite_sets": {
+        "title": "Favoriete Emote Sets",
+        "add": "Toevoegen & hernoemen voor alles",
+        "remove": "Uit alles verwijderen"
+      },
+      "mass_select_feature": {
+        "add": "Toevoegen aan emote set",
+        "remove": "Verwijderen uit emote set",
+        "amount_selected_label": "/20 geselecteerd"
+      },
+      "default_emote_set": {
+        "remove": "Emote verwijderen uit {set}",
+        "add": "Emote toevoegen aan {set}",
+        "conflicting_name": "Conflicterende naam"
+      }
+    },
+    "manage_aliases": {
+      "title": "Emote-aliassen Beheren",
+      "add_placeholder": "Nieuwe alias toevoegen.."
+    },
+    "rename_emote": {
+      "title": "Emote Hernoemen in {set}",
+      "input_placeholder": "Nieuwe emote-naam",
+      "confirmation_message": "Weet je zeker dat je deze emote wilt hernoemen in {set}?",
+      "confirm": "Hernoemen"
+    },
+    "remove_emote_from_set": {
+      "title": "Emote verwijderen uit {set}",
+      "warning_message": "Weet je zeker dat je {emote} wilt verwijderen uit {set}?",
+      "confirm": "Verwijderen"
+    },
+    "add_emote": {
+      "title": "{emote} toevoegen aan",
+      "change_name": "Emote-naam wijzigen",
+      "confirm": "Bevestigen",
+      "confirm_changes": "{count, plural, one {1 wijziging bevestigen} other {{count} wijzigingen bevestigen}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Emote-wachtrij",
+      "activity": "Activiteit",
+      "comments": "Commentaar"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Emote toevoegen/verwijderen",
+      "edit_emote_alias": "Emote-alias bewerken",
+      "remove_emote": "Emote uit set verwijderen",
+      "open_in_new_tab": "In nieuw tabblad openen",
+      "copy_emote_link": "Emote-link kopiëren"
+    },
+    "cart": {
+      "title": "Je Winkelwagen",
+      "duration": "Duur",
+      "price": "Prijs",
+      "preview": "Voorbeeld",
+      "purchase_as_gift": "Koop als een cadeau",
+      "total": "Totaal"
+    },
+    "editor": {
+      "permissions": "Bewerkersmachtigingen Instellen",
+      "super_admin": "Superbeheerder",
+      "emote_sets": "Emote sets",
+      "admin": "Beheerder",
+      "emotes": "Emotes",
+      "user": "Gebruiker",
+      "manage_personal_emotes": "Persoonlijke emote set beheren",
+      "confirm": "Bevestigen",
+      "no_editors": "Geen bewerkers om weer te geven",
+      "permissions_details": {
+        "manage": "Beheren",
+        "create": "Aanmaken",
+        "transfer": "Overdragen",
+        "manage_profile": "Profiel beheren",
+        "manage_emotes": "Emotes beheren",
+        "manage_billing": "Facturering beheren",
+        "manage_editors": "Bewerkers beheren",
+        "view_billing": "Factuurgegevens bekijken"
+      }
+    },
+    "emote_info": {
+      "processing": "Deze emote wordt nog verwerkt",
+      "refresh": "Vernieuw",
+      "download": "Downloaden"
+    },
+    "copy_emotes": {
+      "title": "Geselecteerde emotes kopiëren naar"
+    },
+    "default_set": {
+      "title": "Standaard Emote Set"
+    },
+    "delete_account": {
+      "warning": "Waarschuwing",
+      "warning_message": "Deze actie zal je account permanent verwijderen. Je kunt deze actie niet ongedaan maken.",
+      "choose_reasons": "Kies de redenen voor het verwijderen van je account",
+      "reasons": {
+        "no_longer_use": "Ik gebruik 7TV niet meer",
+        "privacy_concerns": "Privacyzorgen",
+        "not_useful": "Niet nuttig",
+        "other": "Anders"
+      },
+      "confirm_username": "Voer je gebruikersnaam in om te bevestigen"
+    },
+    "delete_emote_or_set": {
+      "title": "{name} verwijderen",
+      "warning_message_emote": "Dit zal je emote permanent verwijderen. Je kunt deze actie niet ongedaan maken.",
+      "warning_message_set": "Dit zal je emote set permanent verwijderen. Je kunt deze actie niet ongedaan maken.",
+      "reason": "Reden",
+      "reason_for_deletion": "Reden voor verwijdering"
+    },
+    "edit_emote": {
+      "title": "{emote} bewerken"
+    },
+    "edit_emote_set": {
+      "title": "Emote Set Bewerken",
+      "show_on_profile": "Weergeven op profiel",
+      "publicly_listed": "Openbaar vermeld"
+    },
+    "remove_emote": {
+      "title": "Geselecteerde emotes uit {set} verwijderen"
+    },
+    "report_emote": {
+      "title": "Emote Rapporteren",
+      "choose_reasons": "Kies de redenen",
+      "reasons": {
+        "my_work": "Ik heb deze emote gemaakt, maar iemand anders heeft hem geüpload",
+        "duplicate": "Deze emote bestaat al",
+        "sexual": "Deze emote bevat pornografische of overdreven geseksualiseerde beelden",
+        "violance": "Deze emote toont extreem geweld of bloed",
+        "its_me": "Deze emote beeldt mij af en dat vind ik niet prettig",
+        "offensive": "Ik vind deze emote aanstootgevend",
+        "other": "Anders"
+      },
+      "additional_info": "Bijkomende informatie",
+      "disclaimer": "Misbruik van de rapporteerfunctie kan leiden tot het intrekken van je toegang."
+    },
+    "transfer_emote": {
+      "title": "{emote} overdragen",
+      "details": "Dit zal {emote} overdragen.",
+      "receipient": "Emote-ontvanger",
+      "transfer": "Overdragen"
+    },
+    "badge": {
+      "title": "Badge"
+    },
+    "subscription": {
+      "gifted_by": "Je abonnement is je cadeau gedaan door",
+      "cancel_notice": "Als je je abonnement nu beëindigt, verlies je onmiddellijk toegang tot je abonnementsvoordelen. Weet je zeker dat je je abonnement wilt beëindigen?",
+      "cancel_confirmation": "Weet je zeker dat je je abonnement wilt opzeggen? Je zult toegang tot je abonnementsvoordelen verliezen aan het einde van je huidige factureringsperiode.",
+      "confirm": "Bevestigen"
+    },
+    "error": {
+      "title": "Fout"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Pick'ems Pass cadeau geven",
+        "gift_to": "Pick'ems Pass cadeau geven aan",
+        "recipient": "Kies ontvanger",
+        "back": "Terug",
+        "continue": "Verder"
+      }
+    },
+    "gift": {
+      "title": "Geef 1",
+      "gift_to": "Geef 1 {variantUnit(variant)} aan",
+      "recipient": "Kies ontvanger"
+    },
+    "paint": {
+      "title": "Verf"
+    },
+    "buttons": {
+      "back": "Terug",
+      "continue": "Verder"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Geüpload"
+      },
+      "process": {
+        "start": "Nieuwe verwerkingsopdracht gestart",
+        "success": "Verwerking succesvol voltooid",
+        "fail": "Verwerking mislukt",
+        "cancel": "Verwerkingsopdracht geannuleerd"
+      },
+      "change_name": {
+        "action": "Hernoemd"
+      },
+      "merge": {
+        "action": "Samengevoegd"
+      },
+      "change_owner": {
+        "action": "Eigendom overgedragen"
+      },
+      "change_tags": {
+        "action": "Tags ingesteld op"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Goedgekeurd voor publieke vermelding"
+        },
+        "removed_public": {
+          "action": "Verwijderd uit publieke vermelding"
+        },
+        "approved_personal": {
+          "action": "Goedgekeurd voor persoonlijk gebruik"
+        },
+        "rejected_personal": {
+          "action": "Afgewezen voor persoonlijk gebruik"
+        },
+        "added_overlaying": {
+          "action": "Vlag toegevoegd: overlappend"
+        },
+        "removed_overlaying": {
+          "action": "Vlag verwijderd: overlappend"
+        },
+        "added_private": {
+          "action": "Vlag toegevoegd: privé"
+        },
+        "removed_private": {
+          "action": "Vlag verwijderd: privé"
+        }
+      },
+      "delete": {
+        "action": "Verwijderd"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Activiteit",
+      "emote": {
+        "deleted_emote": "Verwijderde Emote",
+        "deleted_set": "Verwijderde Set",
+        "by": "door",
+        "created": "aangemaakt",
+        "changed_tags": "Tags gewijzigd voor",
+        "changed_capacity": "Capaciteit gewijzigd voor",
+        "added": "Toegevoegd:",
+        "removed": "Emote verwijderd:",
+        "renamed": "Emote hernoemd:",
+        "in": "in",
+        "from": "van",
+        "to": "naar",
+        "deleted": "Verwijderd"
+      },
+      "user": {
+        "changed_paint": "Actieve verf gewijzigd van",
+        "changed_badge": "Actieve badge gewijzigd van",
+        "removed": "Verwijderd:",
+        "connection": "Verbinding",
+        "changed_set": "Actieve emote set gewijzigd van",
+        "added": "Toegevoegd:",
+        "no_badge": "Geen Badge",
+        "no_paint": "Geen Verf",
+        "deleted": "Verwijderd"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Je wordt ingelogd...",
+        "logged": "Ingelogd",
+        "failed": "Inloggen mislukt"
+      },
+      "state": {
+        "logging": "Je wordt ingelogd...",
+        "logged": "Ingelogd",
+        "failed": {
+          "title": "Inloggen mislukt",
+          "message": "Zorg ervoor dat je dit venster via de extensie opent"
+        }
+      }
+    },
+    "home": {
+      "title": "Startpagina",
+      "features": {
+        "emote_slots": "1000 Emote Slots",
+        "emote_slots_info": "Iedereen krijgt 1000 instelbare kanaal-emote-slots, helemaal gratis. Bewaar al je emotes op één plek.",
+        "emote_slots_button": "Zoek emotes",
+        "emote_sets": "Emote Sets",
+        "emote_sets_info": "Groepeer emotes in aanpasbare sets die kunnen worden gedeeld met andere gebruikers of snel op je kanaal kunnen worden verwisseld.",
+        "emote_sets_button": "Maak een emote set",
+        "custom_emotes": "Aangepaste Emote-namen",
+        "custom_emotes_info": "Bevalt de naam die de auteur aan een emote heeft gegeven je niet? Geen probleem, je kunt hem alleen voor jouw kanaal aanpassen.",
+        "custom_emotes_button": "Zoek emotes",
+        "real-time": "Realtime-updates",
+        "real-time_info": "Het wijzigen van emotes op je kanaal gebeurt direct, voor alle kijkers. Geen F5 nodig, gedaan met wachten.",
+        "real-time_button": "Download de extensie",
+        "large_community": "Grote Community",
+        "large_community_info": "7TV dient dagelijks meer dan 2.000.000 unieke gebruikers en beschikt over een bibliotheek van meer dan 1.000.000 publieke emotes.",
+        "large_community_button": "Join onze Discord",
+        "next_gen": "Next-gen Formaten",
+        "next_gen_info": "We gebruiken nieuwere, meer geoptimaliseerde afbeeldingsformaten zoals WebP en AVIF, om het bandbreedtegebruik te verminderen.",
+        "next_gen_button": "Download de extensie"
+      }
+    },
+    "help": {
+      "title": "Help"
+    },
+    "directory": {
+      "title": "Catalogus",
+      "bookmarked": "Bladwijzers",
+      "sorting": {
+        "title": "Sortering",
+        "alphabetical": "Alfabetisch",
+        "upload_date": "Uploaddatum"
+      },
+      "filters": {
+        "animated": "Geanimeerd",
+        "static": "Statisch",
+        "overlaying": "Overlappend",
+        "personal_use": "Persoonlijk gebruik",
+        "exact_match": "Exacte overeenkomst"
+      },
+      "size": {
+        "title": "Grootte",
+        "any": "Elke grootte"
+      }
+    },
+    "landing": {
+      "start": "Begin je avontuur met honderden emotes en functies die je chatervaring verbeteren. Download de Officiële 7TV-Extensie of andere tools van derden.",
+      "developers": {
+        "header": "Source-Available",
+        "info": "Onze volledige codebase is beschikbaar op GitHub met een source-available-licentie. Iedereen kan deze bekijken en eraan bijdragen."
+      },
+      "download": {
+        "start": "Begin je avontuur met honderden emotes en functies die je chatervaring verbeteren. Download de Officiële 7TV-Extensie of andere tools van derden.",
+        "extension": "Webextensie",
+        "stable": "Stabiele release",
+        "nightly": "Nightly release",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobiele Apps"
+        },
+        "bots": {
+          "header": "Chatbots"
+        }
+      },
+      "features": {
+        "header": "Waarom 7TV?",
+        "info": "Ons platform biedt een reeks handige functies aan die je chatervaring zullen verbeteren."
+      },
+      "footer": {
+        "affiliated": "7TV is niet gelieerd aan Twitch, Kick, YouTube of Discord",
+        "privacy_policy": "Privacybeleid",
+        "tos": "Algemene Voorwaarden"
+      },
+      "hero": {
+        "platform": "Het Emote Platform",
+        "all": "voor Iedereen",
+        "download": "Downloaden",
+        "manage": "Beheer eenvoudig honderden emotes voor je Twitch-, Kick- of YouTube-kanalen. Verbeter je chatervaring.",
+        "more": "Meer informatie",
+        "xmas": {
+          "header": "KERST-SUBEVENEMENT",
+          "info": "Geef deze kerst 1 abonnement cadeau aan iemand en krijg een speciale badge!",
+          "gift": "Geef een abonnement cadeau"
+        },
+        "nnys": {
+          "info": "Stem op NNYS 2025 en ontvang een exclusieve verf, badge & emote set.",
+          "vote": "Stem in NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 STREAMERS",
+          "tournament": "7TV-GEORGANISEERD TOERNOOI",
+          "event": "3-DAAGS EVENEMENT",
+          "header": "Plaats je Pick'ems. Win Prijzen.",
+          "info": "7TV-Georganiseerd CS2-Toernooi",
+          "date": "29 feb. - 2 mrt.",
+          "pickems": "Plaats je pick'ems",
+          "pass": "Haal de pass!",
+          "badges_paints": "Win Badges & Verf.",
+          "description1": "xQc, OhnePixel, JasonTheWeen en 32 andere streamers nemen het tegen elkaar op",
+          "description2": "in een 3-daags Enkelvoudige Eliminatie 7TV-Georganiseerd CS2-toernooi."
+        }
+      }
+    },
+    "discover": {
+      "title": "Ontdek",
+      "uploads": "Uploads",
+      "followed": "Gevolgde accounts"
+    },
+    "store": {
+      "title": "Winkel",
+      "redeem": {
+        "title": "Inwisselen",
+        "header": "Een cadeaucode inwisselen",
+        "subtitle": "Wissel een cadeaucode in om exclusieve cosmetica en voordelen te ontgrendelen.",
+        "state": {
+          "idle": "Inactief",
+          "loading": "Laden",
+          "success": "Succes"
+        },
+        "code": "code",
+        "shown": "zichtbaar",
+        "trial": "Je hebt je proefabonnement succesvol ingewisseld"
+      },
+      "purchase": {
+        "success": "Je aankoop is succesvol afgerond"
+      },
+      "subscription": {
+        "banner_title_subbed": "Bedankt voor de steun",
+        "banner_title_unsubbed": "Ontgrendel speciale voordelen",
+        "banner_subtitle_subbed": "Geniet van je speciale abonnementsvoordelen!",
+        "banner_subtitle_unsubbed": "Abonneer je om je chatervaring te verbeteren.",
+        "badge_progress": {
+          "title": "Badge Vooruitgang",
+          "left": "{duration} resterend"
+        },
+        "benefits": {
+          "title": "Abonnementsvoordelen",
+          "animated_avatar": "Geanimeerde profielfoto",
+          "personal_emotes": "Persoonlijke emotes",
+          "paints": "Naamtag-verf",
+          "sub_badge": "Abonneebadge",
+          "raffle_tickets": "Loterijtickets"
+        },
+        "raffle": "Globale Emote-loterij",
+        "monthly_paints": "Maandelijkse Verf",
+        "your_cosmetics": "Jouw cosmetica",
+        "your_paints": "Jouw verven",
+        "beomce_a_subscriber": "Word een Abonnee",
+        "your_badges": "Jouw badges",
+        "top_gifters": "Top Cadeaugevers",
+        "subscribe": "Abonneren",
+        "subscribed": "Geabonneerd",
+        "cancel": "Abonnement opzeggen",
+        "reactivate": "Abonnement heractiveren",
+        "one_monhth": "1 maand",
+        "one_year": "1 jaar"
+      },
+      "paint_bundles": {
+        "coming_soon": "Binnenkort beschikbaar",
+        "banner_title": "Laat jezelf stralen",
+        "banner_subtitle": "Naamtag-verf laat je jezelf uitdrukken in elke kleur."
+      },
+      "events": {
+        "no_events": "Geen aankomende evenementen",
+        "xmas": "X-MAS 2024 EVENEMENT: SCHENK 1 ABONNEMENT EN KRIJG EEN SPECIALE BADGE",
+        "cs2": {
+          "tournament": "7TV-Georganiseerd CS2-Toernooi",
+          "cosmetics": "Cosmetica verdienen voor het voorspellen van het resultaat? Klik hieronder!",
+          "twitch": "BEKIJK TWITCH",
+          "bundle": "Bundel kopen",
+          "already_subscribed": "Reeds geabonneerd",
+          "subscribe": "{price} vandaag, daarna {recurring}",
+          "billing_cycle": "Gefactureerd als eenmalige aankoop",
+          "pickems": {
+            "place": "Plaats Pick'ems",
+            "predict": "Voorspel Winnaars",
+            "purchase_pass": "Pass kopen"
+          },
+          "pass": {
+            "title": "Pick'ems Pass",
+            "get": "Pass halen",
+            "bundle": "Pass + {variantName(variant)} Abonnementsbundel"
+          },
+          "schedule": {
+            "header": "Toernooischema",
+            "stage": "Fase",
+            "best_of": "Beste van",
+            "start_time": "Starttijd"
+          },
+          "streamers": {
+            "header": "Ontmoet de Streamers",
+            "info": "Een prominente line-up van Twitch-streamers stelt een team samen uit hun community’s die het tegen elkaar opnemen in een CS-Stijl Enkelvoudige Eliminatie-toernooi.",
+            "watch": "Bekijk het hoofdevenement op het",
+            "twitch_channel": "7TV Twitch-kanaal",
+            "streamer_pov": "of via het POV van je favoriete streamer."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Beheerder",
+      "overview": "Overzicht",
+      "welcome": "Welkom terug",
+      "enjoy": "Veel plezier met modereren!",
+      "tickets": {
+        "title": "Tickets",
+        "emotes": {
+          "public_listing": "Publieke Vermelding",
+          "personal_use": "Persoonlijk Gebruik",
+          "resolved": "Opgelost",
+          "not_implemented": "Niet geïmplementeerd"
+        },
+        "emote_table": {
+          "emote_name": "Emote-naam",
+          "uploader": "Uploader",
+          "country": "Land",
+          "tags_flags": "Tags & vlaggen",
+          "reviewed_by": "Beoordeeld door"
+        },
+        "reports": "Meldingen",
+        "reports_options": {
+          "all": "Alles",
+          "assigned": "Toegewezen",
+          "closed": "Gesloten"
+        },
+        "reports_table": {
+          "reported_by": "Gerapporteerd door",
+          "target": "Doelwit",
+          "description": "Beschrijving",
+          "assigned_to": "Toegewezen aan",
+          "status": "Status",
+          "date": "Datum",
+          "ticket_id": "Ticket-ID",
+          "subject": "Onderwerp",
+          "details": "Details"
+        },
+        "reports_actions": {
+          "close": "Als gesloten markeren",
+          "assign_self": "Aan jezelf toewijzen",
+          "add_comment": "Opmerking toevoegen"
+        }
+      },
+      "codes": {
+        "redeem": "Codes inwisselen",
+        "add": "Code(s) toevoegen",
+        "filters": {
+          "header": "Filters:",
+          "remaining_uses": "Resterende gebruiken"
+        },
+        "search": {
+          "results": "{results.totalCount} resultaten gevonden ({results.pageCount} pagina’s)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Naam",
+            "description": "Beschrijving",
+            "tags": "Tags",
+            "code": "Code",
+            "remaining_uses": "Resterende gebruiken",
+            "active_period": "Actieve periode",
+            "effect": "Effect",
+            "subscription_effect": "Abonnementseffect",
+            "created_by": "Gemaakt door",
+            "created_at": "Gemaakt op",
+            "actions": "Acties"
+          }
+        },
+        "period": {
+          "unlimited": "Ongelimiteerd"
+        },
+        "trial": {
+          "days": "dagen proefperiode",
+          "no_trial": "Geen proefperiode",
+          "none": "Geen"
+        },
+        "system": "Systeem"
+      },
+      "special_events": {
+        "header": "Speciale Evenementen",
+        "create": "Speciaal Evenement aanmaken",
+        "add": "Speciaal Evenement toevoegen",
+        "results": "{results.length} resultaten gevonden",
+        "attributes": {
+          "name": "Naam",
+          "description": "Beschrijving",
+          "tags": "Tags",
+          "created_by": "Gemaakt door",
+          "created_at": "Gemaakt op",
+          "actions": "Acties",
+          "create": "Aanmaken",
+          "cancel": "Annuleren"
+        },
+        "system": "Systeem",
+        "no_events": "Geen Speciale Evenementen"
+      },
+      "users": {
+        "id": {
+          "back": "Terug",
+          "last_updated": "Laatst Bijgewerkt Op",
+          "search_last_update": "Zoek Laatst Bijgewerkt Op",
+          "queued": "In wachtrij voor update",
+          "stripe": {
+            "customer": "Stripe-klant",
+            "view": "Bekijken",
+            "no_customer": "Geen stripe-klant gekoppeld",
+            "roles": "Rollen"
+          },
+          "actions": {
+            "header": "Acties",
+            "sessions": {
+              "header": "Sessies",
+              "create_session": "Nieuwe sessie aanmaken",
+              "delete_all": "Alle sessies verwijderen",
+              "expiration": "Vervaldatum over",
+              "token": "Token",
+              "copy_token": "Token kopiëren",
+              "create": "Aanmaken",
+              "close": "Sluiten"
+            },
+            "connections": {
+              "header": "Connecties",
+              "kick": "Kick handmatig koppelen",
+              "username": "Kick gebruikersnaam"
+            },
+            "entitlements": {
+              "header": "Rechten",
+              "create": "Rechten Aanmaken",
+              "assign": "Rechten Handmatig Toewijzen",
+              "assign_to": "Rechten toewijzen aan",
+              "remove_all": "Alle Rechten Verwijderen",
+              "view": "Rechten Bekijken",
+              "showing": "Weergeven van rechten toegewezen aan"
+            }
+          },
+          "subscription": {
+            "header": "Abonnement",
+            "period": {
+              "header": "Abonnementsperiodes",
+              "key": "Sleutel",
+              "value": "Waarde",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "ULID kopiëren",
+              "uuid": "UUID kopiëren"
+            },
+            "provider": {
+              "id": "Provider-ID",
+              "view": "Bekijken"
+            },
+            "product": {
+              "id": "Product-ID",
+              "view": "Bekijken",
+              "start": "Start",
+              "end": "Einde",
+              "is_trial": "Is proefperiode?",
+              "auto_renew": "Automatisch verlengen?",
+              "gifted": {
+                "header": "Cadeau gedaan?",
+                "yes": "Ja - door",
+                "no": "Nee"
+              },
+              "created_by": "Gemaakt door",
+              "redeem": "Code inwisselen",
+              "invoice": "Factuur",
+              "system": "Systeem",
+              "variant": "Productvariant"
+            }
+          },
+          "not_found": "Gebruiker niet gevonden"
+        },
+        "layout": {
+          "users": "Gebruikers"
+        },
+        "page": {
+          "manage": {
+            "header": "Beheer",
+            "single_user": "Beheer één gebruiker"
+          },
+          "actions": {
+            "header": "Acties",
+            "sub_benefits_job": {
+              "header": "Abonnementsvoordelen-Job",
+              "manually": "Start handmatig de abonnements-job om de rechten en abonnementsvoordelen voor alle gebruikers opnieuw te berekenen.",
+              "rerun": "Opnieuw uitvoeren"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Emote gebruiken",
+      "add_to": "Toevoegen aan...",
+      "transfer": "Overdragen",
+      "merge": "Samenvoegen",
+      "size": "grootte",
+      "copy_link": "Link kopiëren"
+    },
+    "user": {
+      "about": "Over",
+      "active_emotes": "Actieve emotes",
+      "uploaded": "Geüpload",
+      "uploaded_emotes": "Geüploade emotes"
+    },
+    "settings": {
+      "account": {
+        "title": "Account",
+        "profile": {
+          "details": "Voorkeuren aanpassen en details beheren zodat ze aansluiten bij je individuele behoeften",
+          "display_name": "Weergavenaam",
+          "display_name_description": "Kies een hoofdverbinding die gebruikt zal worden voor je weergavenaam en statische profielfoto",
+          "profile_picture_description": "Kies een profielfoto die op alle platforms wordt weergegeven",
+          "update_profile_picture": "Profielfoto bijwerken"
+        },
+        "connections": {
+          "details": "Beheer en koppel externe accounts om de toegang te vereenvoudigen en de interoperabiliteit binnen het platform te verbeteren"
+        },
+        "security": {
+          "title": "Beveiliging",
+          "details": "Beheer en pas de beveiliging van je account aan",
+          "2fa": "Tweefactorauthenticatie",
+          "2fa_details": "Verbeter de beveiliging van je account met tweefactorauthenticatie (2FA)",
+          "email_details": "Ontvang een verificatiecode via e-mail",
+          "authenticator_app": "Authenticator-app",
+          "authenticator_app_details": "Installeer een app om je verificatiecode te genereren",
+          "sign_out_everywhere": "Overal uitloggen",
+          "sign_out_everywhere_details": "Zorg voor veiligheid en log met één klik uit op alle apparaten",
+          "delete_account_details": "Verwijder permanent alle persoonlijke informatie en bijbehorende gegevens van het platform, waardoor je account wordt beëindigd"
+        }
+      },
+      "appearance": {
+        "title": "Uiterlijk",
+        "details": "Wijzig het uiterlijk en gevoel",
+        "theme": {
+          "header": "Thema",
+          "options": {
+            "system": "Systeem",
+            "dark": "Donker",
+            "light": "Licht"
+          }
+        },
+        "motion": {
+          "header": "Verminderde Beweging",
+          "options": {
+            "system": "Systeem",
+            "enabled": "Ingeschakeld",
+            "disbaled": "Uitgeschakeld"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Richting Website-lay-out",
+          "options": {
+            "ltr": "Links naar rechts",
+            "rtl": "Rechts naar links"
+          }
+        }
+      },
+      "editors": {
+        "details": "Beheer en pas je bewerkers of kanalen waarvoor je werkt aan",
+        "editing_for": "Bewerken voor",
+        "add_editor": "Bewerker toevoegen",
+        "not_allowed": "Je bent niet bevoegd om bewerkers voor deze gebruiker te beheren"
+      },
+      "notifications": {
+        "details": "Realtime-updates en waarschuwingen, zodat gebruikers op de hoogte blijven van belangrijke gebeurtenissen, berichten en activiteiten binnen de website of applicatie"
+      },
+      "blocked": {
+        "title": "Geblokkeerd",
+        "details": "Beheer je beperkte of verboden inhoud, gebruikers of activiteiten",
+        "add_user": "Geblokkeerde gebruiker toevoegen"
+      },
+      "billing": {
+        "title": "Facturering",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Abonnementstegoed gebruiken",
+          "use_credits_details": "Je abonnementstegoed wordt eerst gebruikt voor je volgende facturering",
+          "cancelled": "Abonnement geannuleerd",
+          "cancelled_details": "Je abonnement is geannuleerd en je voordelen vervallen op {date}"
+        },
+        "history": {
+          "title": "Factuurgeschiedenis",
+          "details": "Bekijk alle betalingsactiviteiten die aan je account zijn gekoppeld, zoals eerdere factureringen en transacties"
+        },
+        "payment_methods": {
+          "details": "Controleer en werk je voorkeursbetaalmethoden bij",
+          "add_new": "Nieuwe toevoegen",
+          "card": {
+            "title": "Kaartgegevens",
+            "ends_in": "Eindigt op {digits}",
+            "expires": "Vervalt op {month}/{year}",
+            "address": "Adres",
+            "name": "Naam"
+          }
+        },
+        "table": {
+          "status": "Status",
+          "amount": "Aantal",
+          "invoice": "Factuur"
+        }
+      },
+      "user_table": {
+        "name": "Naam",
+        "last_modified": "Laatst gewijzigd",
+        "permissions": "Machtigingen"
+      }
+    },
+    "link": {
+      "linking": "Account wordt gekoppeld...",
+      "linking_successful": "Account succesvol gekoppeld",
+      "linking_failed": "Koppelen mislukt"
+    },
+    "extension": {
+      "login": "Je wordt ingelogd...",
+      "login_successful": "Ingelogd",
+      "login_failed": "Inloggen mislukt",
+      "window": "Zorg ervoor dat je dit venster via de extensie opent"
+    }
+  }
+}

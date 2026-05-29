@@ -1,205 +1,101 @@
 <script lang="ts">
 	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
-	import { t } from "svelte-i18n";
-	// import xQcProfile from "$assets/xqc.png?url";
-	// import stableRonaldoProfile from "$assets/stableronaldo.png?url";
-	// import aikoBlissProfile from "$assets/aikobliss.png?url";
-	// import dorozeaProfile from "$assets/dorozea.png?url";
-	// import erobb221Profile from "$assets/erobb221.png?url";
-	// import donaCSProfile from "$assets/donacs.png?url";
-	// import jasonTheWeenProfile from "$assets/jasontheween.png?url";
-	// import renyanProfile from "$assets/renyan.png?url";
-	// import omieProfile from "$assets/omie.png?url";
-	// import arrowCSProfile from "$assets/arrowcs.png?url";
-	// import dimaWallhacksProfile from "$assets/dima_wallhacks.png?url";
-	// import ohnePixelProfile from "$assets/ohnepixel.png?url";
-	// import furiProfile from "$assets/furi.png?url";
-	// import neokProfile from "$assets/neok.png?url";
-	// import dizzyProfile from "$assets/dizzy.png?url";
-	// import StewieProfile from "$assets/stewie2k.png?url";
-	// import duwapProfile from "$assets/duwap.png?url";
-	// import trilluxeProfile from "$assets/trilluxe.png?url";
-	// import trainwreckProfile from "$assets/trainwreckstv.png?url";
-	// import propernatorProfile from "$assets/propernator.png?url";
-	// import andersProfile from "$assets/anders.png?url";
-	// import moetvProfile from "$assets/m0e_tv.png?url";
-	// import moxyProfile from "$assets/m0xyy.jpg?url";
-	// import austinProfile from "$assets/austincs_.png?url";
-	// import hyzacsProfile from "$assets/hyzacs.png?url";
-	// import jojodjProfile from "$assets/jojodj.png?url";
-	// import tylert69Profile from "$assets/tylert69_.png?url";
-	// import segalsonProfile from "$assets/segalson.png?url";
-	// import loagurtProfile from "$assets/loagurt.png?url";
-	// import coachmaryyProfile from "$assets/coachmaryy.png?url";
-	// import pol0Profile from "$assets/pol0.png?url";
-	// import trucklover86Profile from "$assets/trucklover86.png?url";
-	// import dathrixProfile from "$assets/dathrix.png?url";
-	// import dementorcsgoProfile from "$assets/dementorcsgo.png?url";
-	// import destroybladerProfile from "$assets/destroyblader.png?url";
-
+	//import xQcProfile from "$assets/xqc.png?url";
+	//import stableRonaldoProfile from "$assets/stableronaldo.png?url";
+	import aikoBlissProfile from "$assets/aikobliss.png?url"; // done
+	//import dorozeaProfile from "$assets/dorozea.png?url";
+	//import erobb221Profile from "$assets/erobb221.png?url";
+	import donaCSProfile from "$assets/donacs.png?url"; // done
+	//import jasonTheWeenProfile from "$assets/jasontheween.png?url";
+	import renyanProfile from "$assets/renyan.png?url"; // done
+	import omieProfile from "$assets/omie.png?url"; // done
+	import demeProfile from "$assets/deme.png?url"; // done
+	import franzJProfile from "$assets/franzj.png?url"; // done
+	import arrowCSProfile from "$assets/arrowcs.png?url"; // done
+	import psp1gProfile from "$assets/psp1g.png?url"; // done
+	import dimaWallhacksProfile from "$assets/dima_wallhacks.png?url"; // done
+	//import ohnePixelProfile from "$assets/ohnepixel.png?url";
+	import furiProfile from "$assets/furi.png?url"; // done
+	import neokProfile from "$assets/neok.png?url"; // done
+	import dizzyProfile from "$assets/dizzy.png?url"; // done
+	//import StewieProfile from "$assets/stewie2k.png?url";
+	import duwapProfile from "$assets/duwap.png?url"; // done
 	import Button from "../input/button.svelte";
 
 	let { hasPass = $bindable() }: { hasPass: boolean } = $props();
 
 	let streamers: { name: string; profile: string }[] = [
-		// {
-		// 	name: "xQc",
-		// 	profile: xQcProfile,
-		// },
-		// {
-		// 	name: "StableRonaldo",
-		// 	profile: stableRonaldoProfile,
-		// },
-		// {
-		// 	name: "AikoBliss",
-		// 	profile: aikoBlissProfile,
-		// },
-		// {
-		// 	name: "Dorozea",
-		// 	profile: dorozeaProfile,
-		// },
-		// {
-		// 	name: "Erobb221",
-		// 	profile: erobb221Profile,
-		// },
-		// {
-		// 	name: "DonaCS",
-		// 	profile: donaCSProfile,
-		// },
-		// {
-		// 	name: "JasonTheWeen",
-		// 	profile: jasonTheWeenProfile,
-		// },
-		// {
-		// 	name: "Renyan",
-		// 	profile: renyanProfile,
-		// },
-		// {
-		// 	name: "omie",
-		// 	profile: omieProfile,
-		// },
-		// {
-		// 	name: "ArrowCS",
-		// 	profile: arrowCSProfile,
-		// },
-		// {
-		// 	name: "dima_wallhacks",
-		// 	profile: dimaWallhacksProfile,
-		// },
-		// {
-		// 	name: "OhnePixel",
-		// 	profile: ohnePixelProfile,
-		// },
-		// {
-		// 	name: "Furi",
-		// 	profile: furiProfile,
-		// },
-		// {
-		// 	name: "neok",
-		// 	profile: neokProfile,
-		// },
-		// {
-		// 	name: "Dizzy",
-		// 	profile: dizzyProfile,
-		// },
-		// {
-		// 	name: "Stewie2K",
-		// 	profile: StewieProfile,
-		// },
-		// {
-		// 	name: "duwap",
-		// 	profile: duwapProfile,
-		// },
-		// {
-		// 	name: "TrilluXe",
-		// 	profile: trilluxeProfile,
-		// },
-		// {
-		// 	name: "trainwreckstv",
-		// 	profile: trainwreckProfile,
-		// },
-		// {
-		// 	name: "propernator",
-		// 	profile: propernatorProfile,
-		// },
-		// {
-		// 	name: "anders",
-		// 	profile: andersProfile,
-		// },
-		// {
-		// 	name: "m0e_tv",
-		// 	profile: moetvProfile,
-		// },
-		// {
-		// 	name: "m0xyy",
-		// 	profile: moxyProfile,
-		// },
-		// {
-		// 	name: "austincs_",
-		// 	profile: austinProfile,
-		// },
-		// {
-		// 	name: "hyzaCS",
-		// 	profile: hyzacsProfile,
-		// },
-		// {
-		// 	name: "jojodj",
-		// 	profile: jojodjProfile,
-		// },
-		// {
-		// 	name: "tylert69_",
-		// 	profile: tylert69Profile,
-		// },
-		// {
-		// 	name: "segalson",
-		// 	profile: segalsonProfile,
-		// },
-		// {
-		// 	name: "loagurt",
-		// 	profile: loagurtProfile,
-		// },
-		// {
-		// 	name: "coachmaryy",
-		// 	profile: coachmaryyProfile,
-		// },
-		// {
-		// 	name: "pol0",
-		// 	profile: pol0Profile,
-		// },
-		// {
-		// 	name: "trucklover86",
-		// 	profile: trucklover86Profile,
-		// },
-		// {
-		// 	name: "dathrix",
-		// 	profile: dathrixProfile,
-		// },
-		// {
-		// 	name: "dementorcsgo",
-		// 	profile: dementorcsgoProfile,
-		// },
-		// {
-		// 	name: "destroyblader",
-		// 	profile: destroybladerProfile,
-		// },
+		{
+			name: "AikoBliss",
+			profile: aikoBlissProfile,
+		},
+		{
+			name: "DonaCS",
+			profile: donaCSProfile,
+		},
+		{
+			name: "Renyan",
+			profile: renyanProfile,
+		},
+		{
+			name: "omie",
+			profile: omieProfile,
+		},
+		{
+			name: "ArrowCS",
+			profile: arrowCSProfile,
+		},
+		{
+			name: "dima_wallhacks",
+			profile: dimaWallhacksProfile,
+		},
+		{
+			name: "Furi",
+			profile: furiProfile,
+		},
+		{
+			name: "neok",
+			profile: neokProfile,
+		},
+		{
+			name: "Dizzy",
+			profile: dizzyProfile,
+		},
+		{
+			name: "FranzJ",
+			profile: franzJProfile,
+		},
+		{
+			name: "deme",
+			profile: demeProfile,
+		},
+		{
+			name: "PSP1G",
+			profile: psp1gProfile,
+		},
+		{
+			name: "duwap",
+			profile: duwapProfile,
+		},
 	];
 </script>
 
 <div class="container">
 	<div class="left-panel">
-		<h1 class="alt_head">{$t("pages.store.events.cs2.streamers.header")}</h1>
+		<h1 class="alt_head">Meet the Streamers</h1>
 		<hr class="hrDialog" />
 		<p>
-			{$t("pages.store.events.cs2.streamers.info")}
+			A prominent line-up of Twitch Streamers build a team from their communities who go
+			head-to-head in an exciting 2 bracket double elimination tournament.
 		</p>
 		<p>
-			{$t("pages.store.events.cs2.streamers.watch")} <a
+			Watch the main event on the <a
 				href="https://twitch.tv/7tvapp"
 				aria-label="7tvapp Twitch Channel"
-				>{$t("pages.store.events.cs2.streamers.twitch_channel")} <ArrowSquareOut style="vertical-align: text-top;" /></a
-			>, {$t("pages.store.events.cs2.streamers.streamer_pov")}
+				>7TV Twitch Channel <ArrowSquareOut style="vertical-align: text-top;" /></a
+			>, or through your favourite streamer's POV.
 		</p>
-		<p>{$t("pages.store.events.cs2.cosmetics")}</p>
+		<p>Want to earn cosmetics for predicting the outcome? Click below and dive right in!</p>
 		<div class="purchase-div">
 			{#if hasPass}
 				<Button
@@ -212,9 +108,9 @@
 				border: none;
 				border-radius: 0.25rem;
 				cursor: pointer;"
-					href="https://app.pickems.tv"
+					href="https://pickems.7tv.app"
 				>
-					{$t("pages.store.events.cs2.pickems.predict")}
+					Predict Winners
 					<ArrowSquareOut style="margin-left: auto; margin-right: 0;" />
 				</Button>
 			{:else}
@@ -230,7 +126,7 @@
 				cursor: pointer;"
 					href="#PickemsPricing"
 				>
-					{$t("pages.store.events.cs2.pickems.purchase_pass")}
+					Purchase Pass
 					<Ticket style="margin-left: auto; margin-right: 0;" />
 				</Button>
 			{/if}
@@ -249,7 +145,7 @@
 						<div class="info">
 							<h3>{streamer.name}</h3>
 							<span class="streamer-link">
-								<u> {$t("pages.store.events.cs2.twitch")} </u>
+								<u> VIEW TWITCH </u>
 							</span>
 						</div>
 					</div>
@@ -355,6 +251,18 @@
 
 				h3 {
 					font-size: 1rem;
+				}
+
+				a {
+					display: flex;
+					align-items: center;
+					color: grey;
+					margin-top: 0.5rem;
+					font-size: 0.875rem;
+
+					:global(svg) {
+						margin-left: 0.5rem;
+					}
 				}
 			}
 		}

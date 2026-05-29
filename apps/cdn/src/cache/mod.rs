@@ -11,8 +11,6 @@ use tokio::sync::OnceCell;
 use crate::config;
 use crate::global::Global;
 
-const ONE_WEEK: std::time::Duration = std::time::Duration::from_secs(60 * 60 * 24 * 7);
-
 pub struct Cache {
 	inner: moka::future::Cache<CacheKey, CachedResponse>,
 	inflight: Arc<scc::HashMap<CacheKey, Arc<Inflight>>>,
@@ -250,6 +248,7 @@ impl Cache {
 						.key(key.to_string())
 						.send()
 						.await?,
+					global.config.cdn.max_age,
 				)
 				.await?)
 			},
@@ -438,6 +437,7 @@ impl IntoResponse for CachedResponse {
 impl CachedResponse {
 	pub async fn from_s3_response(
 		mut value: aws_sdk_s3::operation::get_object::GetObjectOutput,
+		max_age: std::time::Duration,
 	) -> Result<Self, aws_sdk_s3::primitives::ByteStreamError> {
 		let date = chrono::Utc::now();
 
@@ -454,7 +454,7 @@ impl CachedResponse {
 					.and_then(|e| chrono::DateTime::parse_from_rfc2822(&e).ok());
 				expires.and_then(|e| e.signed_duration_since(date).to_std().ok())
 			})
-			.unwrap_or(ONE_WEEK);
+			.unwrap_or(max_age);
 
 		let mut chunks = Vec::new();
 

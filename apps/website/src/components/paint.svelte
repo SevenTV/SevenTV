@@ -14,10 +14,11 @@
 		paint: Paint;
 		children: Snippet;
 		enableDialog?: boolean;
+		dialogWidth?: number;
 	} & HTMLAttributes<HTMLSpanElement> &
 		HTMLAttributes<HTMLButtonElement>;
 
-	let { paint, children, enableDialog, ...restProps }: Props = $props();
+	let { paint, children, dialogWidth, enableDialog, ...restProps }: Props = $props();
 
 	function layerToBackgroundImage(layer: PaintLayer) {
 		switch (layer.ty.__typename) {
@@ -116,7 +117,7 @@
 	}
 </script>
 
-<PaintDialog {paint} bind:mode={dialogMode} />
+<PaintDialog {dialogWidth} {paint} bind:mode={dialogMode} />
 
 {#snippet content()}
 	{#if layers.length === 0}
@@ -147,6 +148,7 @@
 		tabindex="-1"
 		class="paint"
 		title="Paint: {paint.name.length > 0 ? paint.name : paint.id}"
+		style:overflow={paint.name.length > 14 ? "hidden" : "unset"}
 		onclick={showDialog}
 		{...restProps}
 	>
@@ -162,9 +164,6 @@
 	.paint {
 		display: grid;
 		justify-items: start;
-
-		// Fix long names with paints causing overflow
-		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
@@ -178,7 +177,7 @@
 			-webkit-text-fill-color: transparent;
 			background-clip: text;
 			-webkit-background-clip: text;
-			background-size: cover;
+			background-size: 100% 100%;
 		}
 	}
 

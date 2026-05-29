@@ -41,7 +41,7 @@
 <Dialog width={30} bind:mode>
 	<form class="layout">
 		<h1>{$t("dialogs.emote_set.create")}</h1>
-		<TextInput placeholder="Name" bind:value={name}>
+		<TextInput placeholder={$t("dialogs.emote_set.label")} bind:value={name}>
 			<span class="label">{$t("dialogs.emote_set.name")}</span>
 		</TextInput>
 		<TagsInput bind:tags />

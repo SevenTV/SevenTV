@@ -28,6 +28,58 @@
 	/* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
 }
 
+/* BBH Bartleby */
+@font-face {
+	font-display: swap;
+	/* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+	font-family: "BBH Bartleby";
+	font-style: normal;
+	font-weight: 400;
+	src:
+		/* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+		url("$assets/fonts/BBHBartle-Regular.ttf") format("truetype");
+	/* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+}
+
+/* Syne */
+@font-face {
+	font-display: swap;
+	/* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+	font-family: "Syne";
+	font-style: normal;
+	font-weight: 400;
+	src:
+		/* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+		url("$assets/fonts/Syne-VariableFont_wght.ttf") format("truetype");
+	/* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+}
+
+/* Syne - Bold */
+@font-face {
+	font-display: swap;
+	/* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+	font-family: "Syne Bold";
+	font-style: normal;
+	font-weight: 400;
+	src:
+		/* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+		url("$assets/fonts/Syne-Bold.ttf") format("truetype");
+	/* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+}
+
+/* Syne - ExtraBold */
+@font-face {
+	font-display: swap;
+	/* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+	font-family: "Syne ExtraBold";
+	font-style: normal;
+	font-weight: 400;
+	src:
+		/* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+		url("$assets/fonts/Syne-ExtraBold.ttf") format("truetype");
+	/* Chrome 4+, Firefox 3.5+, IE 9+, Safari 3.1+, iOS 4.2+, Android Browser 2.2+ */
+}
+
 /* inter-300 - latin_latin-ext */
 @font-face {
 	font-display: swap;

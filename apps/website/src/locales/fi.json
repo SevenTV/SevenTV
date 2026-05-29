@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Ylläpitäjä",
+    "trending_emotes": "Trendaavat emotet",
+    "top_emotes": "Parhaat emotet",
+    "global_emotes": "Globaalit emotet",
+    "new_emotes": "Uudet emotet",
+    "bookmarked_emotes": "Kirjanmerkityt emotet",
+    "bookmarked_emote_sets": "Kirjanmerkityt emote-kokoelmat",
+    "bookmarked_users": "Kirjanmerkityt käyttäjät",
+    "account_settings": "Tiliasetukset",
+    "editor_settings": "Muokkaajan asetukset",
+    "notification_settings": "Ilmoitusasetukset",
+    "blocked_settings": "Estetyt asetukset",
+    "billing_settings": "Laskutusasetukset",
+    "admin_emote_public_listing": "Emoteiden listauspyynnöt julkiseen käyttöön",
+    "admin_emote_personal_use": "Emoteiden listauspyynnöt henkilökohtaiseen käyttöön",
+    "admin_emote_resolved": "Ratkaistut emote-tiketit"
+  },
+  "page_errors": {
+    "not_found": "Sivua, jota yritit etsiä, ei löydy.",
+    "forbidden": "Sinulla ei ole lupaa nähdä tätä sivua.",
+    "unauthorized": "Et ole valtuutettu katsomaan tätä sivua.",
+    "unexpected": "Voit yrittää päivittää sivun. Jos ongelma jatkuu, ota meihin yhteyttä.",
+    "generic": "Tapahtui virhe.",
+    "emote_set_load": "Emote-kokoelmaa ei voitu ladata",
+    "emote_set_not_found": "Emote-kokoelmaa ei löytynyt",
+    "user": "Käyttäjää ei voitu ladata"
+  },
+  "words": {
+    "from": "kohteesta",
+    "to": "kohteeseen",
+    "with": "kanssa",
+    "by": "-"
+  },
+  "common": {
+    "sign_in": "Kirjaudu sisään",
+    "sign_out": "Kirjaudu ulos",
+    "go_back": "Palaa takaisin",
+    "super_admin": "Pääylläpitäjä",
+    "skip_to_content": "Siirry sisältöön",
+    "emotes": "{count, plural, one {Emote} other {Emotet}}",
+    "emote_sets": "{count, plural, one {Emote-kokoelma} other {Emote-kokoelmat}}",
+    "users": "{count, plural, one {Käyttäjä} other {Käyttäjät}}",
+    "channels": "{count, plural, one {Kanava} other {Kanavat}}",
+    "followers": "{count, plural, one {Seuraaja} other {Seuraajat}}",
+    "items": "{count, plural, one {Kohde} other {Kohteet}}",
+    "subscriptions": "{count, plural, one {Tilaus} other {Tilaukset}}",
+    "payment_methods": "{count, plural, one {Maksutapa} other {Maksutavat}}",
+    "date": "Päivämäärä",
+    "help": "Tuki",
+    "for": "kohteelle",
+    "error": "Virhe",
+    "loading": "Ladataan...",
+    "paint_bundles": "Värityspaketit",
+    "notifications": "Ilmoitukset",
+    "connections": "Liitännät",
+    "direct_messages": "Yksityisviestit",
+    "mod_comments": "Modin kommentit",
+    "profile_picture": "Profiilikuva",
+    "suggested_emotes": "Ehdotetut emotet",
+    "personal_emotes": "Henkilökohtaiset emotet",
+    "no_more_emotes": "Ei enää emoteja",
+    "no_emotes": "Ei emoteja",
+    "your_subscription": "Tilauksesi",
+    "theme": "Teema",
+    "language": "Kieli",
+    "developer_portal": "Kehittäjäportaali",
+    "faq": "Usein kysytyt kysymykset",
+    "faq_short": "UKK",
+    "privacy": "Tietosuojakäytäntö",
+    "tos": "Käyttöehdot",
+    "trending": "Trendaavat",
+    "top": "Parhaat",
+    "global": "Globaalit",
+    "new": "Uutuudet",
+    "Weekly": "Viikottain",
+    "Monthly": "Kuukausittain",
+    "Today": "Tänään",
+    "news": "Uutiset",
+    "Default_set": "Oletuskokoelma",
+    "following": "Seuraavat",
+    "activity": "Toiminta",
+    "analytics": "Analytiikka",
+    "statistics": "Tilastot",
+    "contact": "Ota yhteyttä",
+    "cosmetics": "Kosmetiikka",
+    "editors": "Muokkaajat",
+    "active": "Aktiivinen",
+    "profile": "Profiili",
+    "pinned": "Kiinnitetty",
+    "settings": "Asetukset",
+    "delete_account": "Poista käyttäjä"
+  },
+  "labels": {
+    "enter_text": "Syötä teksti",
+    "redeem": "Syötä koodi",
+    "search": "Etsi",
+    "refetch": "Hae uudelleen",
+    "manage_connections": "Hallitse liitäntöjä",
+    "manage_editors": "Hallitse muokkaajia",
+    "none": "Ei mitään",
+    "search_user": "Etsi käyttäjä",
+    "search_country": "Hae maa",
+    "search_emote_set": "Etsi emote-kokoelma",
+    "search_users": "{count, plural, one {Etsi käyttäjä} other {Etsi käyttäjät}}",
+    "tags": "Tunnisteet",
+    "close": "Sulje",
+    "contribute": "Osallistu",
+    "enter_tags": "Syötä tunnisteet",
+    "tag_limit_reached": "Tunnisteiden enimmäismäärä {limit} saavutettu",
+    "filters": "Suodattimet",
+    "no_filters": "Ei suodattimia",
+    "emote_name": "Emoten nimi",
+    "copy_link": "Kopioi linkki",
+    "create_emote_set": "Luo uusi kokoelma",
+    "emote_set_name": "Emote-kokoelman nimi",
+    "emote_attribution": "Emoten attribuutio",
+    "select": "Valitse",
+    "selection_mode": "Valintatila",
+    "edit": "Muokkaa",
+    "capacity": "Kapasiteetti",
+    "enable": "Ota käyttöön",
+    "disable": "Poista käytöstä",
+    "disabled": "Ei käytössä",
+    "more": "Lisää",
+    "actions": "Toiminnot",
+    "download": "Lataa",
+    "report": "Raportoi",
+    "delete": "Poista",
+    "time_select": {
+      "week": "Tällä viikolla",
+      "month": "Tässä kuussa",
+      "year": "Tänä vuonna"
+    },
+    "gift": "Lahjoita",
+    "follow": "Seuraa",
+    "connect": "Yhdistä",
+    "disconnect": "Katkaise yhteys",
+    "email": "Sähköposti",
+    "password": "Salasana",
+    "all": "Kaikki",
+    "other": "Muut",
+    "cancel": "Peruuta",
+    "confirm": "Vahvista",
+    "proceed": "Jatka",
+    "save": "Tallenna",
+    "remove": "Poista",
+    "accept": "Hyväksy",
+    "deny": "Kiellä",
+    "enter": "Syötä"
+  },
+  "themes": {
+    "system": "Järjestelmä",
+    "dark": "Tumma",
+    "light": "Vaalea"
+  },
+  "flags": {
+    "global": "Globaalit",
+    "trending": "Trendaavat",
+    "overlaying": "Päälle asettuva",
+    "default": "Oletus",
+    "personal": "Henkilökohtainen",
+    "listed": "Listattu",
+    "unlisted": "Listaamaton",
+    "personal_use": "Henkilökohtainen käyttö",
+    "deleted": "Poistettu",
+    "private": "Yksityinen",
+    "personal_use_approved": "Henkilökohtainen käyttö hyväksytty",
+    "personal_use_denied": "Henkilökohtainen käyttö estetty",
+    "personal_use_pending": "Henkilökohtainen käyttö käsittelyssä",
+    "renamed": "Uudelleennimetty",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "Käsittelyssä",
+      "accepted": "Hyväksytty",
+      "rejected": "Hylätty",
+      "you_accepted": "Sinä hyväksyit",
+      "you_rejected": "Sinä hylkäsit"
+    }
+  },
+  "notifications": {
+    "system": "Järjestelmä",
+    "approved_for_public": "Emotesi {emote} on hyväksytty julkiseen listaukseen."
+  },
+  "sub_info": {
+    "plan": "Suunnitelma",
+    "free": "Ilmainen",
+    "gifted_by": "Lahjoittanut",
+    "ends": "Tilaus päättyy",
+    "total": "Yhteensä",
+    "credits": "Tilauskrediitit"
+  },
+  "file_limits": {
+    "max_size": "{size} maksimi tiedostokoko",
+    "max_resolution": "{width}x{height} maksimiresoluutio",
+    "max_frames": "{count} maksimikehyksiä",
+    "resolution_error": "Resoluutio ei saa ylittää {width}x{height}",
+    "duration_error": "Kesto saa olla enintään {duration} sekuntia"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Kirjaudu 7TV:hen",
+      "subtitle": "Kirjaudu sisään tai luo käyttäjä jatkaaksesi",
+      "continue_with": "Jatka sovelluksella {platform}",
+      "trouble": "Ongelmia kirjautumisessa?",
+      "legal_yapping": "Kirjautumalla sisään hyväksyt meidän",
+      "and": "ja",
+      "linking_new": "Onko sinulla jo 7TV-tili ja haluat linkittää uuden yhteyden? Kirjaudu sisään olemassa olevalla yhteydelläsi ja linkitä uusi yhteys",
+      "settings": "asetukset"
+    },
+    "search": {
+      "emotes": "Emotet",
+      "users": "Käyttäjät"
+    },
+    "upload": {
+      "title": "Lataa emote",
+      "untitled": "Nimetön",
+      "chat": "Lähetä viesti",
+      "drag_drop": "Vedä ja pudota lataaksesi, tai",
+      "browse_files": "Selaa tiedostoja",
+      "accept_rules": "Hyväksyn säännöt ja ohjeet",
+      "discard": "Hylkää",
+      "upload_guidelines": "Emote-latausohjeet",
+      "upload": "Lataa"
+    },
+    "emote_set": {
+      "title": "Aktiivinen emote-kokoelma",
+      "create": "Luo emote-kokoelma",
+      "name": "Emote-kokoelman nimi",
+      "label": "Nimi",
+      "confirm": "Luo",
+      "copy_set": "Kopioi kokoelma",
+      "special": "Erityinen",
+      "favourite_sets": {
+        "title": "Suosikki-emote-kokoelmat",
+        "add": "Lisää ja nimeä uudelleen kaikille",
+        "remove": "Poista kaikilta"
+      },
+      "mass_select_feature": {
+        "add": "Lisää emote-kokoelmaan",
+        "remove": "Poista emote-kokoelmasta",
+        "amount_selected_label": "/20 valittu"
+      },
+      "default_emote_set": {
+        "remove": "Poista emote kohteesta",
+        "add": "Lisää emote kohteeseen",
+        "conflicting_name": "Ristiriitainen nimi"
+      }
+    },
+    "manage_aliases": {
+      "title": "Hallitse emote-aliaksia",
+      "add_placeholder": "Lisää uusi alias.."
+    },
+    "rename_emote": {
+      "title": "Uudelleennimeä emote kohteessa {set}",
+      "input_placeholder": "Uusi emote-nimi",
+      "confirmation_message": "Haluatko varmasti uudelleennimetä tämän emoten kohteessa {set}?",
+      "confirm": "Uudelleennimeä"
+    },
+    "remove_emote_from_set": {
+      "title": "Poista emote kohteesta {set}",
+      "warning_message": "Haluatko varmasti poistaa {emote} kohteesta {set}?",
+      "confirm": "Poista"
+    },
+    "add_emote": {
+      "title": "Lisää {emote} kanavalle",
+      "change_name": "Muuta emoten nimeä",
+      "confirm": "Vahvista",
+      "confirm_changes": "{count, plural, one {Vahvista 1 muutos} other {Vahvista {count} muutosta}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Emote-jono",
+      "activity": "Toiminta",
+      "comments": "Kommentit"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Lisää/Poista emote",
+      "edit_emote_alias": "Muokkaa emote-aliasta",
+      "remove_emote": "Poista emote kokoelmasta",
+      "open_in_new_tab": "Avaa uudessa välilehdessä",
+      "copy_emote_link": "Kopioi emotelinkki"
+    },
+    "cart": {
+      "title": "Ostoskorisi",
+      "duration": "Kestoaika",
+      "price": "Hinta",
+      "preview": "Esikatsele",
+      "purchase_as_gift": "Osta lahjaksi",
+      "total": "Yhteensä"
+    },
+    "editor": {
+      "permissions": "Määritä muokkaajan oikeudet",
+      "super_admin": "Pääylläpitäjä",
+      "emote_sets": "Emote-kokoelmat",
+      "admin": "Ylläpitäjä",
+      "emotes": "Emotet",
+      "user": "Käyttäjä",
+      "manage_personal_emotes": "Hallitse henkilökohtaista emote-kokoelmaa",
+      "confirm": "Vahvista",
+      "no_editors": "Ei muokkaajia näytettäväksi",
+      "permissions_details": {
+        "manage": "Hallitse",
+        "create": "Luo",
+        "transfer": "Siirrä",
+        "manage_profile": "Hallitse profiilia",
+        "manage_emotes": "Hallitse emoteja",
+        "manage_billing": "Hallitse laskutusta",
+        "manage_editors": "Hallitse muokkaajia",
+        "view_billing": "Näytä laskutustiedot"
+      }
+    },
+    "emote_info": {
+      "processing": "Tämä emote on vielä käsittelyssä",
+      "refresh": "Virkistä",
+      "download": "Lataa"
+    },
+    "copy_emotes": {
+      "title": "Kopio valitut emotet kanavalle"
+    },
+    "default_set": {
+      "title": "Oletus emote-kokoelma"
+    },
+    "delete_account": {
+      "warning": "Varoitus",
+      "warning_message": "Tämä toiminto poistaa tilisi pysyvästi. Tätä toimintoa ei voi kumota.",
+      "choose_reasons": "Valitse syyt tilin poistamiseen",
+      "reasons": {
+        "no_longer_use": "En käytä enää 7TV:tä",
+        "privacy_concerns": "Yksityisyyteen liittyviä huolenaiheita",
+        "not_useful": "Ei ole hyödyllistä",
+        "other": "Muut"
+      },
+      "confirm_username": "Vahvista syöttämällä käyttäjätunnuksesi"
+    },
+    "delete_emote_or_set": {
+      "title": "Poista {name}",
+      "warning_message_emote": "Tämä toiminto poistaa emotesi pysyvästi. Tätä toimintoa ei voi kumota.",
+      "warning_message_set": "Tämä toiminto poistaa emote-kokoelman pysyvästi. Tätä toimintoa ei voi kumota.",
+      "reason": "Syy",
+      "reason_for_deletion": "Poiston syy"
+    },
+    "edit_emote": {
+      "title": "Muokkaa {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Muokkaa emote-kokoelma",
+      "show_on_profile": "Näytä profiilissa",
+      "publicly_listed": "Julkisesti listattu"
+    },
+    "remove_emote": {
+      "title": "Poista valitut emotet kohteesta {set}"
+    },
+    "report_emote": {
+      "title": "Raportoi emote",
+      "choose_reasons": "Valitse syyt",
+      "reasons": {
+        "my_work": "Tein tämän emoten, mutta sen on ladannut joku muu",
+        "duplicate": "Tämä emote on kopio",
+        "sexual": "Tämä emote sisältää pornograafisia tai liian seksuaalisia kuvastoa",
+        "violance": "Tämä emote esittää äärimmäistä väkivaltaa tai raakaa verenvuodatusta",
+        "its_me": "Tämä emote kuvaa minua, enkä pidä siitä",
+        "offensive": "Pidän tätä emotea loukkaavana",
+        "other": "Muut"
+      },
+      "additional_info": "Lisätietoja",
+      "disclaimer": "Raportointiominaisuuden väärinkäyttö voi johtaa käyttöoikeutesi kumoamiseen."
+    },
+    "transfer_emote": {
+      "title": "Siirrä {emote}",
+      "details": "Tämä siirtää {emote}.",
+      "receipient": "Emoten vastaanottaja",
+      "transfer": "Siirrä"
+    },
+    "badge": {
+      "title": "Merkki"
+    },
+    "subscription": {
+      "gifted_by": "Tilauksen on lahjoittanut sinulle",
+      "cancel_notice": "Jos lopetat tilauksesi nyt, menetät välittömästi tilausedut. Haluatko varmasti lopettaa tilauksesi?",
+      "cancel_confirmation": "Haluatko varmasti peruuttaa tilauksesi? Menetät tilausedut nykyisen laskutuskauden päättyessä.",
+      "confirm": "Vahvista"
+    },
+    "error": {
+      "title": "Virhe"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Lahjoita Pick'ems-passi",
+        "gift_to": "Lahjoita Pick'ems-passi",
+        "recipient": "Valitse vastaanottaja",
+        "back": "Takaisin",
+        "continue": "Jatka"
+      }
+    },
+    "gift": {
+      "title": "Lahjoita 1",
+      "gift_to": "Lahjoita 1 {variantUnit(variant)} ",
+      "recipient": "Valitse vastaanottaja"
+    },
+    "paint": {
+      "title": "Väritys"
+    },
+    "buttons": {
+      "back": "Takaisin",
+      "continue": "Jatka"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Ladattu"
+      },
+      "process": {
+        "start": "Uusi käsittelytehtävä aloitettu",
+        "success": "Käsittely onnistui",
+        "fail": "Käsittely epäonnistui",
+        "cancel": "Käsittelytehtävä peruutettu"
+      },
+      "change_name": {
+        "action": "Uudelleennimettiin"
+      },
+      "merge": {
+        "action": "Yhdistetty"
+      },
+      "change_owner": {
+        "action": "Omistajuus siirretty"
+      },
+      "change_tags": {
+        "action": "Lisättiin tunnisteet"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Hyväksytty julkiseen listaukseen"
+        },
+        "removed_public": {
+          "action": "Poistettiin julkisesta listauksesta"
+        },
+        "approved_personal": {
+          "action": "Hyväksytty henkilökohtaiseen käyttöön"
+        },
+        "rejected_personal": {
+          "action": "Hylätty henkilökohtaiseen käyttöön"
+        },
+        "added_overlaying": {
+          "action": "Lisättiin päälle asettuva tunniste"
+        },
+        "removed_overlaying": {
+          "action": "Poistettiin päälle asettuva tunniste"
+        },
+        "added_private": {
+          "action": "Lisättiin"
+        },
+        "removed_private": {
+          "action": "Poistettiin yksityinen tunniste"
+        }
+      },
+      "delete": {
+        "action": "Poistettiin"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Toiminta",
+      "emote": {
+        "deleted_emote": "Poistettiin emote",
+        "deleted_set": "Poistettiin kokoelma",
+        "by": "-",
+        "created": "Luotiin",
+        "changed_tags": "Muutettiin tunnisteita kohteelle",
+        "changed_capacity": "Muutettiin kapasiteettia kohteelle",
+        "added": "Lisättiin",
+        "removed": "Poistettiin emote",
+        "renamed": "Uudelleennimettiin emote",
+        "in": "kohteessa",
+        "from": "kohteesta",
+        "to": "kohteeseen",
+        "deleted": "Poistettiin"
+      },
+      "user": {
+        "changed_paint": "Vaihdettiin aktiivinen väritys kohteesta",
+        "changed_badge": "Vaihdettiin aktiivinen merkki kohteesta",
+        "removed": "Poistettiin",
+        "connection": "Liitäntä",
+        "changed_set": "Vaihdettiin aktiivinen emote-kokoelma kohteesta",
+        "added": "Lisättiin",
+        "no_badge": "Ei merkkiä",
+        "no_paint": "Ei väritystä",
+        "deleted": "Poistettiin"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Kirjaudutaan sisään...",
+        "logged": "Kirjautunut",
+        "failed": "Kirjautuminen epäonnistui"
+      },
+      "state": {
+        "logging": "Kirjaudutaan sisään...",
+        "logged": "Kirjautunut",
+        "failed": {
+          "title": "Epäonnistunut kirjautuminen",
+          "message": "Varmista, että avaat tämän ikkunan laajennuksen kautta"
+        }
+      }
+    },
+    "home": {
+      "title": "Koti",
+      "features": {
+        "emote_slots": "1000 emote-paikkaa",
+        "emote_slots_info": "Kaikille tarjotaan 1000 muokattavaa kanava-emote-paikkaa täysin ilmaiseksi. Säilytä kaikki emotesi yhdessä paikassa.",
+        "emote_slots_button": "Selaa emoteja",
+        "emote_sets": "Emote-kokoelmat",
+        "emote_sets_info": "Ryhmittele emotesi muokattaviin kokoelmiin, joita voit jakaa muiden käyttäjien kanssa tai vaihtaa nopeasti kanavallesi.",
+        "emote_sets_button": "Luo emote-kokoelma",
+        "custom_emotes": "Mukautetut emote-nimet",
+        "custom_emotes_info": "Etkö pidä emote-tekijän antamasta nimestä? Ei hätää, voit muuttaa sen vain omalle kanavallesi.",
+        "custom_emotes_button": "Selaa emoteja",
+        "real-time": "Reaaliaikaiset päivitykset",
+        "real-time_info": "Emoteiden vaihtaminen kanavallasi tapahtuu heti kaikille katsojille. Ei F5:ttä, ei odottelua.",
+        "real-time_button": "Lataa laajennus",
+        "large_community": "Suuri yhteisö",
+        "large_community_info": "7TV palvelee yli 2 000 000 päivittäistä käyttäjää, ja sen kirjastossa on yli 1 000 000 julkista emotea.",
+        "large_community_button": "Liity Discordiimme",
+        "next_gen": "Seuraavan sukupolven formaatit",
+        "next_gen_info": "Käytämme uudempia ja optimoituja kuvaformaatteja, kuten WebP ja AVIF, vähentääksemme kaistanleveyden käyttöä.",
+        "next_gen_button": "Lataa laajennus"
+      }
+    },
+    "help": {
+      "title": "Tuki"
+    },
+    "directory": {
+      "title": "Hakemisto",
+      "bookmarked": "Kirjanmerkitty",
+      "sorting": {
+        "title": "Lajittelu",
+        "alphabetical": "Aakkosjärjestys",
+        "upload_date": "Latauspäivämäärä"
+      },
+      "filters": {
+        "animated": "Animoitu",
+        "static": "Staattinen",
+        "overlaying": "Päälle asettuva",
+        "personal_use": "Henkilökohtainen käyttö",
+        "exact_match": "Tarkka vastaavuus"
+      },
+      "size": {
+        "title": "Koko",
+        "any": "Mikä tahansa koko"
+      }
+    },
+    "landing": {
+      "start": "Aloita matkasi sadoilla emoteilla ja ominaisuuksilla, jotka parantavat chatti-kokemustasi. Lataa virallinen 7TV-laajennus tai muut kolmannen osapuolen työkalut.",
+      "developers": {
+        "header": "Lähdekoodi saatavilla",
+        "info": "Koko koodipohjamme on saatavilla GitHubissa lähdekoodin saatavuuden mahdollistavalla lisenssillä. Kuka tahansa voi tarkastella sitä ja osallistua kehitykseen."
+      },
+      "download": {
+        "start": "Aloita matkasi sadoilla emoteilla ja ominaisuuksilla, jotka parantavat chatti-kokemustasi. Lataa virallinen 7TV-laajennus tai muut kolmannen osapuolen työkalut.",
+        "extension": "Selaimen laajennus",
+        "stable": "Stable Release",
+        "nightly": "Nightly Release",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobiilisovellukset"
+        },
+        "bots": {
+          "header": "Chatbotit"
+        }
+      },
+      "features": {
+        "header": "Miksi 7TV?",
+        "info": "Alustamme tarjoaa monia hyödyllisiä ominaisuuksia, jotka parantavat chatti-kokemustasi."
+      },
+      "footer": {
+        "affiliated": "7TV ei ole yhteistyössä Twitchin, Kickin, YouTuben tai Discordin kanssa.",
+        "privacy_policy": "Tietosuojakäytäntö",
+        "tos": "Käyttöehdot"
+      },
+      "hero": {
+        "platform": "Emote-alusta",
+        "all": "kaikille",
+        "download": "Lataa",
+        "manage": "Hallitse helposti satoja emoteja Twitch-, Kick- tai YouTube-kanavillasi. Paranna chatti-kokemustasi.",
+        "more": "Lue lisää",
+        "xmas": {
+          "header": "X-MAS TILAUSKAMPANJA",
+          "info": "Lahjoita 1 tilaus kenelle tahansa tänä jouluna ja saat erityisen merkin!",
+          "gift": "Lahjoita tilaus"
+        },
+        "nnys": {
+          "info": "Äänestä NNYS 2025:ssa ja saat eksklusiivisen värityksen, merkin ja emote-kokoelman.",
+          "vote": "Äänestä NNYS 2025:ssa"
+        },
+        "cs2": {
+          "streamers": "35 STRIIMAAJAA",
+          "tournament": "7TV:N JÄRJESTÄMÄ TURNAUS",
+          "event": "3 PÄIVÄN TAPAHTUMA",
+          "header": "Tee Pick'ems-valintasi. Voita palkintoja.",
+          "info": "7TV:n järjestämä CS2-turnaus",
+          "date": "29. helmikuuta – 2. maaliskuuta",
+          "pickems": "Tee Pick'ems-valintasi",
+          "pass": "Hanki passi!",
+          "badges_paints": "Voita merkkejä ja värityksiä.",
+          "description1": "xQc, OhnePixel, JasonTheWeen ja 32 muuta striimaajaa kilpailevat toisiaan vastaan",
+          "description2": "3 päivän yksinkertaisessa pudotuspeliturnauksessa, jonka järjestää 7TV."
+        }
+      }
+    },
+    "discover": {
+      "title": "Löydä",
+      "uploads": "Lataukset",
+      "followed": "Seuratut käyttäjät"
+    },
+    "store": {
+      "title": "Kauppa",
+      "redeem": {
+        "title": "Lunasta",
+        "header": "Lunasta lahjakoodi",
+        "subtitle": "Lunasta lahjakoodi avataksesi eksklusiivisia kosmetiikkatuotteita ja etuja.",
+        "state": {
+          "idle": "Odotustila",
+          "loading": "Ladataan",
+          "success": "Onnistui"
+        },
+        "code": "koodi",
+        "shown": "Näytetty",
+        "trial": "Lunastit kokeilutilauksen onnistuneesti"
+      },
+      "purchase": {
+        "success": "Ostoksesi onnistui."
+      },
+      "subscription": {
+        "banner_title_subbed": "Kiitos tuestasi",
+        "banner_title_unsubbed": "Avaa erikoisetuja",
+        "banner_subtitle_subbed": "Nauti erityisistä tilaajaeduistasi!",
+        "banner_subtitle_unsubbed": "Tilaa parantaaksesi chattailukokemustasi.",
+        "badge_progress": {
+          "title": "Merkin edistyminen",
+          "left": "{duration} jäljellä"
+        },
+        "benefits": {
+          "title": "Tilaajaedut",
+          "animated_avatar": "Animoitu profiilikuva",
+          "personal_emotes": "Henkilökohtaiset emotet",
+          "paints": "Nimimerkin väritykset",
+          "sub_badge": "Tilaajamerkki",
+          "raffle_tickets": "Arpajaisliput"
+        },
+        "raffle": "Globaali emote-arpajaiset",
+        "monthly_paints": "Kuukauden väritykset",
+        "your_cosmetics": "Kosmetiikkasi",
+        "your_paints": "Värityksesi",
+        "beomce_a_subscriber": "Ryhdy tilaajaksi",
+        "your_badges": "Merkkisi",
+        "top_gifters": "Parhaat lahjoittajat",
+        "subscribe": "Tilaa",
+        "subscribed": "Tilattu",
+        "cancel": "Peruuta tilaus",
+        "reactivate": "Aktivoi tilauksesi uudelleen",
+        "one_monhth": "1 Kuukausi",
+        "one_year": "1 Vuosi"
+      },
+      "paint_bundles": {
+        "coming_soon": "Tulossa pian",
+        "banner_title": "Laita itsesi hehkumaan",
+        "banner_subtitle": "Nimimerkki väritysten avulla voit ilmaista itseäsi kaikissa sävyissä."
+      },
+      "events": {
+        "no_events": "Ei tulevia tapahtumia",
+        "xmas": "X-MAS 2024 TAPAHTUMA: LAHJOITA 1 TILAUS SAADAKSESI ERIKOISMERKIN",
+        "cs2": {
+          "tournament": "7TV:n järjestämä CS2-turnaus",
+          "cosmetics": "Haluatko ansaita kosmetiikkaa ennustamalla lopputuloksen? Klikkaa alta!",
+          "twitch": "NÄYTÄ TWITCHISSÄ",
+          "bundle": "Osta paketti",
+          "already_subscribed": "Olet jo tilaaja",
+          "subscribe": "{price} nyt, sen jälkeen {recurring}",
+          "billing_cycle": "Veloitetaan kertamaksuna",
+          "pickems": {
+            "place": "Tee Pick'em-valinnat",
+            "predict": "Ennusta voittajat",
+            "purchase_pass": "Osta passi"
+          },
+          "pass": {
+            "title": "Pick'ems-passi",
+            "get": "Hanki passi",
+            "bundle": "Passi +  {variantName(variant)} tilauspaketti"
+          },
+          "schedule": {
+            "header": "Turnausaikataulu",
+            "stage": "Vaihe",
+            "best_of": "Paras",
+            "start_time": "Alkamisaika"
+          },
+          "streamers": {
+            "header": "Tapaa striimaajat",
+            "info": "Merkittävä joukko Twitch-striimaajia kokoaa joukkueen yhteisöistään, jotka kohtaavat toisensa suorassa pudotuspeliturnauksessa CS-tyyliin",
+            "watch": "Katso päätapahtuma",
+            "twitch_channel": "7TV Twitch-kanava",
+            "streamer_pov": "tai suosikkistriimaajasi näkökulmasta."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Ylläpitäjä",
+      "overview": "Yleiskuva",
+      "welcome": "Tervetuloa takaisin",
+      "enjoy": "Hauskaa modailua!",
+      "tickets": {
+        "title": "Tiketit",
+        "emotes": {
+          "public_listing": "Julkinen listaus",
+          "personal_use": "Henkilökohtainen käyttö",
+          "resolved": "Ratkaistu",
+          "not_implemented": "Ei toteutettu"
+        },
+        "emote_table": {
+          "emote_name": "Emoten nimi",
+          "uploader": "Lataaja",
+          "country": "Maa",
+          "tags_flags": "Tunnisteet ja liput",
+          "reviewed_by": "Arvostellut"
+        },
+        "reports": "Raportit",
+        "reports_options": {
+          "all": "Kaikki",
+          "assigned": "Määrätyt",
+          "closed": "Suljettu"
+        },
+        "reports_table": {
+          "reported_by": "Raportoinut",
+          "target": "Kohde",
+          "description": "Kuvaus",
+          "assigned_to": "Määrätty henkilölle",
+          "status": "Tila",
+          "date": "Päivämäärä",
+          "ticket_id": "Tiketin ID",
+          "subject": "Aihe",
+          "details": "Tiedot"
+        },
+        "reports_actions": {
+          "close": "Merkitse suljetuksi",
+          "assign_self": "Määritä itsellesi",
+          "add_comment": "Lisää kommentti"
+        }
+      },
+      "codes": {
+        "redeem": "Lunasta koodeja",
+        "add": "Lisää koodi(t)",
+        "filters": {
+          "header": "Suodattimet:",
+          "remaining_uses": "Jäljellä olevat käyttökerrat"
+        },
+        "search": {
+          "results": "Löytyi {results.totalCount} tulosta ({results.pageCount} sivua)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Nimi",
+            "description": "Kuvaus",
+            "tags": "Tunnisteet",
+            "code": "Koodi",
+            "remaining_uses": "Jäljellä olevat käyttökerrat",
+            "active_period": "Aktiivinen jakso",
+            "effect": "Vaikutus",
+            "subscription_effect": "Tilausvaikutus",
+            "created_by": "Luonut",
+            "created_at": "Luotu",
+            "actions": "Toiminnot"
+          }
+        },
+        "period": {
+          "unlimited": "Rajoittamaton"
+        },
+        "trial": {
+          "days": "päivän kokeilujakso",
+          "no_trial": "Ei kokeilujaksoa",
+          "none": "Ei mitään"
+        },
+        "system": "Järjestelmä"
+      },
+      "special_events": {
+        "header": "Erikoistapahtumat",
+        "create": "Luo erikoistapahtuma",
+        "add": "Lisää erikoistapahtuma",
+        "results": "Löytyi {results.length} tulosta",
+        "attributes": {
+          "name": "Nimi",
+          "description": "Kuvaus",
+          "tags": "Tunnisteet",
+          "created_by": "Luonut",
+          "created_at": "Luotu",
+          "actions": "Toiminnot",
+          "create": "Luo",
+          "cancel": "Peruuta"
+        },
+        "system": "Järjestelmä",
+        "no_events": "Ei erikoistapahtumia"
+      },
+      "users": {
+        "id": {
+          "back": "Takaisin",
+          "last_updated": "Viimeksi päivitetty",
+          "search_last_update": "Haku viimeksi päivitetty",
+          "queued": "Päivitysjonossa",
+          "stripe": {
+            "customer": "Stripe-asiakas",
+            "view": "Näytä",
+            "no_customer": "Ei liitettyä Stripe-asiakasta",
+            "roles": "Roolit"
+          },
+          "actions": {
+            "header": "Toiminnot",
+            "sessions": {
+              "header": "Istunnot",
+              "create_session": "Luo uusi istunto",
+              "delete_all": "Poista kaikki istunnot",
+              "expiration": "Voimassaoloaika päättyy",
+              "token": "Tunnus",
+              "copy_token": "Kopioi tunnus",
+              "create": "Luo",
+              "close": "Sulje"
+            },
+            "connections": {
+              "header": "Liitännät",
+              "kick": "Linkitä Kick käsin",
+              "username": "Kick-käyttäjänimi"
+            },
+            "entitlements": {
+              "header": "Käyttöoikeudet",
+              "create": "Luo käyttöoikeuksia",
+              "assign": "Myönnä käyttöoikeudet käsin",
+              "assign_to": "Määritä käyttöoikeudet",
+              "remove_all": "Poista kaikki käyttöoikeudet",
+              "view": "Näytä käyttöoikeudet",
+              "showing": "Näytetään myönnetyt käyttöoikeudet"
+            }
+          },
+          "subscription": {
+            "header": "Tilaus",
+            "period": {
+              "header": "Tilausjaksot",
+              "key": "Avain",
+              "value": "Arvo",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Kopioi ULID",
+              "uuid": "Kopioi UUID"
+            },
+            "provider": {
+              "id": "Tarjoajan ID",
+              "view": "Näytä"
+            },
+            "product": {
+              "id": "Tuote ID",
+              "view": "Näytä",
+              "start": "Aloita",
+              "end": "Lopeta",
+              "is_trial": "Onko kokeilu?",
+              "auto_renew": "Automaattinen uusinta?",
+              "gifted": {
+                "header": "Saatu lahjaksi?",
+                "yes": "Kyllä",
+                "no": "Ei"
+              },
+              "created_by": "Luonut",
+              "redeem": "Lunasta koodi",
+              "invoice": "Lasku",
+              "system": "Järjestelmä",
+              "variant": "Tuotevariantti"
+            }
+          },
+          "not_found": "Käyttäjää ei löytynyt"
+        },
+        "layout": {
+          "users": "Käyttäjät"
+        },
+        "page": {
+          "manage": {
+            "header": "Hallitse",
+            "single_user": "Hallitse yksittäistä käyttäjää"
+          },
+          "actions": {
+            "header": "Toiminnot",
+            "sub_benefits_job": {
+              "header": "Tilausedut-tehtävä",
+              "manually": "Käynnistä tilausprosessi manuaalisesti uudelleen laskemaan käyttöoikeudet ja tilausedut kaikille käyttäjille.",
+              "rerun": "Suorita uudelleen"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Käytä emotea",
+      "add_to": "Lisää...",
+      "transfer": "Siirrä",
+      "merge": "Yhdistä",
+      "size": "Koko",
+      "copy_link": "Kopioi linkki"
+    },
+    "user": {
+      "about": "Tietoja",
+      "active_emotes": "Aktiiviset emotet",
+      "uploaded": "Ladatut",
+      "uploaded_emotes": "Ladatut emotet"
+    },
+    "settings": {
+      "account": {
+        "title": "Tili",
+        "profile": {
+          "details": "Mukauta asetuksia ja hallitse yksityiskohtia yksilöllisten tarpeidesi mukaan",
+          "display_name": "Näyttönimi",
+          "display_name_description": "Valitse ensisijainen yhteys, jota käytetään näyttönimeesi ja staattiseen profiilikuvaasi",
+          "profile_picture_description": "Valitse profiilikuva, joka näytetään kaikilla alustoilla",
+          "update_profile_picture": "Päivitä profiilikuva"
+        },
+        "connections": {
+          "details": "Hallitse ja linkitä ulkoisia tilejä virtaviivaistaaksesi pääsyä ja parantaaksesi yhteentoimivuutta alustan sisällä\n"
+        },
+        "security": {
+          "title": "Turvallisuus",
+          "details": "Hallinnoi ja mukauta tilisi turvallisuutta",
+          "2fa": "Kaksivaiheinen tunnistautuminen",
+          "2fa_details": "Paranna tilisi turvallisuutta kaksivaiheisella tunnistautumisella (2FA)",
+          "email_details": "Vastaanota vahvistuskoodi sähköpostitse",
+          "authenticator_app": "Tunnistautumissovellus",
+          "authenticator_app_details": "Asenna sovellus luodaksesi vahvistuskoodisi",
+          "sign_out_everywhere": "Kirjaudu ulos kaikkialta",
+          "sign_out_everywhere_details": "Varmista turvallisuus ja kirjaudu ulos kaikista laitteista yhdellä napsautuksella",
+          "delete_account_details": "Poista kaikki henkilökohtaiset tiedot ja niihin liittyvät tiedot alustalta pysyvästi, tilisi lopetetaan"
+        }
+      },
+      "appearance": {
+        "title": "Ulkoasu",
+        "details": "Muuta ulkoasua ja tuntumaa",
+        "theme": {
+          "header": "Teema",
+          "options": {
+            "system": "Järjestelmä",
+            "dark": "Tumma",
+            "light": "Vaalea"
+          }
+        },
+        "motion": {
+          "header": "Vähennetty liikkuvuus",
+          "options": {
+            "system": "Järjestelmä",
+            "enabled": "Käytössä",
+            "disbaled": "Ei käytössä"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Sivuston asettelu",
+          "options": {
+            "ltr": "Vasemmalta oikealle",
+            "rtl": "Oikealta vasemmalle"
+          }
+        }
+      },
+      "editors": {
+        "details": "Hallinnoi ja muokkaa muokkaajiasi tai kanavia, joille muokkaat",
+        "editing_for": "Muokkaajana",
+        "add_editor": "Lisää muokkaaja",
+        "not_allowed": "Sinulla ei ole oikeutta hallita tämän käyttäjän muokkaajia"
+      },
+      "notifications": {
+        "details": "Reaaliaikaiset päivitykset ja hälytykset, jotka pitävät käyttäjät ajan tasalla tärkeistä tapahtumista, viesteistä ja toiminnoista verkkosivustolla tai sovelluksessa"
+      },
+      "blocked": {
+        "title": "Estetty",
+        "details": "Hallinnoi rajoitettua tai kiellettyä sisältöä, käyttäjiä tai toimintoja",
+        "add_user": "Lisää estetty käyttäjä"
+      },
+      "billing": {
+        "title": "Laskutus",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Käytä tilauskrediittejä",
+          "use_credits_details": "Tilauskrediittisi käytetään ensin seuraavan laskutuksen yhteydessä",
+          "cancelled": "Tilaus peruutettu",
+          "cancelled_details": "Tilauksesi on peruutettu ja etusi päättyy {date}"
+        },
+        "history": {
+          "title": "Laskutushistoria",
+          "details": "Katso kaikki tiliisi liittyvät maksutapahtumat, kuten aiemmat laskutusotteet ja tapahtumat"
+        },
+        "payment_methods": {
+          "details": "Tarkista ja päivitä haluamasi maksutavat",
+          "add_new": "Lisää uusi",
+          "card": {
+            "title": "Kortin tiedot",
+            "ends_in": "Päättyy {digits}",
+            "expires": "Päättyy {month}/{year}",
+            "address": "Osoite",
+            "name": "Nimi"
+          }
+        },
+        "table": {
+          "status": "Tila",
+          "amount": "Määrä",
+          "invoice": "Lasku"
+        }
+      },
+      "user_table": {
+        "name": "Nimi",
+        "last_modified": "Viimeksi muokattu",
+        "permissions": "Luvat"
+      }
+    },
+    "link": {
+      "linking": "Yhdistetään tiliäsi...",
+      "linking_successful": "Tilisi on onnistuneesti yhdistetty",
+      "linking_failed": "Yhdistäminen epäonnistui"
+    },
+    "extension": {
+      "login": "Kirjaudutaan sisään...",
+      "login_successful": "Kirjauduttu sisään",
+      "login_failed": "Kirjautuminen epäonnistui",
+      "window": "Varmista, että avaat tämän ikkunan laajennuksen kautta"
+    }
+  }
+}

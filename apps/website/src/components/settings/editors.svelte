@@ -419,7 +419,7 @@
 				<tr class="data-row">
 					<td class="shrink" colspan="4">
 						<div class="no-data-container">
-							<span class="no-data">No editors to show</span>
+							<span class="no-data">{$t("dialogs.editor.no_editors")}</span>
 						</div>
 					</td>
 				</tr>

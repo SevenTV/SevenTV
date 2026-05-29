@@ -7,6 +7,7 @@
 	import "$/lib/i18n";
 	import "$/lib/emoteSets";
 	import TopNav from "$/components/nav/top-nav.svelte";
+	import { isValentinesEvent } from "$/lib/events";
 	import {
 		showMobileMenu,
 		showConstructionBar,
@@ -16,11 +17,13 @@
 		defaultEmoteSetDialogMode,
 		showEasterBar,
 		showSummerGift,
+		showXmasBar,
+		showValentinesBar,
 	} from "$/lib/layout";
 	import summerBeachIcon from "$assets/summer-beach.webp?url";
 	import Menu from "$/components/nav/menu.svelte";
 	import { beforeNavigate } from "$app/navigation";
-	import { IconContext, Warning, X, CaretDown } from "phosphor-svelte";
+	import { IconContext, Warning, X, CaretDown, Heart } from "phosphor-svelte";
 	import PaintComponent from "$/components/paint.svelte";
 	import BadgeComponent from "$/components/badge.svelte";
 	import UploadDialog from "$/components/dialogs/upload-dialog.svelte";
@@ -33,12 +36,23 @@
 	import { PUBLIC_DISCORD_LINK, PUBLIC_OLD_WEBSITE_LINK } from "$env/static/public";
 	import type { Badge, Maybe, Paint } from "$/gql/graphql";
 	import Button from "../components/input/button.svelte";
+	import Hearts from "../components/hearts.svelte";
 	import { graphql } from "$/gql";
 	import { gqlClient } from "$/lib/gql";
 	const summerBadgeID = "01JZX7H1H6QERDGF8QRA2ZAKPW";
 	const summerPaintID = "01JZ3NFYMT7NBFMEP0HKJTV5W8";
+	const xmasBadgeID = "01KCEQKHXY2WYWAQZM0QHQXRQ5";
+	const valentinesBadgeID = "01KH9H6MEQMRS1N2S3HT3TJ9JQ";
+	const valentinesPaintID = "01KH9GC158GSBAHYSQF2SQM8HT";
 	let summerPaintData = $state<Maybe<Paint>[]>([]);
 	let summerBadgeData = $state<Maybe<Badge>[]>([]);
+	let valentinesPaintData = $state<Maybe<Paint>[]>([]);
+	let valentinesBadgeData = $state<Maybe<Badge>[]>([]);
+	let xmasBadgeData = $state<Maybe<Badge>[]>([]);
+
+	
+		
+
 	async function getAllCosmetics() {
 		const res = await gqlClient()
 			.query(
@@ -165,17 +179,13 @@
 		document.body.classList.toggle("summer-gift", $showSummerGift);
 
 		(async () => {
-			const cosmetics = await getAllCosmetics();
-			let paint = cosmetics.paints.find((paint: { id: string }) => paint.id === summerPaintID);
-			let badge = cosmetics.badges.find((badge: { id: string }) => badge.id === summerBadgeID);
-			summerPaintData = paint ? [paint as Maybe<Paint>] : [];
-			summerBadgeData = badge ? [badge as Maybe<Badge>] : [];
-			console.log("Summer Paint Data:", summerPaintData);
-			console.log("Summer Badge Data:", summerBadgeData);
+			// Xmas Event
 		})();
 	});
 </script>
-
+{#if isValentinesEvent()}
+	<Hearts />
+{/if}
 <IconContext values={{ size: 1.2 * 16, weight: "bold", style: "flex-shrink: 0" }}>
 	<header>
 		<a href="#main" class="skip-to-main">{$t("common.skip_to_content")}</a>
@@ -251,6 +261,99 @@
 					<span class="more-info">
 						You can gift 4 7TV subs to friends and earn the rewards above. Rewards are only
 						available during the event!
+					</span>
+					<br />
+					<Button href="/store" onclick={toggleExpand} primary>Interested? Click here</Button>
+				</div>
+			</div>
+		{/if}
+		{#if $showValentinesBar}
+			<div class="alert-bar">
+				<span class="main-text" style="display: flex; align-items: center; gap: 0.5rem;">
+					<Button
+						onclick={toggleExpand}
+						aria-expanded={expanded}
+						aria-label={expanded ? "Collapse details" : "Expand details"}
+						style="position: static; right: 70%; bottom: 0.5rem; z-index: 2;"
+					>
+						{#snippet icon()}
+							<CaretDown
+								style={`transform: rotate(${expanded ? 180 : 0}deg); transition: transform 0.2s;`}
+							/>
+						{/snippet}
+					</Button>
+					<img src={"https://cdn.7tv.app/emote/01GS60TYE80009HGJ10EGWF51F/4x.webp"} alt="Valentine Gift Icon" style="width: 3rem; height: 3rem; transform: scaleX(-1);" />
+					The Valentine's Gifting Event is Here!
+					<a href="/store"> Gift 6 times to receive a limited edition Valentine's Badge and Paint! </a>
+					<Button onclick={() => ($showValentinesBar = false)}>
+						{#snippet icon()}
+							<X />
+						{/snippet}
+					</Button>
+				</span>
+				<div class="extra-bar-content">
+					<br />
+					<div style="display: flex; gap: 5.5rem;">
+						{#if valentinesBadgeData.length > 0 && valentinesBadgeData[0]}
+							<BadgeComponent badge={valentinesBadgeData[0]} size={2 * 32} />
+						{/if}
+						{#if valentinesPaintData.length > 0 && valentinesPaintData[0]}
+							<div
+								style="display: flex; justify-content: center; align-items: center; width: 100%;"
+							>
+								<PaintComponent paint={valentinesPaintData[0]}>Valentine's Gifting</PaintComponent>
+							</div>
+						{/if}
+					</div>
+					<br />
+					<span class="more-info">
+						You can gift 6 7TV subs to friends and earn the rewards above. Rewards are only
+						available during the event!
+					</span>
+					<br />
+					<Button href="/store" onclick={toggleExpand} primary>Interested? Click here</Button>
+				</div>
+			</div>
+		{/if}
+		{#if $showXmasBar}
+			<div class="alert-bar">
+				<span class="main-text" style="display: flex; align-items: center; gap: 0.5rem;">
+					<Button
+						onclick={toggleExpand}
+						aria-expanded={expanded}
+						aria-label={expanded ? "Collapse details" : "Expand details"}
+						style="position: static; right: 70%; bottom: 0.5rem; z-index: 2;"
+					>
+						{#snippet icon()}
+							<CaretDown
+								style={`transform: rotate(${expanded ? 180 : 0}deg); transition: transform 0.2s;`}
+							/>
+						{/snippet}
+					</Button>
+					<img
+						src={"https://cdn.7tv.app/emote/01GE9XQ2FG000CYZNMHH7766W6/4x.webp"}
+						alt="Summer Gift Icon"
+						style="width: 3rem; height: 3rem;"
+					/>
+					The Xmas 2025 Gifting Event is here!
+					<a href="/store"> Gift 4 times to receive a limited edition Badge! </a>
+					<Button onclick={() => ($showXmasBar = false)}>
+						{#snippet icon()}
+							<X />
+						{/snippet}
+					</Button>
+				</span>
+				<div class="extra-bar-content">
+					<br />
+					<div style="display: flex; gap: 5.5rem;">
+						{#if xmasBadgeData.length > 0 && xmasBadgeData[0]}
+							<BadgeComponent badge={xmasBadgeData[0]} size={2 * 32} />
+						{/if}
+					</div>
+					<br />
+					<span class="more-info">
+						You can gift 4 7TV subs to friends and earn the reward above. This reward is only
+						available during the event.
 					</span>
 					<br />
 					<Button href="/store" onclick={toggleExpand} primary>Interested? Click here</Button>

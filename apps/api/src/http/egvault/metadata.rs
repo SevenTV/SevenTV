@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use shared::database::product::codes::RedeemCodeId;
+use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::{ProductId, StripeProductId, SubscriptionProductId};
 use shared::database::user::UserId;
 
@@ -47,11 +48,22 @@ pub struct SubscriptionMetadata {
 	rename_all_fields = "SCREAMING_SNAKE_CASE"
 )]
 pub enum CheckoutSessionMetadata {
-	Redeem { user_id: UserId, redeem_code_id: RedeemCodeId },
+	Redeem {
+		user_id: UserId,
+		redeem_code_id: RedeemCodeId,
+	},
 	Subscription,
 	Gift,
 	Setup,
-	Pickems { user_id: UserId, product_id: ProductId },
+	Pickems {
+		user_id: UserId,
+		product_id: ProductId,
+	},
+	CosmeticBundle {
+		user_id: UserId,
+		product_id: ProductId,
+		special_event_id: SpecialEventId,
+	},
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

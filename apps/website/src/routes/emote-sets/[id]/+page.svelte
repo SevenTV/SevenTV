@@ -34,17 +34,18 @@
 	import UserName from "$/components/user-name.svelte";
 	import UserProfilePicture from "$/components/user-profile-picture.svelte";
 	import HideOn from "$/components/hide-on.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
 
-	// let selectionMode = $state(false);
-	// let selectionMap = $state({});
+	let selectionMode = $state(false);
 	let editDialogMode: DialogMode = $state("hidden");
 	// let copyEmotesDialogMode: DialogMode = $state("hidden");
 	// let removeEmotesDialogMode: DialogMode = $state("hidden");
 
 	let query = $state("");
-
+	let emoteSetId = data.id;
+	let emoteSetName = data.name;
 	let timeout: NodeJS.Timeout | number | undefined; // not reactive
 
 	async function queryEmotes(
@@ -75,6 +76,7 @@
 										emotes(query: $query, page: $page, perPage: $perPage) {
 											__typename
 											items {
+												id
 												alias
 												flags {
 													zeroWidth
@@ -280,12 +282,6 @@
 	</div>
 	<div class="controls">
 		<div class="buttons">
-			<!-- <Button secondary onclick={() => (selectionMode = !selectionMode)} hideOnDesktop>
-				{$t("labels.select")}
-				{#snippet iconRight()}
-					<Toggle bind:value={selectionMode} />
-				{/snippet}
-			</Button> -->
 			{#if $user}
 				<!-- <HideOn mobile={selectionMode}> -->
 				{#if data.kind === EmoteSetKind.Normal && ($user.id === data.owner?.id || $user.permissions.user.manageAny || $user.editorFor.some((editor) => editor?.editorId === $user?.id && editor.permissions.user.manageProfile))}
@@ -312,9 +308,9 @@
 										disabled={setActiveLoading}
 									>
 										{#if isActive}
-											{$t("labels.disable")} for <UserName {user} />
+											{$t("labels.disable")} {$t("common.for")} <UserName {user} />
 										{:else}
-											{$t("labels.enable")} for <UserName {user} />
+											{$t("labels.enable")} {$t("common.for")} <UserName {user} />
 										{/if}
 										{#snippet icon()}
 											{#if isActive}
@@ -339,6 +335,12 @@
 					<Button secondary hideOnDesktop onclick={() => (editDialogMode = "shown")}>
 						{#snippet iconRight()}
 							<NotePencil />
+						{/snippet}
+					</Button>
+					<Button secondary onclick={() => (selectionMode = !selectionMode)}>
+						{$t("labels.select")}
+						{#snippet iconRight()}
+							<Toggle bind:value={selectionMode} />
 						{/snippet}
 					</Button>
 				{/if}
@@ -407,8 +409,12 @@
 		<EmoteLoader
 			bind:this={loader}
 			load={(page, perPage) => queryEmotes(query || undefined, page, perPage)}
-			scrollable={false}
 			setKind={data.kind}
+			scrollable={false}
+			{emoteSetName}
+			{emoteSetId}
+			bind:selectionMode
+			isDeletionMode={true}
 		/>
 	</div>
 </div>

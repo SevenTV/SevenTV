@@ -31,7 +31,7 @@
 				</TabLink>
 			{/if}
 			<TabLink
-				title="Appearance"
+				title={$t("pages.settings.appearance.title")}
 				href="/settings/appearance"
 				matcher={(page, href) => !!href && page.url.pathname.startsWith(href)}
 				big

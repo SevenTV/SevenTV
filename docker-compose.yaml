@@ -8,8 +8,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${MONGO_MEMORY:-4G}
-    command: --replSet rs0 
+          memory: ${MONGO_MEMORY:-2G}
+    command: --replSet rs0
     volumes:
       - mongodb:/data/db
 
@@ -24,7 +24,7 @@ services:
      - -c
      - |
       set -eux;
-      mongosh --host mongodb --eval 'rs.initiate({
+      mongosh --host 127.0.0.1 --eval 'rs.initiate({
         _id: "rs0",
         version: 1,
         members: [
@@ -45,7 +45,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${TYPESENSE_MEMORY:-4G}
+          memory: ${TYPESENSE_MEMORY:-2G}
 
   nats:
     image: nats:latest
@@ -53,81 +53,83 @@ services:
     restart: unless-stopped
     ports:
       - "${NATS_BIND:-127.0.0.1:4222}:4222"
-    command: -js -sd /data 
+    command: -js -sd /data
     volumes:
       - nats:/data
     deploy:
       resources:
         limits:
-          memory: ${NATS_MEMORY:-4G}
+          memory: ${NATS_MEMORY:-2G}
 
-  # minio:
-  #   image: ghcr.io/scuffletv/ci/minio:latest
-  #   pull_policy: "always"
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${MINIO_BIND:-127.0.0.1:9000}:9000"
-  #     - "${MINIO_CONSOLE_BIND:-127.0.0.1:9001}:9001"
-  #   environment:
-  #     - "MINIO_ACCESS_KEY=seventvkey"
-  #     - "MINIO_SECRET_KEY=seventvkey" 
-  #   volumes:
-  #     - minio:/data
-  #   command: server /data --console-address ":9001"
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: ${MINIO_MEMORY:-4G}
+  minio:
+     image: docker.io/minio/minio
+     pull_policy: "always"
+     restart: unless-stopped
+     ports:
+       - "${MINIO_BIND:-127.0.0.1:9000}:9000"
+       - "${MINIO_CONSOLE_BIND:-127.0.0.1:9001}:9001"
+     environment:
+       - "MINIO_ACCESS_KEY=seventvkey"
+       - "MINIO_SECRET_KEY=seventvkey"
+     volumes:
+       - minio:/data
+     command: server /data --console-address ":9001"
+     deploy:
+       resources:
+         limits:
+           memory: ${MINIO_MEMORY:-2G}
 
-  # minio-setup:
-  #   image: minio/mc:latest
-  #   pull_policy: "always"
-  #   restart: "no"
-  #   depends_on:
-  #     - minio
-  #   entrypoint:
-  #     - /bin/sh
-  #     - -c
-  #     - |
-  #       set -eux;
-  #       /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey || true; 
-  #       /usr/bin/mc mb myminio/seventv-cdn || true;
-  #       /usr/bin/mc anonymous set download myminio/seventv-cdn || true;
-  #       /usr/bin/mc mb myminio/seventv-cdn-private || true;
-  #       exit 0;
+  minio-setup:
+     image: minio/mc:latest
+     pull_policy: "always"
+     restart: "no"
+     depends_on:
+       - minio
+     entrypoint:
+       - /bin/sh
+       - -c
+       - |
+         set -eux;
+         /usr/bin/mc config host add myminio http://minio:9000 seventvkey seventvkey || true;
+         /usr/bin/mc mb myminio/seventv-cdn || true;
+         /usr/bin/mc anonymous set download myminio/seventv-cdn || true;
+         /usr/bin/mc mb myminio/seventv-cdn-private || true;
+         exit 0;
 
-  # image-processor:
-  #   image: ghcr.io/scuffletv/image-processor:latest
-  #   pull_policy: "always"
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${IMAGE_PROCESSOR_BIND:-127.0.0.1:50051}:50051"
-  #   command: --config /config/image-processor.toml
-  #   volumes:
-  #     - ./dev/image-processor.toml:/config/image-processor.toml
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: ${IMAGE_PROCESSOR_CPUS:-1}
-  #         memory: ${IMAGE_PROCESSOR_MEMORY:-4G}
-  #   depends_on:
-  #     - mongodb
-  #     - nats
-  #     - minio
+  image-processor:
+     image: ghcr.io/seventv/image-processor:latest
+     pull_policy: "always"
+     restart: unless-stopped
+     ports:
+       - "${IMAGE_PROCESSOR_BIND:-127.0.0.1:50051}:50051"
+     command: --config /config/image-processor.toml
+     volumes:
+       - ./dev/image-processor.toml:/config/image-processor.toml
+     deploy:
+       resources:
+         limits:
+           cpus: ${IMAGE_PROCESSOR_CPUS:-1}
+           memory: ${IMAGE_PROCESSOR_MEMORY:-2G}
+     depends_on:
+       - mongodb
+       - nats
+       - minio
 
-  # clickhouse:
-  #   image: bitnami/clickhouse:latest
-  #   pull_policy: "always"
-  #   restart: unless-stopped
-  #   # user: root
-  #   ports:
-  #     - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
-  #     - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"
-  #   environment:
-  #     - CLICKHOUSE_ADMIN_USER=default
-  #     - CLICKHOUSE_ADMIN_PASSWORD=default
-  #   volumes:
-  #     - clickhouse:/bitnami/clickhouse
+  clickhouse:
+     image: clickhouse:latest
+     pull_policy: "always"
+     restart: unless-stopped
+     user: root
+     ports:
+       - "${CLICKHOUSE_BIND:-127.0.0.1:8123}:8123"
+       - "${CLICKHOUSE_BIND:-127.0.0.1:19000}:9000"
+     environment:
+       - CLICKHOUSE_ADMIN_USER=default
+       - CLICKHOUSE_ADMIN_PASSWORD=default
+       - CLICKHOUSE_USER=default
+       - CLICKHOUSE_PASSWORD=default
+     volumes:
+       - clickhouse:/bitnami/clickhouse
 
   redis:
     image: bitnami/redis:latest
@@ -140,14 +142,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${REDIS_MEMORY_LIMIT:-4G}
+          memory: ${REDIS_MEMORY_LIMIT:-2G}
     volumes:
       - redis:/bitnami/redis/data
 
 volumes:
   mongodb:
   typesense:
-  # minio:
+  minio:
   nats:
   clickhouse:
   redis:

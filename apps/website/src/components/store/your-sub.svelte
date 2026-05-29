@@ -185,7 +185,7 @@
 {#if giftSubVariant}
 	<GiftSubscriptionDialog bind:mode={giftSubDialog} variant={giftSubVariant} />
 {/if}
-<StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : "Become a subscriber"}>
+<StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : $t("pages.store.subscription.beomce_a_subscriber")}>
 	{#snippet header()}
 		<div class="buttons">
 			{#if subInfo.activePeriod}

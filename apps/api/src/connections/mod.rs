@@ -106,6 +106,7 @@ pub struct PlatformUserData {
 	pub username: String,
 	pub display_name: String,
 	pub avatar: Option<String>,
+	pub email: Option<String>,
 }
 
 #[tracing::instrument(skip(global, access_token))]

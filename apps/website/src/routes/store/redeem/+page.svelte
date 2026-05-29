@@ -1,133 +1,142 @@
 <script lang="ts">
-	import Button from "$/components/input/button.svelte";
-	import TextInput from "$/components/input/text-input.svelte";
-	import Spinner from "$/components/spinner.svelte";
-	import { graphql } from "$/gql";
-	import { gqlClient } from "$/lib/gql";
-	import { CaretRight, Check, Gift } from "phosphor-svelte";
-	import { t } from "svelte-i18n";
-	import { user } from "$lib/auth";
-	import Banner from "$/components/store/banner.svelte";
-	import StoreSection from "$/components/store/store-section.svelte";
-	import type { PageData } from "./$types";
-	import { signInDialogMode } from "$/lib/layout";
-	import { page } from "$app/stores";
-	import { goto } from "$app/navigation";
+    import Button from "$/components/input/button.svelte";
+    import TextInput from "$/components/input/text-input.svelte";
+    import Spinner from "$/components/spinner.svelte";
+    import { graphql } from "$/gql";
+    import { gqlClient } from "$/lib/gql";
+    import { CaretRight, Check, Gift } from "phosphor-svelte";
+    import { t } from "svelte-i18n";
+    import { user } from "$lib/auth";
+    import Banner from "$/components/store/banner.svelte";
+    import StoreSection from "$/components/store/store-section.svelte";
+    import type { PageData } from "./$types";
+    import { signInDialogMode } from "$/lib/layout";
+    import { page } from "$app/stores";
+    import { goto } from "$app/navigation";
+    //import { PUBLIC_RECAPTCHA_SITE_KEY } from "$env/static/public";
 
-	let { data }: { data: PageData } = $props();
+    let { data }: { data: PageData } = $props();
 
-	let code = $state(data.code ?? "");
-	let redeemState = $state<"idle" | "loading" | "success">("idle");
+	
+    let code = $state(data.code ?? "");
+    let redeemState = $state<"idle" | "loading" | "success">("idle");
 
-	$effect(() => {
-		let url = new URL($page.url);
+    $effect(() => {
+        let url = new URL($page.url);
 
-		if (code) {
-			url.searchParams.set("code", code);
-		} else {
-			url.searchParams.delete("code");
-		}
+        if (code) {
+            url.searchParams.set("code", code);
+        } else {
+            url.searchParams.delete("code");
+        }
 
-		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-	});
+        goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+    });
 
-	async function submit(e: SubmitEvent) {
-		e.preventDefault();
+    async function submit(e: SubmitEvent) {
+        e.preventDefault();
 
-		if (!$user) {
-			$signInDialogMode = "shown";
-			return;
-		}
+        if (!$user) {
+            $signInDialogMode = "shown";
+            return;
+        }
 
-		redeemState = "loading";
+        redeemState = "loading";
 
-		const res = await gqlClient()
-			.mutation(
-				graphql(`
-					mutation RedeemRedeemCode($userId: Id!, $code: String!) {
-						billing(userId: $userId) {
-							redeemCode(code: $code) {
-								checkoutUrl
-							}
-						}
-					}
-				`),
-				{ userId: $user.id, code },
-			)
-			.toPromise();
+        try {
+            // @ts-ignore
+            grecaptcha.ready(() => {
+                // @ts-ignore
+                grecaptcha.execute(PUBLIC_RECAPTCHA_SITE_KEY, { action: 'redeem' }).then(async (token: string) => {
+                    const res = await gqlClient()
+                        .mutation(
+                            graphql(`
+                                mutation RedeemRedeemCode($userId: Id!, $code: String!, $captchaToken: String!) {
+                                    billing(userId: $userId) {
+                                        redeemCode(code: $code, captchaToken: $captchaToken) {
+                                            checkoutUrl
+                                        }
+                                    }
+                                }
+                            `),
+                            { userId: $user.id, code, captchaToken: token },
+                        )
+                        .toPromise();
 
-		if (res.data) {
-			if (res.data.billing.redeemCode.checkoutUrl) {
-				window.location.href = res.data.billing.redeemCode.checkoutUrl;
-			}
-
-			redeemState = "success";
-		} else {
-			redeemState = "idle";
-		}
-	}
+                    if (res.data?.billing.redeemCode.checkoutUrl) {
+                        window.location.href = res.data.billing.redeemCode.checkoutUrl;
+                        redeemState = "success";
+                    } else {
+                        redeemState = "idle";
+                    }
+                });
+            });
+        } catch (err) {
+            redeemState = "idle";
+        }
+    }
 </script>
 
 <svelte:head>
-	<title>{$t("pages.store.redeem.title")} - {$t("page_titles.suffix")}</title>
+    <title>{$t("pages.store.redeem.title")} - {$t("page_titles.suffix")}</title>
+    <script src="https://www.google.com/recaptcha/api.js?render={PUBLIC_RECAPTCHA_SITE_KEY}"></script>
 </svelte:head>
 
 <Banner
-	title={$t("pages.store.redeem.header")}
-	subtitle={$t("pages.store.redeem.subtitle")}
-	gradientColor="#ff11bc"
+    title={$t("pages.store.redeem.header")}
+    subtitle={$t("pages.store.redeem.subtitle")}
+    gradientColor="#ff11bc"
 />
 
 <div class="grid">
-	<StoreSection title={$t("pages.store.redeem.header")}>
-		<form class="redeem" onsubmit={submit}>
-			<TextInput
-				placeholder={$t("labels.redeem")}
-				style="flex-grow: 1"
-				disabled={redeemState !== "idle"}
-				bind:value={code}
-			>
-				<span class="label">Code</span>
-				{#snippet icon()}
-					<Gift />
-				{/snippet}
-			</TextInput>
-			<Button secondary submit disabled={redeemState !== "idle" || !code} style="align-self: end">
-				{$t("pages.store.redeem.title")}
-				{#snippet iconRight()}
-					{#if redeemState === "idle"}
-						<CaretRight />
-					{:else if redeemState === "loading"}
-						<Spinner />
-					{:else if redeemState === "success"}
-						<Check />
-					{/if}
-				{/snippet}
-			</Button>
-		</form>
-	</StoreSection>
+    <StoreSection title={$t("pages.store.redeem.header")}>
+        <form class="redeem" onsubmit={submit}>
+            <TextInput
+                placeholder={$t("labels.redeem")}
+                style="flex-grow: 1"
+                disabled={redeemState !== "idle"}
+                bind:value={code}
+            >
+                <span class="label">{$t("pages.store.redeem.code")}</span>
+                {#snippet icon()}
+                    <Gift />
+                {/snippet}
+            </TextInput>
+            <Button secondary submit disabled={redeemState !== "idle" || !code} style="align-self: end">
+                {$t("pages.store.redeem.title")}
+                {#snippet iconRight()}
+                    {#if redeemState === "idle"}
+                        <CaretRight />
+                    {:else if redeemState === "loading"}
+                        <Spinner />
+                    {:else if redeemState === "success"}
+                        <Check />
+                    {/if}
+                {/snippet}
+            </Button>
+        </form>
+    </StoreSection>
 </div>
 
 <style lang="scss">
-	.label {
-		font-size: 0.75rem;
-		font-weight: 500;
-	}
+    .label {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
 
-	.grid {
-		max-width: 25rem;
-		margin-top: 1rem;
-		margin-inline: auto;
-	}
+    .grid {
+        max-width: 25rem;
+        margin-top: 1rem;
+        margin-inline: auto;
+    }
 
-	.redeem {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
+    .redeem {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
 
-		& :global(input) {
-			// Monospace for redeem codes
-			font-family: monospace, "Inter", sans-serif;
-		}
-	}
+        & :global(input) {
+            font-family: monospace, "Inter", sans-serif;
+        }
+    }
 </style>

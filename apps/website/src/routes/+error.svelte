@@ -1,22 +1,23 @@
 <script lang="ts">
 	import Error from "$/components/error.svelte";
 	import { page } from "$app/stores";
+	import { t } from "svelte-i18n";
 
 	function defaultDetails(status: number): string {
 		if (status === 401) {
-			return "You are unauthorized to view this page.";
+			return $t("page_errors.unauthorized");
 		} else if (status === 403) {
-			return "You do not have permission to view this page.";
+			return $t("page_errors.forbidden");
 		} else if (status === 404) {
-			return "The page you were looking for could not be found.";
+			return $t("page_errors.not_found");
 		} else if (status === 500) {
-			return "You can try refreshing the page. If the problem persists, please contact us.";
+			return $t("page_errors.unexpected");
 		} else {
-			return "An error occurred.";
-		}
+			return $t("page_errors.generic");
+		} 
 	}
 
-	let title = $derived($page.error?.message ?? "Error");
+	let title = $derived($page.error?.message ?? $t("dialogs.error.title"));
 	let details = $derived($page.error?.details ?? defaultDetails($page.status));
 </script>
 

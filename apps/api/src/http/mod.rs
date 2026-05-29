@@ -46,6 +46,24 @@ const ALLOWED_CORS_HEADERS: &[&str] = &[
 	"x-ignore-auth-failure",
 ];
 
+pub fn root_origin_match(allowed: &url::Url, test: &url::Url) -> bool {
+	if allowed.origin() == test.origin() {
+		return true;
+	}
+
+	let allowed_root = match allowed.origin() {
+		url::Origin::Tuple(_, url::Host::Domain(domain), _) => Some(domain),
+		_ => None,
+	};
+
+	let test_domain = match test.origin() {
+		url::Origin::Tuple(_, url::Host::Domain(domain), _) => Some(domain),
+		_ => None,
+	};
+
+	test_domain.is_some_and(|t| allowed_root.is_some_and(|a| t.ends_with(a.as_str())))
+}
+
 fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 	let mut allowed_origins = global.config.api.cors_allowed_credential_origins.clone();
 	allowed_origins.push(global.config.api.old_website_origin.clone());
@@ -57,7 +75,7 @@ fn cors_layer(global: &Arc<Global>) -> CorsLayer {
 			.to_str()
 			.ok()
 			.and_then(|o| url::Url::parse(o).ok())
-			.map(|o| allowed_origins.iter().any(|allowed| allowed.origin() == o.origin()))
+			.map(|o| allowed_origins.iter().any(|allowed| root_origin_match(allowed, &o)))
 			.unwrap_or_default()
 	});
 

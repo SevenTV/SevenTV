@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV-admin",
+    "trending_emotes": "Trendande emotes",
+    "top_emotes": "Populära emotes",
+    "global_emotes": "Globala emotes",
+    "new_emotes": "Nya emotes",
+    "bookmarked_emotes": "Sparade emotes",
+    "bookmarked_emote_sets": "Sparade Emote-set",
+    "bookmarked_users": "Sparade användare",
+    "account_settings": "Kontoinställningar",
+    "editor_settings": "Inställningar för redigerare",
+    "notification_settings": "Notisinställningar",
+    "blocked_settings": "Inställningar för blockeringar",
+    "billing_settings": "Faktureringsinställningar",
+    "admin_emote_public_listing": "Förfrågningar om publicering",
+    "admin_emote_personal_use": "Förfrågningar om personligt bruk",
+    "admin_emote_resolved": "Lösta emote-ärenden"
+  },
+  "page_errors": {
+    "not_found": "Sidan du sökte kunde inte hittas.",
+    "forbidden": "Du saknar behörighet att visa denna sida.",
+    "unauthorized": "Du är inte behörig att visa denna sida.",
+    "unexpected": "Prova att ladda om sidan. Kontakta oss om problemet kvarstår.",
+    "generic": "Ett fel uppstod.",
+    "emote_set_load": "Kunde inte ladda Emote-set",
+    "emote_set_not_found": "Emote-set hittades inte",
+    "user": "Kunde inte ladda användare"
+  },
+  "words": {
+    "from": "från",
+    "to": "till",
+    "with": "med",
+    "by": "av"
+  },
+  "common": {
+    "sign_in": "Logga in",
+    "sign_out": "Logga ut",
+    "go_back": "Gå tillbaka",
+    "super_admin": "Super-admin",
+    "skip_to_content": "Hoppa till innehåll",
+    "emotes": "{count, plural,one {Emote} other {Emotes}}",
+    "emote_sets": "{count, plural,one {Emote-set} other {Emote-set}}",
+    "users": "{count, plural,one {Användare} other {Användare}}",
+    "channels": "{count, plural,one {Kanal} other {Kanaler}}",
+    "followers": "{count, plural,one {Följare} other {Följare}}",
+    "items": "{count, plural,one {Föremål} other {Föremål}}",
+    "subscriptions": "{count, plural,one {Prenumeration} other {Prenumerationer}}",
+    "payment_methods": "{count, plural,one {Betalningsmetod} other {Betalningsmetoder}}",
+    "date": "Datum",
+    "help": "Hjälp",
+    "for": "för",
+    "error": "Fel",
+    "loading": "Laddar...",
+    "paint_bundles": "Paint-paket",
+    "notifications": "Notiser",
+    "connections": "Anslutningar",
+    "direct_messages": "Direktmeddelanden",
+    "mod_comments": "Mod-kommentarer",
+    "profile_picture": "Profilbild",
+    "suggested_emotes": "Rekommenderade emotes",
+    "personal_emotes": "Personliga emotes",
+    "no_more_emotes": "Inga fler emotes",
+    "no_emotes": "Inga emotes",
+    "your_subscription": "Din prenumeration",
+    "theme": "Tema",
+    "language": "Språk",
+    "developer_portal": "Utvecklarportal",
+    "faq": "Vanliga frågor",
+    "faq_short": "Vanliga frågor",
+    "privacy": "Integritetspolicy",
+    "tos": "Användarvillkor",
+    "trending": "Trendande",
+    "top": "Populära",
+    "global": "Globala",
+    "new": "Nytt",
+    "Weekly": "Denna vecka",
+    "Monthly": "Denna månad",
+    "Today": "Idag",
+    "news": "Nyheter",
+    "Default_set": "Standard-set",
+    "following": "Följer",
+    "activity": "Aktivitet",
+    "analytics": "Statistik",
+    "statistics": "Statistik",
+    "contact": "Kontakt",
+    "cosmetics": "Kosmetiska föremål",
+    "editors": "Redigerare",
+    "active": "Aktiv",
+    "profile": "Profil",
+    "pinned": "Fastnålade",
+    "settings": "Inställningar",
+    "delete_account": "Ta bort konto"
+  },
+  "labels": {
+    "enter_text": "Ange text",
+    "redeem": "Ange kod",
+    "search": "Sök",
+    "refetch": "Hämta igen",
+    "manage_connections": "Hantera anslutningar",
+    "manage_editors": "Hantera redigerare",
+    "none": "Ingen",
+    "search_user": "Sök användare",
+    "search_country": "Sök land",
+    "search_emote_set": "Sök Emote-set",
+    "search_users": "{count, plural,one {Sök en användare} other {Sök användare}}",
+    "tags": "Taggar",
+    "close": "Stäng",
+    "contribute": "Bidra",
+    "enter_tags": "Ange taggar",
+    "tag_limit_reached": "Gränsen för {limit} taggar uppnådd",
+    "filters": "Filter",
+    "no_filters": "Inga filter",
+    "emote_name": "Emote-namn",
+    "copy_link": "Kopiera länk",
+    "create_emote_set": "Skapa nytt Emote-set",
+    "emote_set_name": "Namn på Emote-set",
+    "emote_attribution": "Emote-kreditering",
+    "select": "Välj",
+    "selection_mode": "Markeringsläge",
+    "edit": "Redigera",
+    "capacity": "Utrymme",
+    "enable": "Aktivera",
+    "disable": "Inaktivera",
+    "disabled": "Inaktiverad",
+    "more": "Mer",
+    "actions": "Åtgärder",
+    "download": "Ladda ner",
+    "report": "Anmäl",
+    "delete": "Ta bort",
+    "time_select": {
+      "week": "Denna vecka",
+      "month": "Denna månad",
+      "year": "Detta år"
+    },
+    "gift": "Ge bort",
+    "follow": "Följ",
+    "connect": "Anslut",
+    "disconnect": "Koppla från",
+    "email": "E-post",
+    "password": "Lösenord",
+    "all": "Alla",
+    "other": "Annat",
+    "cancel": "Avbryt",
+    "confirm": "Bekräfta",
+    "proceed": "Fortsätt",
+    "save": "Spara",
+    "remove": "Ta bort",
+    "accept": "Acceptera",
+    "deny": "Neka",
+    "enter": "Ange"
+  },
+  "themes": {
+    "system": "System",
+    "dark": "Mörkt",
+    "light": "Ljust"
+  },
+  "flags": {
+    "global": "Globala",
+    "trending": "Trendande",
+    "overlaying": "Överlappande",
+    "default": "Standard",
+    "personal": "Personlig",
+    "listed": "Listad",
+    "unlisted": "Olistad",
+    "personal_use": "Personligt bruk",
+    "deleted": "Borttagen",
+    "private": "Privat",
+    "personal_use_approved": "Godkänd för personligt bruk",
+    "personal_use_denied": "Ej godkänd för personligt bruk",
+    "personal_use_pending": "Personligt bruk väntar på granskning",
+    "renamed": "Namnändrad",
+    "nsfw": "Känsligt innehåll",
+    "editor_flags": {
+      "pending": "Väntande",
+      "accepted": "Godkänd",
+      "rejected": "Nekad",
+      "you_accepted": "Du godkände",
+      "you_rejected": "Du nekade"
+    }
+  },
+  "notifications": {
+    "system": "System",
+    "approved_for_public": "Din emote {emote} har godkänts för att listas offentligt."
+  },
+  "sub_info": {
+    "plan": "Plan",
+    "free": "Gratis",
+    "gifted_by": "Gåva från",
+    "ends": "Prenumerationen går ut",
+    "total": "Totalt",
+    "credits": "Prenumerationskrediter"
+  },
+  "file_limits": {
+    "max_size": "Maximal filstorlek {size}",
+    "max_resolution": "Maximal upplösning {width}x{height}",
+    "max_frames": "Max antal bildrutor: {count}",
+    "resolution_error": "Upplösningen får inte överstiga {width}x{height}",
+    "duration_error": "Längden får vara högst {duration} sekunder"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Logga in på 7TV",
+      "subtitle": "Logga in eller skapa ett konto för att fortsätta",
+      "continue_with": "Fortsätt med {platform}",
+      "trouble": "Problem med att logga in?",
+      "legal_yapping": "Genom att logga in godkänner du våra",
+      "and": "och",
+      "linking_new": "Har du redan ett 7TV-konto och vill lägga till en ny anslutning? Logga in med din befintliga anslutning och lägg till den nya i",
+      "settings": "inställningar"
+    },
+    "search": {
+      "emotes": "Emotes",
+      "users": "Användare"
+    },
+    "upload": {
+      "title": "Ladda upp emote",
+      "untitled": "Namnlös",
+      "chat": "Skicka meddelande",
+      "drag_drop": "Dra och släpp för att ladda upp, eller",
+      "browse_files": "Välj filer",
+      "accept_rules": "Jag godkänner reglerna och riktlinjerna",
+      "discard": "Kasta",
+      "upload_guidelines": "Riktlinjer för uppladdning",
+      "upload": "Ladda upp"
+    },
+    "emote_set": {
+      "title": "Aktivt Emote-set",
+      "create": "Skapa Emote-set",
+      "name": "Namn på Emote-set",
+      "label": "Namn",
+      "confirm": "Skapa",
+      "copy_set": "Kopiera set",
+      "special": "Special",
+      "favourite_sets": {
+        "title": "Favorit-set",
+        "add": "Lägg till och byt namn på alla",
+        "remove": "Ta bort från alla"
+      },
+      "mass_select_feature": {
+        "add": "Lägg till i Emote-set",
+        "remove": "Ta bort från Emote-set",
+        "amount_selected_label": "/20 valda"
+      },
+      "default_emote_set": {
+        "remove": "Ta bort emote från {set}",
+        "add": "Lägg till emote till {set}",
+        "conflicting_name": "Upptaget namn"
+      }
+    },
+    "manage_aliases": {
+      "title": "Hantera emote-alias",
+      "add_placeholder": "Lägg till nytt alias.."
+    },
+    "rename_emote": {
+      "title": "Byt namn på emote i {set}",
+      "input_placeholder": "Nytt namn",
+      "confirmation_message": "Är du säker på att du vill byta namn på denna emote i {set}?",
+      "confirm": "Byt namn"
+    },
+    "remove_emote_from_set": {
+      "title": "Ta bort emote från {set}",
+      "warning_message": "Är du säker på att du vill ta bort {emote} från {set}?",
+      "confirm": "Ta bort"
+    },
+    "add_emote": {
+      "title": "Lägg till {emote} i",
+      "change_name": "Byt namn på emote",
+      "confirm": "Bekräfta",
+      "confirm_changes": "{count, plural,one {Bekräfta 1 ändring} other {Bekräfta {count} ändringar}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Emote-kö",
+      "activity": "Aktivitet",
+      "comments": "Kommentarer"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Lägg till/Ta bort emote",
+      "edit_emote_alias": "Redigera alias",
+      "remove_emote": "Ta bort emote från set",
+      "open_in_new_tab": "Öppna i ny flik",
+      "copy_emote_link": "Kopiera länk till emote"
+    },
+    "cart": {
+      "title": "Din varukorg",
+      "duration": "Längd",
+      "price": "Pris",
+      "preview": "Förhandsvisning",
+      "purchase_as_gift": "Köp som gåva",
+      "total": "Totalt"
+    },
+    "editor": {
+      "permissions": "Ställ in behörigheter för redigerare",
+      "super_admin": "Super-admin",
+      "emote_sets": "Emote-set",
+      "admin": "Admin",
+      "emotes": "Emotes",
+      "user": "Användare",
+      "manage_personal_emotes": "Hantera personligt Emote-set",
+      "confirm": "Bekräfta",
+      "no_editors": "Inga redigerare att visa",
+      "permissions_details": {
+        "manage": "Hantera",
+        "create": "Skapa",
+        "transfer": "Överför",
+        "manage_profile": "Hantera profil",
+        "manage_emotes": "Hantera emotes",
+        "manage_billing": "Hantera fakturering",
+        "manage_editors": "Hantera redigerare",
+        "view_billing": "Visa faktureringsuppgifter"
+      }
+    },
+    "emote_info": {
+      "processing": "Denna emote bearbetas fortfarande",
+      "refresh": "Uppdatera",
+      "download": "Ladda ner"
+    },
+    "copy_emotes": {
+      "title": "Kopiera valda emotes till"
+    },
+    "default_set": {
+      "title": "Standard Emote-set"
+    },
+    "delete_account": {
+      "warning": "Varning",
+      "warning_message": "Denna åtgärd tar bort ditt konto permanent. Du kan inte ångra detta.",
+      "choose_reasons": "Välj orsak till borttagning av kontot",
+      "reasons": {
+        "no_longer_use": "Jag använder inte längre 7TV",
+        "privacy_concerns": "Integritetsskäl",
+        "not_useful": "Jag har ingen nytta av tjänsten",
+        "other": "Annat"
+      },
+      "confirm_username": "Ange ditt användarnamn för att bekräfta"
+    },
+    "delete_emote_or_set": {
+      "title": "Ta bort {name}",
+      "warning_message_emote": "Detta tar bort din emote permanent. Du kan inte ångra detta.",
+      "warning_message_set": "Detta tar bort ditt Emote-set permanent. Du kan inte ångra detta.",
+      "reason": "Anledning",
+      "reason_for_deletion": "Anledning till borttagning"
+    },
+    "edit_emote": {
+      "title": "Redigera {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Redigera Emote-set",
+      "show_on_profile": "Visa på profilen",
+      "publicly_listed": "Listad offentligt"
+    },
+    "remove_emote": {
+      "title": "Ta bort valda emotes från {set}"
+    },
+    "report_emote": {
+      "title": "Anmäl emote",
+      "choose_reasons": "Välj anledning",
+      "reasons": {
+        "my_work": "Jag skapade denna emote men den laddades upp av någon annan",
+        "duplicate": "Denna emote är en dubblett",
+        "sexual": "Emoten innehåller pornografi eller överdrivet sexualiserat innehåll",
+        "violance": "Denna emote visar extremt våld eller blodigt innehåll",
+        "its_me": "Emoten föreställer mig och jag gillar det inte",
+        "offensive": "Jag upplever denna emote som stötande",
+        "other": "Annat"
+      },
+      "additional_info": "Ytterligare information",
+      "disclaimer": "Missbruk av anmälningsfunktionen kan leda till avstängning."
+    },
+    "transfer_emote": {
+      "title": "Överför {emote}",
+      "details": "Detta överför {emote}.",
+      "receipient": "Emote-mottagare",
+      "transfer": "Överför"
+    },
+    "badge": {
+      "title": "Dekal"
+    },
+    "subscription": {
+      "gifted_by": "Din prenumeration är en gåva från",
+      "cancel_notice": "Om du avslutar din prenumeration nu förlorar du omedelbart tillgången till dina förmåner. Är du säker på att du vill avsluta prenumerationen?",
+      "cancel_confirmation": "Är du säker på att du vill säga upp din prenumeration? Du förlorar tillgången till dina förmåner vid slutet av nuvarande faktureringsperiod.",
+      "confirm": "Bekräfta"
+    },
+    "error": {
+      "title": "Fel"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Ge bort Pick'ems-pass",
+        "gift_to": "Ge bort Pick'ems-pass till",
+        "recipient": "Välj mottagare",
+        "back": "Tillbaka",
+        "continue": "Fortsätt"
+      }
+    },
+    "gift": {
+      "title": "Ge bort 1",
+      "gift_to": "Ge bort 1 {variant} till",
+      "recipient": "Välj mottagare"
+    },
+    "paint": {
+      "title": "Paint"
+    },
+    "buttons": {
+      "back": "Tillbaka",
+      "continue": "Fortsätt"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Laddades upp"
+      },
+      "process": {
+        "start": "Ett nytt bearbetningsjobb startades",
+        "success": "Bearbetningen lyckades",
+        "fail": "Bearbetningen misslyckades",
+        "cancel": "Avbröt bearbetningsjobb"
+      },
+      "change_name": {
+        "action": "Namnändrades"
+      },
+      "merge": {
+        "action": "Slogs ihop"
+      },
+      "change_owner": {
+        "action": "Överförde ägarskap"
+      },
+      "change_tags": {
+        "action": "Taggar ändrades till"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Godkändes för offentlig listning"
+        },
+        "removed_public": {
+          "action": "Togs bort från offentlig listning"
+        },
+        "approved_personal": {
+          "action": "Godkändes för personligt bruk"
+        },
+        "rejected_personal": {
+          "action": "Nekades för personligt bruk"
+        },
+        "added_overlaying": {
+          "action": "Flaggan \"Överlappande\" lades till"
+        },
+        "removed_overlaying": {
+          "action": "Flaggan \"Överlappande\" togs bort"
+        },
+        "added_private": {
+          "action": "Flaggan \"Privat\" lades till"
+        },
+        "removed_private": {
+          "action": "Flaggan \"Privat\" togs bort"
+        }
+      },
+      "delete": {
+        "action": "Raderades"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Aktivitet",
+      "emote": {
+        "deleted_emote": "Borttagen emote",
+        "deleted_set": "Borttaget set",
+        "by": "av",
+        "created": "Skapad",
+        "changed_tags": "Ändrade taggar för",
+        "changed_capacity": "Ändrade utrymme för",
+        "added": "Lade till",
+        "removed": "Tog bort emote",
+        "renamed": "Bytte namn på emote",
+        "in": "i",
+        "from": "från",
+        "to": "till",
+        "deleted": "Raderad"
+      },
+      "user": {
+        "changed_paint": "Bytte aktiv paint från",
+        "changed_badge": "Bytte aktiv dekal från",
+        "removed": "Tog bort",
+        "connection": "Anslutning",
+        "changed_set": "Bytte aktivt Emote-set från",
+        "added": "Lade till",
+        "no_badge": "Ingen dekal",
+        "no_paint": "Ingen paint",
+        "deleted": "Raderad"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Loggar in...",
+        "logged": "Inloggad",
+        "failed": "Inloggningen misslyckades"
+      },
+      "state": {
+        "logging": "Loggar in...",
+        "logged": "Inloggad",
+        "failed": {
+          "title": "Inloggningen misslyckades",
+          "message": "Se till att öppna detta fönster via tillägget"
+        }
+      }
+    },
+    "home": {
+      "title": "Hem",
+      "features": {
+        "emote_slots": "Plats för 1000 emotes",
+        "emote_slots_info": "Alla får plats för 1000 emotes på sin kanal, helt gratis. Samla alla dina emotes på ett ställe.",
+        "emote_slots_button": "Bläddra bland emotes",
+        "emote_sets": "Emote-set",
+        "emote_sets_info": "Samla dina emotes i egna set som du kan dela med andra eller snabbt byta till på din kanal.",
+        "emote_sets_button": "Skapa ett Emote-set",
+        "custom_emotes": "Anpassade emote-namn",
+        "custom_emotes_info": "Gillar du inte namnet som skaparen gav emoten? Inga problem, du kan byta namn på den enbart för din kanal.",
+        "custom_emotes_button": "Bläddra bland emotes",
+        "real-time": "Uppdateringar i realtid",
+        "real-time_info": "När du byter emotes i din kanal sker det direkt för alla tittare. Inget F5-tryckande, ingen mer väntan.",
+        "real-time_button": "Ladda ner tillägget",
+        "large_community": "Stort community",
+        "large_community_info": "7TV används dagligen av 2 000 000+ personer och har ett bibliotek med över 1 000 000 offentliga emotes.",
+        "large_community_button": "Gå med i vår Discord",
+        "next_gen": "Nästa generations format",
+        "next_gen_info": "Vi använder moderna bildformat som WebP och AVIF för att minska dataanvändningen.",
+        "next_gen_button": "Ladda ner tillägget"
+      }
+    },
+    "help": {
+      "title": "Hjälp"
+    },
+    "directory": {
+      "title": "Katalog",
+      "bookmarked": "Sparat",
+      "sorting": {
+        "title": "Sortering",
+        "alphabetical": "Alfabetisk",
+        "upload_date": "Uppladdningsdatum"
+      },
+      "filters": {
+        "animated": "Animerade",
+        "static": "Statiska",
+        "overlaying": "Överlappande",
+        "personal_use": "Personligt bruk",
+        "exact_match": "Exakt matchning"
+      },
+      "size": {
+        "title": "Storlek",
+        "any": "Valfri storlek"
+      }
+    },
+    "landing": {
+      "start": "Börja din resa med hundratals emotes och funktioner som förbättrar din chattupplevelse. Ladda ner det officiella 7TV-tillägget eller andra tredjepartsverktyg.",
+      "developers": {
+        "header": "Tillgänglig källkod",
+        "info": "Hela vår källkod finns tillgänglig på GitHub med en licens för tillgänglig källkod. Vem som helst kan granska och bidra."
+      },
+      "download": {
+        "start": "Börja din resa med hundratals emotes och funktioner som förbättrar din chattupplevelse. Ladda ner det officiella 7TV-tillägget eller andra tredjepartsverktyg.",
+        "extension": "Webbläsartillägg",
+        "stable": "Stabil version",
+        "nightly": "Nightly-version",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobilappar"
+        },
+        "bots": {
+          "header": "Chatbottar"
+        }
+      },
+      "features": {
+        "header": "Varför 7TV?",
+        "info": "Vår plattform erbjuder en mängd smarta funktioner som förbättrar din chattupplevelse."
+      },
+      "footer": {
+        "affiliated": "7TV är inte associerat med Twitch, Kick, YouTube eller Discord",
+        "privacy_policy": "Integritetspolicy",
+        "tos": "Användarvillkor"
+      },
+      "hero": {
+        "platform": "Emote-plattformen",
+        "all": "för alla",
+        "download": "Ladda ner",
+        "manage": "Hantera enkelt hundratals emotes för dina Twitch-, Kick- eller YouTube-kanaler. Gör din chattupplevelse ännu bättre.",
+        "more": "Läs mer",
+        "xmas": {
+          "header": "Prenumerationsevent i jul",
+          "info": "Ge bort 1 prenumeration till någon i jul och få en unik dekal bredvid ditt namn!",
+          "gift": "Ge bort en prenumeration"
+        },
+        "nnys": {
+          "info": "Rösta i NNYS 2025 för att få en exklusiv paint, dekal och ett Emote-set.",
+          "vote": "Rösta i NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 STREAMERS",
+          "tournament": "TURNERING ARRANGERAD AV 7TV",
+          "event": "3-DAGARSEVENT",
+          "header": "Lägg dina Pick'ems. Vinn priser.",
+          "info": "7TV arrangerar CS2-turnering",
+          "date": "29 februari - 2 mars",
+          "pickems": "Lägg dina Pick'ems",
+          "pass": "Skaffa passet!",
+          "badges_paints": "Vinn dekaler och paints.",
+          "description1": "xQc, OhnePixel, JasonTheWeen och 32 andra streamers möts i dueller",
+          "description2": "i en 3-dagars utslagsturnering i CS2, arrangerad av 7TV."
+        }
+      }
+    },
+    "discover": {
+      "title": "Upptäck",
+      "uploads": "Uppladdningar",
+      "followed": "Konton du följer"
+    },
+    "store": {
+      "title": "Butik",
+      "redeem": {
+        "title": "Lös in",
+        "header": "Lös in en presentkod",
+        "subtitle": "Lös in en presentkod för att låsa upp exklusiva kosmetiska föremål och förmåner.",
+        "state": {
+          "idle": "Inaktiv",
+          "loading": "Laddar",
+          "success": "Lyckades"
+        },
+        "code": "kod",
+        "shown": "visas",
+        "trial": "Du har löst in din provprenumeration"
+      },
+      "purchase": {
+        "success": "Ditt köp har genomförts"
+      },
+      "subscription": {
+        "banner_title_subbed": "Tack för ditt stöd",
+        "banner_title_unsubbed": "Lås upp speciella förmåner",
+        "banner_subtitle_subbed": "Njut av dina exklusiva prenumerationsförmåner!",
+        "banner_subtitle_unsubbed": "Prenumerera för att förbättra din chattupplevelse.",
+        "badge_progress": {
+          "title": "Dekalframsteg",
+          "left": "{duration} kvar"
+        },
+        "benefits": {
+          "title": "Prenumerationsförmåner",
+          "animated_avatar": "Animerad profilbild",
+          "personal_emotes": "Personliga emotes",
+          "paints": "Namn-paints",
+          "sub_badge": "Prenumerantdekal",
+          "raffle_tickets": "Lotter"
+        },
+        "raffle": "Global emote-utlottning",
+        "monthly_paints": "Månads-paints",
+        "your_cosmetics": "Dina kosmetiska föremål",
+        "your_paints": "Dina paints",
+        "beomce_a_subscriber": "Bli prenumerant",
+        "your_badges": "Dina dekaler",
+        "top_gifters": "Toppgivare",
+        "subscribe": "Prenumerera",
+        "subscribed": "Prenumererar",
+        "cancel": "Avsluta prenumeration",
+        "reactivate": "Återaktivera prenumeration",
+        "one_monhth": "1 månad",
+        "one_year": "1 år"
+      },
+      "paint_bundles": {
+        "coming_soon": "Kommer snart",
+        "banner_title": "Få dig själv att lysa",
+        "banner_subtitle": "Med namn-paints kan du uttrycka dig i alla nyanser."
+      },
+      "events": {
+        "no_events": "Inga kommande händelser",
+        "xmas": "JULEVENT 2024: GE BORT 1 PRENUMERATION FÖR ATT FÅ EN SPECIELL DEKAL",
+        "cs2": {
+          "tournament": "CS2-turnering arrangerad av 7TV",
+          "cosmetics": "Vill du vinna kosmetiska föremål genom att gissa resultatet? Klicka nedan!",
+          "twitch": "SE PÅ TWITCH",
+          "bundle": "Köp paket",
+          "already_subscribed": "Prenumererar redan",
+          "subscribe": "{price} idag, därefter {recurring}",
+          "billing_cycle": "Faktureras som engångsköp",
+          "pickems": {
+            "place": "Lägg dina Pick'ems",
+            "predict": "Förutse vinnare",
+            "purchase_pass": "Köp passet"
+          },
+          "pass": {
+            "title": "Pick'ems-pass",
+            "get": "Skaffa passet",
+            "bundle": "Paket: Pass + {variantName(variant)} prenumeration"
+          },
+          "schedule": {
+            "header": "Turneringsschema",
+            "stage": "Omgång",
+            "best_of": "Bäst av",
+            "start_time": "Starttid"
+          },
+          "streamers": {
+            "header": "Möt våra streamers",
+            "info": "En rad kända Twitch-streamers bildar lag från sina communities och gör upp i en CS-utslagsturnering.",
+            "watch": "Se huvudeventet på",
+            "twitch_channel": "7TV:s Twitch-kanal",
+            "streamer_pov": "eller ur din favoritstreamers perspektiv."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Admin",
+      "overview": "Översikt",
+      "welcome": "Välkommen tillbaka",
+      "enjoy": "Njut av moddandet!",
+      "tickets": {
+        "title": "Ärenden",
+        "emotes": {
+          "public_listing": "Offentlig listning",
+          "personal_use": "Personligt bruk",
+          "resolved": "Lösta",
+          "not_implemented": "Inte implementerad"
+        },
+        "emote_table": {
+          "emote_name": "Emote-namn",
+          "uploader": "Uppladdad av",
+          "country": "Land",
+          "tags_flags": "Taggar & flaggor",
+          "reviewed_by": "Granskad av"
+        },
+        "reports": "Anmälningar",
+        "reports_options": {
+          "all": "Alla",
+          "assigned": "Tilldelad",
+          "closed": "Stängda"
+        },
+        "reports_table": {
+          "reported_by": "Anmäld av",
+          "target": "Anmäld emote",
+          "description": "Beskrivning",
+          "assigned_to": "Tilldelad till",
+          "status": "Status",
+          "date": "Datum",
+          "ticket_id": "Ärende-ID",
+          "subject": "Anledning",
+          "details": "Detaljer"
+        },
+        "reports_actions": {
+          "close": "Stäng ärende",
+          "assign_self": "Tilldela mig",
+          "add_comment": "Lägg till kommentar"
+        }
+      },
+      "codes": {
+        "redeem": "Kampanjkoder",
+        "add": "Lägg till kod(er)",
+        "filters": {
+          "header": "Filter:",
+          "remaining_uses": "Återstående användningar"
+        },
+        "search": {
+          "results": "Hittade {results.totalCount} resultat ({results.pageCount} sidor)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Namn",
+            "description": "Beskrivning",
+            "tags": "Taggar",
+            "code": "Kod",
+            "remaining_uses": "Återstående användningar",
+            "active_period": "Giltighetstid",
+            "effect": "Effekt",
+            "subscription_effect": "Prenumerationseffekt",
+            "created_by": "Skapad av",
+            "created_at": "Skapad",
+            "actions": "Åtgärder"
+          }
+        },
+        "period": {
+          "unlimited": "Obegränsad"
+        },
+        "trial": {
+          "days": "dagars provperiod",
+          "no_trial": "Ingen provperiod",
+          "none": "Ingen"
+        },
+        "system": "System"
+      },
+      "special_events": {
+        "header": "Specialevent",
+        "create": "Skapa specialevent",
+        "add": "Lägg till specialevent",
+        "results": "Hittade {results.length} resultat",
+        "attributes": {
+          "name": "Namn",
+          "description": "Beskrivning",
+          "tags": "Taggar",
+          "created_by": "Skapad av",
+          "created_at": "Skapad",
+          "actions": "Åtgärder",
+          "create": "Skapa",
+          "cancel": "Avbryt"
+        },
+        "system": "System",
+        "no_events": "Inga specialevent"
+      },
+      "users": {
+        "id": {
+          "back": "Tillbaka",
+          "last_updated": "Senast uppdaterad",
+          "search_last_update": "Sökindex senast uppdaterat",
+          "queued": "I kö för uppdatering",
+          "stripe": {
+            "customer": "Stripe-kund",
+            "view": "Visa",
+            "no_customer": "Ingen Stripe-kund kopplad",
+            "roles": "Roller"
+          },
+          "actions": {
+            "header": "Åtgärder",
+            "sessions": {
+              "header": "Sessioner",
+              "create_session": "Skapa ny session",
+              "delete_all": "Avsluta alla sessioner",
+              "expiration": "Går ut om",
+              "token": "Token",
+              "copy_token": "Kopiera token",
+              "create": "Skapa",
+              "close": "Stäng"
+            },
+            "connections": {
+              "header": "Anslutningar",
+              "kick": "Koppla Kick manuellt",
+              "username": "Kick-användarnamn"
+            },
+            "entitlements": {
+              "header": "Rättigheter",
+              "create": "Lägg till rättigheter",
+              "assign": "Tilldela rättigheter manuellt",
+              "assign_to": "Tilldela rättigheter till",
+              "remove_all": "Ta bort alla rättigheter",
+              "view": "Visa rättigheter",
+              "showing": "Visar rättigheter tilldelade till"
+            }
+          },
+          "subscription": {
+            "header": "Prenumeration",
+            "period": {
+              "header": "Prenumerationsperioder",
+              "key": "Fält",
+              "value": "Värde",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Kopiera ULID",
+              "uuid": "Kopiera UUID"
+            },
+            "provider": {
+              "id": "Leverantörs-ID",
+              "view": "Visa"
+            },
+            "product": {
+              "id": "Produkt-ID",
+              "view": "Visa",
+              "start": "Start",
+              "end": "Slutdatum",
+              "is_trial": "Provperiod?",
+              "auto_renew": "Automatisk förnyelse?",
+              "gifted": {
+                "header": "Gåva?",
+                "yes": "Ja - av",
+                "no": "Nej"
+              },
+              "created_by": "Skapad av",
+              "redeem": "Lös in kod",
+              "invoice": "Faktura",
+              "system": "System",
+              "variant": "Produktvariant"
+            }
+          },
+          "not_found": "Användare hittades inte"
+        },
+        "layout": {
+          "users": "Användare"
+        },
+        "page": {
+          "manage": {
+            "header": "Hantera",
+            "single_user": "Hantera en enskild användare"
+          },
+          "actions": {
+            "header": "Åtgärder",
+            "sub_benefits_job": {
+              "header": "Jobb för prenumerationsförmåner",
+              "manually": "Starta prenumerationsjobbet manuellt för att räkna om rättigheter och prenumerationsförmåner för alla användare.",
+              "rerun": "Kör igen"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Använd emote",
+      "add_to": "Lägg till i...",
+      "transfer": "Överför",
+      "merge": "Slå ihop",
+      "size": "Storlek",
+      "copy_link": "Kopiera länk"
+    },
+    "user": {
+      "about": "Om",
+      "active_emotes": "Aktiva emotes",
+      "uploaded": "Uppladdade",
+      "uploaded_emotes": "Uppladdade emotes"
+    },
+    "settings": {
+      "account": {
+        "title": "Konto",
+        "profile": {
+          "details": "Anpassa inställningar och hantera uppgifter",
+          "display_name": "Visningsnamn",
+          "display_name_description": "Välj en huvudanslutning som ska användas för ditt visningsnamn och din profilbild",
+          "profile_picture_description": "Välj en profilbild som ska visas på alla plattformar",
+          "update_profile_picture": "Uppdatera profilbild"
+        },
+        "connections": {
+          "details": "Hantera och koppla externa konton för smidigare åtkomst och bättre integration med plattformen"
+        },
+        "security": {
+          "title": "Säkerhet",
+          "details": "Hantera och anpassa din kontosäkerhet",
+          "2fa": "Tvåfaktorsautentisering",
+          "2fa_details": "Öka säkerheten på ditt konto med tvåfaktorsautentisering (2FA)",
+          "email_details": "Få en verifieringskod via e-post",
+          "authenticator_app": "Autentiseringsapp",
+          "authenticator_app_details": "Installera en app för att generera verifieringskoder",
+          "sign_out_everywhere": "Logga ut från alla enheter",
+          "sign_out_everywhere_details": "Säkra ditt konto genom att logga ut från alla enheter med ett klick",
+          "delete_account_details": "Radera all personlig information och tillhörande data permanent från plattformen och avsluta ditt konto"
+        }
+      },
+      "appearance": {
+        "title": "Utseende",
+        "details": "Anpassa utseendet",
+        "theme": {
+          "header": "Tema",
+          "options": {
+            "system": "System",
+            "dark": "Mörkt",
+            "light": "Ljust"
+          }
+        },
+        "motion": {
+          "header": "Minska rörelse",
+          "options": {
+            "system": "System",
+            "enabled": "Aktiverad",
+            "disbaled": "Inaktiverad"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Layoutriktning",
+          "options": {
+            "ltr": "Vänster till höger",
+            "rtl": "Höger till vänster"
+          }
+        }
+      },
+      "editors": {
+        "details": "Hantera dina redigerare eller kanaler du redigerar åt",
+        "editing_for": "Redigerar åt",
+        "add_editor": "Lägg till redigerare",
+        "not_allowed": "Du har inte behörighet att hantera redigerare för denna användare"
+      },
+      "notifications": {
+        "details": "Realtidsuppdateringar och notiser som håller dig informerad om viktiga händelser, meddelanden och aktiviteter på webbplatsen eller i appen"
+      },
+      "blocked": {
+        "title": "Blockeringar",
+        "details": "Hantera begränsat eller förbjudet innehåll, användare eller aktiviteter",
+        "add_user": "Lägg till blockerad användare"
+      },
+      "billing": {
+        "title": "Fakturering",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Använd prenumerationskrediter",
+          "use_credits_details": "Dina prenumerationskrediter används i första hand vid nästa debitering",
+          "cancelled": "Prenumeration avslutad",
+          "cancelled_details": "Din prenumeration har avslutats och dina förmåner går ut den {date}"
+        },
+        "history": {
+          "title": "Faktureringshistorik",
+          "details": "Se all betalningshistorik som är kopplad till ditt konto, som tidigare faktureringsutdrag och transaktioner"
+        },
+        "payment_methods": {
+          "details": "Kontrollera och uppdatera dina betalningsmetoder",
+          "add_new": "Lägg till ny",
+          "card": {
+            "title": "Kortuppgifter",
+            "ends_in": "Slutar på {digits}",
+            "expires": "Giltig t.o.m. {month}/{year}",
+            "address": "Fakturaadress",
+            "name": "Namn på kortet"
+          }
+        },
+        "table": {
+          "status": "Status",
+          "amount": "Belopp",
+          "invoice": "Faktura"
+        }
+      },
+      "user_table": {
+        "name": "Namn",
+        "last_modified": "Senast ändrad",
+        "permissions": "Behörigheter"
+      }
+    },
+    "link": {
+      "linking": "Kopplar ditt konto...",
+      "linking_successful": "Kontot har kopplats",
+      "linking_failed": "Koppling misslyckades"
+    },
+    "extension": {
+      "login": "Loggar in...",
+      "login_successful": "Inloggad",
+      "login_failed": "Inloggningen misslyckades",
+      "window": "Se till att öppna detta fönster via tillägget"
+    }
+  }
+}

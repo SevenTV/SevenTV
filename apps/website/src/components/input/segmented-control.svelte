@@ -41,11 +41,7 @@
 				<span class="label">{option.label}</span>
 			{/if}
 			{#if value === option.value}
-				<div
-					class="slider"
-					in:receive={{ key: "slider" }}
-					out:send={{ key: "slider" }}
-				></div>
+				<div class="slider" in:receive={{ key: "slider" }} out:send={{ key: "slider" }}></div>
 			{/if}
 		</button>
 	{/each}

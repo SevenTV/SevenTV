@@ -12,7 +12,7 @@ struct KickResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct KickUserData {
-	// pub email: String,
+	pub email: String,
 	pub name: String,
 	pub profile_picture: Option<String>,
 	pub user_id: i32,
@@ -25,6 +25,7 @@ impl From<KickUserData> for PlatformUserData {
 			username: value.name.clone(),
 			display_name: value.name,
 			avatar: value.profile_picture,
+			email: Some(value.email),
 		}
 	}
 }

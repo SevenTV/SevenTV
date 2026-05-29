@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV 管理員",
+    "trending_emotes": "流行表情符號",
+    "top_emotes": "熱門表情符號",
+    "global_emotes": "全域表情符號",
+    "new_emotes": "最新表情符號",
+    "bookmarked_emotes": "已收藏的表情符號",
+    "bookmarked_emote_sets": "已收藏的表情符號組",
+    "bookmarked_users": "已收藏的使用者",
+    "account_settings": "帳號設定",
+    "editor_settings": "編輯者設定",
+    "notification_settings": "通知設定",
+    "blocked_settings": "封鎖設定",
+    "billing_settings": "帳單設定",
+    "admin_emote_public_listing": "表情符號公開上架請求",
+    "admin_emote_personal_use": "表情符號個人使用請求",
+    "admin_emote_resolved": "已處理的表情符號申請"
+  },
+  "page_errors": {
+    "not_found": "找不到您所查詢的頁面。",
+    "forbidden": "您沒有權限檢視此頁面。",
+    "unauthorized": "您未被授權檢視此頁面。",
+    "unexpected": "您可以嘗試重新整理頁面。如果問題持續存在，請與我們聯絡。",
+    "generic": "發生錯誤。",
+    "emote_set_load": "無法載入表情組",
+    "emote_set_not_found": "找不到表情組",
+    "user": "無法載入使用者"
+  },
+  "words": {
+    "from": "從",
+    "to": "至",
+    "with": "與",
+    "by": "由"
+  },
+  "common": {
+    "sign_in": "登入",
+    "sign_out": "登出",
+    "go_back": "返回",
+    "super_admin": "超級管理員",
+    "skip_to_content": "直接跳到內容",
+    "emotes": "{count, plural, one {表情符號} other {表情符號}}",
+    "emote_sets": "{count, plural, one {表情符號組} other {表情符號組}}",
+    "users": "{count, plural, one {使用者} other {使用者}}",
+    "channels": "{count, plural, one {頻道} other {頻道}}",
+    "followers": "{count, plural, one {追隨者} other {追隨者}}",
+    "items": "{count, plural, one {項目} other {項目}}",
+    "subscriptions": "{count, plural, one {訂閱} other {訂閱}}",
+    "payment_methods": "{count, plural, one {付款方式} other {付款方式}}",
+    "date": "日期",
+    "help": "幫助",
+    "for": "給",
+    "error": "錯誤",
+    "loading": "載入中...",
+    "paint_bundles": "塗裝套組",
+    "notifications": "通知",
+    "connections": "連結",
+    "direct_messages": "私人訊息",
+    "mod_comments": "Mod 留言",
+    "profile_picture": "個人檔案圖片",
+    "suggested_emotes": "建議的表情符號",
+    "personal_emotes": "個人表情符號",
+    "no_more_emotes": "沒有更多表情符號",
+    "no_emotes": "沒有表情符號",
+    "your_subscription": "您的訂閱",
+    "theme": "主題",
+    "language": "語言",
+    "developer_portal": "開發者入口",
+    "faq": "常見問題",
+    "faq_short": "常見問題",
+    "privacy": "隱私權政策",
+    "tos": "服務條款",
+    "trending": "流行",
+    "top": "熱門",
+    "global": "全域",
+    "new": "最新",
+    "Weekly": "每週",
+    "Monthly": "每月",
+    "Today": "今日",
+    "news": "最新消息",
+    "Default_set": "預設組合",
+    "following": "追隨",
+    "activity": "活動",
+    "analytics": "數據分析",
+    "statistics": "統計數據",
+    "contact": "聯絡我們",
+    "cosmetics": "裝飾",
+    "editors": "編輯者",
+    "active": "活躍",
+    "profile": "個人檔案",
+    "pinned": "已釘選",
+    "settings": "設定",
+    "delete_account": "刪除帳號"
+  },
+  "labels": {
+    "enter_text": "輸入文字",
+    "redeem": "輸入代碼",
+    "search": "搜尋",
+    "refetch": "重新取得",
+    "manage_connections": "管理連結",
+    "manage_editors": "管理編輯者",
+    "none": "無",
+    "search_user": "搜尋使用者",
+    "search_country": "搜尋國家",
+    "search_emote_set": "搜尋表情符號組",
+    "search_users": "{count, plural, one {搜尋使用者} other {搜尋使用者}}",
+    "tags": "標籤",
+    "close": "關閉",
+    "contribute": "貢獻",
+    "enter_tags": "輸入標籤",
+    "tag_limit_reached": "已達到標籤數量上限 {limit} 個",
+    "filters": "篩選",
+    "no_filters": "無篩選",
+    "emote_name": "表情符號名稱",
+    "copy_link": "複製連結",
+    "create_emote_set": "建立新組合",
+    "emote_set_name": "表情符號組名稱",
+    "emote_attribution": "表情來源",
+    "select": "選擇",
+    "selection_mode": "選擇模式",
+    "edit": "編輯",
+    "capacity": "數量",
+    "enable": "啟用",
+    "disable": "停用",
+    "disabled": "已停用",
+    "more": "更多",
+    "actions": "功能",
+    "download": "下載",
+    "report": "檢舉",
+    "delete": "刪除",
+    "time_select": {
+      "week": "本周",
+      "month": "本月",
+      "year": "本年"
+    },
+    "gift": "禮物",
+    "follow": "追隨",
+    "connect": "連結",
+    "disconnect": "解除連結",
+    "email": "電子郵件",
+    "password": "密碼",
+    "all": "全部",
+    "other": "其他",
+    "cancel": "取消",
+    "confirm": "確認",
+    "proceed": "繼續",
+    "save": "儲存",
+    "remove": "刪除",
+    "accept": "接受",
+    "deny": "拒絕",
+    "enter": "輸入"
+  },
+  "themes": {
+    "system": "依照系統",
+    "dark": "深色",
+    "light": "淺色"
+  },
+  "flags": {
+    "global": "全域",
+    "trending": "流行",
+    "overlaying": "覆蓋層",
+    "default": "預設",
+    "personal": "個人的",
+    "listed": "已上架",
+    "unlisted": "未上架",
+    "personal_use": "個人使用",
+    "deleted": "已刪除",
+    "private": "私人",
+    "personal_use_approved": "允許個人使用",
+    "personal_use_denied": "拒絕個人使用",
+    "personal_use_pending": "個人使用審核中",
+    "renamed": "已重新命名",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "處理中",
+      "accepted": "已通過",
+      "rejected": "已拒絕",
+      "you_accepted": "您已通過",
+      "you_rejected": "您已拒絕"
+    }
+  },
+  "notifications": {
+    "system": "系統",
+    "approved_for_public": "您的表情 {emote} 已獲批准公開上架。"
+  },
+  "sub_info": {
+    "plan": "方案",
+    "free": "免費",
+    "gifted_by": "贈送自",
+    "ends": "訂閱結束於",
+    "total": "總共",
+    "credits": "訂閱積分"
+  },
+  "file_limits": {
+    "max_size": "{size} 最大檔案大小",
+    "max_resolution": "{width}x{height} 最大解析度",
+    "max_frames": "{count} 最大影格數",
+    "resolution_error": "解析度不得超過 {width}x{height}",
+    "duration_error": "影片時間必須為 {duration} 秒以下"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "登入 7TV",
+      "subtitle": "請先登入或建立帳號",
+      "continue_with": "使用 {platform} 繼續",
+      "trouble": "登入遇到問題？",
+      "legal_yapping": "登入即表示您同意我們的",
+      "and": "及",
+      "linking_new": "如果您已有 7TV 帳號並想綁定新的連結，請先用現有帳號登入，然後在設定中添加新的連結",
+      "settings": "設定"
+    },
+    "search": {
+      "emotes": "表情符號",
+      "users": "使用者"
+    },
+    "upload": {
+      "title": "上傳表情符號",
+      "untitled": "無標題",
+      "chat": "發送訊息",
+      "drag_drop": "拖曳並放置以上傳，或",
+      "browse_files": "瀏覽檔案",
+      "accept_rules": "我接受規則和準則",
+      "discard": "捨棄",
+      "upload_guidelines": "表情符號上傳指南",
+      "upload": "上傳"
+    },
+    "emote_set": {
+      "title": "啟用表情符號組",
+      "create": "建立表情符號組",
+      "name": "表情符號組名稱",
+      "label": "名稱",
+      "confirm": "建立",
+      "copy_set": "複製組合",
+      "special": "專屬",
+      "favourite_sets": {
+        "title": "最愛的表情符號組",
+        "add": "新增並重新命名至全部",
+        "remove": "從全部移除"
+      },
+      "mass_select_feature": {
+        "add": "新增至表情符號組",
+        "remove": "從表情符號組移除",
+        "amount_selected_label": "已選取 /20"
+      },
+      "default_emote_set": {
+        "remove": "從 {set} 移除表情符號",
+        "add": "新增表情符號至 {set}",
+        "conflicting_name": "名稱重複"
+      }
+    },
+    "manage_aliases": {
+      "title": "管理表情符號別名",
+      "add_placeholder": "新增別名"
+    },
+    "rename_emote": {
+      "title": "在 {set} 中重新命名表情符號",
+      "input_placeholder": "新表情符號名稱",
+      "confirmation_message": "您確定要在 {set} 中重新命名此表情符號嗎？",
+      "confirm": "重新命名"
+    },
+    "remove_emote_from_set": {
+      "title": "將表情符號從 {set} 移除",
+      "warning_message": "您確定要將 {emote} 從 {set} 移除嗎？",
+      "confirm": "移除"
+    },
+    "add_emote": {
+      "title": "新增 {emote} 到",
+      "change_name": "更改表情符號名稱",
+      "confirm": "確認",
+      "confirm_changes": "{count, plural, other {確認 {count} 項變更}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "表情符號佇列",
+      "activity": "啟用中",
+      "comments": "評論"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "新增/移除 表情符號",
+      "edit_emote_alias": "編輯表情符號別名",
+      "remove_emote": "從表情符號組中移除表情符號",
+      "open_in_new_tab": "在新分頁中開啟",
+      "copy_emote_link": "複製表情符號連結"
+    },
+    "cart": {
+      "title": "您的購物車",
+      "duration": "持續時間",
+      "price": "價格",
+      "preview": "預覽",
+      "purchase_as_gift": "作為禮物購買",
+      "total": "總共"
+    },
+    "editor": {
+      "permissions": "設定編輯者權限",
+      "super_admin": "超級管理員",
+      "emote_sets": "表情符號組",
+      "admin": "管理員",
+      "emotes": "表情符號",
+      "user": "使用者",
+      "manage_personal_emotes": "管理個人表情符號組",
+      "confirm": "確認",
+      "no_editors": "沒有可顯示的編輯者",
+      "permissions_details": {
+        "manage": "管理",
+        "create": "建立",
+        "transfer": "轉移",
+        "manage_profile": "管理個人檔案",
+        "manage_emotes": "管理表情符號",
+        "manage_billing": "帳單資訊",
+        "manage_editors": "管理編輯者",
+        "view_billing": "檢視帳單資訊"
+      }
+    },
+    "emote_info": {
+      "processing": "這個表情符號仍在處理中",
+      "refresh": "更新",
+      "download": "下載"
+    },
+    "copy_emotes": {
+      "title": "將選中的表情符號複製到"
+    },
+    "default_set": {
+      "title": "預設表情符號組"
+    },
+    "delete_account": {
+      "warning": "警告",
+      "warning_message": "此操作將永久刪除您的帳號，且無法復原。",
+      "choose_reasons": "選擇刪除帳號的原因",
+      "reasons": {
+        "no_longer_use": "我不再使用 7TV 了",
+        "privacy_concerns": "隱私問題",
+        "not_useful": "不實用",
+        "other": "其他"
+      },
+      "confirm_username": "輸入您的使用者名稱來確認刪除帳戶"
+    },
+    "delete_emote_or_set": {
+      "title": "刪除 {name}",
+      "warning_message_emote": "此操作將永久刪除您的表情符號，且無法復原。",
+      "warning_message_set": "此操作將永久刪除您的表情符號組，且無法復原。",
+      "reason": "原因",
+      "reason_for_deletion": "刪除的原因"
+    },
+    "edit_emote": {
+      "title": "編輯 {emote}"
+    },
+    "edit_emote_set": {
+      "title": "編輯表情符號組",
+      "show_on_profile": "在個人檔案中顯示",
+      "publicly_listed": "公開上架"
+    },
+    "remove_emote": {
+      "title": "從 {set} 移除選中的表情"
+    },
+    "report_emote": {
+      "title": "檢舉表情符號",
+      "choose_reasons": "選擇原因",
+      "reasons": {
+        "my_work": "我製作了這個表情符號，但它是由其他人上傳的",
+        "duplicate": "這個表情符號已經存在了",
+        "sexual": "這個表情符號包含色情或過度性暗示的圖像",
+        "violance": "這個表情符號展示極端暴力或血腥畫面",
+        "its_me": "這個表情符號是以我為原型且我不喜歡它",
+        "offensive": "我覺得這個表情符號令人不適",
+        "other": "其他"
+      },
+      "additional_info": "額外資訊",
+      "disclaimer": "濫用檢舉功能可能導致您的存取權限被撤銷。"
+    },
+    "transfer_emote": {
+      "title": "轉移 {emote}",
+      "details": "將轉移 {emote}。",
+      "receipient": "表情符號接收者",
+      "transfer": "轉移"
+    },
+    "badge": {
+      "title": "徽章"
+    },
+    "subscription": {
+      "gifted_by": "您的訂閱由 贈送給您",
+      "cancel_notice": "如果您現在取消訂閱，您將立即失去所有訂閱福利。確定要取消嗎？",
+      "cancel_confirmation": "您確定要取消嗎？您的訂閱福利會在這期帳單結束後終止。",
+      "confirm": "確認"
+    },
+    "error": {
+      "title": "錯誤"
+    },
+    "pickems": {
+      "gift": {
+        "title": "贈送預測通行證",
+        "gift_to": "贈送預測通行證給",
+        "recipient": "選擇送禮對象",
+        "back": "返回",
+        "continue": "繼續"
+      }
+    },
+    "gift": {
+      "title": "贈送 1",
+      "gift_to": "贈送 1 {variantUnit(variant)} 給",
+      "recipient": "選擇送禮對象"
+    },
+    "paint": {
+      "title": "塗裝"
+    },
+    "buttons": {
+      "back": "返回",
+      "continue": "繼續"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "已上傳"
+      },
+      "process": {
+        "start": "開始新的處理任務",
+        "success": "處理已成功完成",
+        "fail": "處理失敗",
+        "cancel": "處理任務已取消"
+      },
+      "change_name": {
+        "action": "已重新命名"
+      },
+      "merge": {
+        "action": "已合併"
+      },
+      "change_owner": {
+        "action": "已轉移所有權"
+      },
+      "change_tags": {
+        "action": "將標籤設為"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "已核准公開上架"
+        },
+        "removed_public": {
+          "action": "已從公開列表移除"
+        },
+        "approved_personal": {
+          "action": "已核准個人使用"
+        },
+        "rejected_personal": {
+          "action": "已拒絕個人使用"
+        },
+        "added_overlaying": {
+          "action": "已新增覆蓋標記"
+        },
+        "removed_overlaying": {
+          "action": "已移除覆蓋標記"
+        },
+        "added_private": {
+          "action": "已新增私人標記"
+        },
+        "removed_private": {
+          "action": "已移除私人標記"
+        }
+      },
+      "delete": {
+        "action": "已刪除"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "活動",
+      "emote": {
+        "deleted_emote": "已刪除表情符號",
+        "deleted_set": "刪除表情符號組",
+        "by": "由",
+        "created": "已建立",
+        "changed_tags": "已更改 的標籤",
+        "changed_capacity": "已更改 的容量",
+        "added": "已新增",
+        "removed": "移除表情符號",
+        "renamed": "重新命名表情符號",
+        "in": "於",
+        "from": "從",
+        "to": "至",
+        "deleted": "已刪除"
+      },
+      "user": {
+        "changed_paint": "已將使用中的塗裝變更自",
+        "changed_badge": "已將使用中的徽章變更自",
+        "removed": "已移除",
+        "connection": "連結",
+        "changed_set": "已將使用中的表情符號組變更自",
+        "added": "已新增",
+        "no_badge": "未使用徽章",
+        "no_paint": "未使用塗裝",
+        "deleted": "已刪除"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "正在為您登入……",
+        "logged": "已登入",
+        "failed": "登入失敗"
+      },
+      "state": {
+        "logging": "正在為您登入……",
+        "logged": "已登入",
+        "failed": {
+          "title": "登入失敗",
+          "message": "請確認您是透過擴充功能開啟此視窗"
+        }
+      }
+    },
+    "home": {
+      "title": "首頁",
+      "features": {
+        "emote_slots": "1000 個表情符號空位",
+        "emote_slots_info": "每個人都可以免費擁有 1000 個可自訂的頻道表情符號空位，將所有表情符號集中管理。",
+        "emote_slots_button": "瀏覽表情符號",
+        "emote_sets": "表情符號組",
+        "emote_sets_info": "將表情符號分組到可自訂的組合中，這些組合可以與其他使用者分享或快速套用到您的頻道上。",
+        "emote_sets_button": "建立表情符號組",
+        "custom_emotes": "自訂表情符號名稱",
+        "custom_emotes_info": "不喜歡表情符號作者給的名稱？沒關係，您可以在您的頻道內自訂表情符號名稱。",
+        "custom_emotes_button": "瀏覽表情符號",
+        "real-time": "即時更新",
+        "real-time_info": "在您的頻道中更換表情符號會立即生效，所有觀眾都能即時看到。不需要重新整理頁面，也不用再等待。",
+        "real-time_button": "下載擴充功能",
+        "large_community": "龐大社群",
+        "large_community_info": "7TV 每日服務超過 2,000,000 名獨立使用者，並擁有超過 1,000,000 個公開表情符號的資料庫。",
+        "large_community_button": "加入我們的 Discord",
+        "next_gen": "新一代格式",
+        "next_gen_info": "我們使用更新、更優化的影像格式，例如 WebP 和 AVIF，以降低頻寬使用量。",
+        "next_gen_button": "下載擴充功能"
+      }
+    },
+    "help": {
+      "title": "幫助"
+    },
+    "directory": {
+      "title": "目錄",
+      "bookmarked": "已收藏",
+      "sorting": {
+        "title": "排序",
+        "alphabetical": "名稱",
+        "upload_date": "上傳日期"
+      },
+      "filters": {
+        "animated": "動態",
+        "static": "靜態",
+        "overlaying": "覆蓋層",
+        "personal_use": "個人使用",
+        "exact_match": "精確匹配"
+      },
+      "size": {
+        "title": "尺寸",
+        "any": "任何尺寸"
+      }
+    },
+    "landing": {
+      "start": "開始您的旅程，使用數百個表情符號和各種增強聊天體驗的功能。下載官方 7TV 擴充功能或其他第三方工具。",
+      "developers": {
+        "header": "開放原始碼可參考",
+        "info": "我們的整個程式碼庫都在 GitHub 上，採用可參考原始碼授權。任何人都可以查看並進行貢獻。"
+      },
+      "download": {
+        "start": "開始您的旅程，使用數百個表情符號及多種增強聊天體驗的功能。下載官方 7TV 擴充功能或其他第三方工具。",
+        "extension": "網頁擴充功能",
+        "stable": "穩定版本",
+        "nightly": "Nightly版本",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "手機應用程式"
+        },
+        "bots": {
+          "header": "聊天機器人"
+        }
+      },
+      "features": {
+        "header": "為什麼使用7TV？",
+        "info": "我們的平台提供多種實用功能，能提升您的聊天體驗。"
+      },
+      "footer": {
+        "affiliated": "7TV 與 Twitch、Kick、YouTube 或 Discord並無關聯",
+        "privacy_policy": "隱私權政策",
+        "tos": "服務條款"
+      },
+      "hero": {
+        "platform": "表情符號平台",
+        "all": "適用於所有人",
+        "download": "下載",
+        "manage": "輕鬆管理您 Twitch、Kick 或 YouTube 頻道上的數百個表情符號，提升您的聊天體驗。",
+        "more": "了解更多",
+        "xmas": {
+          "header": "聖誕訂閱活動",
+          "info": "今年聖誕節贈送 1 個訂閱給任何人，並獲得專屬徽章！",
+          "gift": "贈送訂閱"
+        },
+        "nnys": {
+          "info": "在 NNYS 2025 投票即可獲得限定塗裝、徽章和表情組。",
+          "vote": "參與 NNYS 2025 投票"
+        },
+        "cs2": {
+          "streamers": "35 位實況主",
+          "tournament": "7TV 主辦的競賽",
+          "event": "3 天活動",
+          "header": "選擇您的預測，贏取獎品。",
+          "info": "7TV 主辦的 CS2 競賽",
+          "date": "2 月 29 日 ~ 3 月 2 日",
+          "pickems": "選擇您的預測",
+          "pass": "取得通行證！",
+          "badges_paints": "贏得徽章與塗裝。",
+          "description1": "xQc、OhnePixel、JasonTheWeen 以及其他 32 位實況主將展開對決",
+          "description2": "參加 7TV 主辦的 3 天單淘汰制 CS2 競賽。"
+        }
+      }
+    },
+    "discover": {
+      "title": "探索",
+      "uploads": "上傳項目",
+      "followed": "已追隨帳號"
+    },
+    "store": {
+      "title": "商店",
+      "redeem": {
+        "title": "兌換",
+        "header": "兌換禮物代碼",
+        "subtitle": "兌換禮物代碼以解鎖專屬裝飾與額外福利。",
+        "state": {
+          "idle": "閒置",
+          "loading": "載入中",
+          "success": "成功"
+        },
+        "code": "代碼",
+        "shown": "顯示",
+        "trial": "您已成功兌換試用訂閱"
+      },
+      "purchase": {
+        "success": "您的購買已成功完成"
+      },
+      "subscription": {
+        "banner_title_subbed": "感謝您的支持",
+        "banner_title_unsubbed": "解鎖專屬福利",
+        "banner_subtitle_subbed": "享受您的專屬訂閱者福利！",
+        "banner_subtitle_unsubbed": "訂閱以提升您的聊天體驗。",
+        "badge_progress": {
+          "title": "徽章進度",
+          "left": "剩餘 {duration}"
+        },
+        "benefits": {
+          "title": "訂閱福利",
+          "animated_avatar": "動態個人檔案圖片",
+          "personal_emotes": "個人表情符號",
+          "paints": "名稱塗裝",
+          "sub_badge": "訂閱者徽章",
+          "raffle_tickets": "抽獎券"
+        },
+        "raffle": "全域表情符號抽獎",
+        "monthly_paints": "每月塗裝",
+        "your_cosmetics": "您的裝飾",
+        "your_paints": "您的塗裝",
+        "beomce_a_subscriber": "成為訂閱者",
+        "your_badges": "您的徽章",
+        "top_gifters": "贈送最多者",
+        "subscribe": "訂閱",
+        "subscribed": "已訂閱",
+        "cancel": "取消訂閱",
+        "reactivate": "重新啟用訂閱",
+        "one_monhth": "1 個月",
+        "one_year": "1 年"
+      },
+      "paint_bundles": {
+        "coming_soon": "即將推出",
+        "banner_title": "讓自己閃閃發光",
+        "banner_subtitle": "名稱塗裝讓您能以各種顏色表達自己。"
+      },
+      "events": {
+        "no_events": "目前沒有即將到來的活動",
+        "xmas": "聖誕節 2024 活動：贈送 1 個訂閱即可獲得專屬徽章",
+        "cs2": {
+          "tournament": "7TV主辦的 CS2 競賽",
+          "cosmetics": "想透過預測結果來獲得裝飾嗎？點擊下方！",
+          "twitch": "前往TWITCH",
+          "bundle": "購買組合包",
+          "already_subscribed": "已訂閱",
+          "subscribe": "今天付 {price}，之後每期 {recurring}",
+          "billing_cycle": "一次性付款",
+          "pickems": {
+            "place": "選擇您的預測",
+            "predict": "預測贏家",
+            "purchase_pass": "購買通行證"
+          },
+          "pass": {
+            "title": "預測通行證",
+            "get": "取得通行證",
+            "bundle": "通行證 + {variantName(variant)} 訂閱組合包"
+          },
+          "schedule": {
+            "header": "賽事行程",
+            "stage": "階段",
+            "best_of": "賽制",
+            "start_time": "開始時間"
+          },
+          "streamers": {
+            "header": "實況主介紹",
+            "info": "知名的 Twitch 實況主將從自己的社群中組建隊伍，在CS風格的單淘汰賽中正面對決。",
+            "watch": "前往 觀看主賽事",
+            "twitch_channel": "7TV Twitch 頻道",
+            "streamer_pov": "或透過您最愛的實況主視角收看。"
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "管理員",
+      "overview": "總覽",
+      "welcome": "歡迎回來",
+      "enjoy": "享受自訂的樂趣！",
+      "tickets": {
+        "title": "請求",
+        "emotes": {
+          "public_listing": "公開上架",
+          "personal_use": "個人使用",
+          "resolved": "已處理",
+          "not_implemented": "尚未實作"
+        },
+        "emote_table": {
+          "emote_name": "表情符號名稱",
+          "uploader": "上傳者",
+          "country": "國家",
+          "tags_flags": "標籤與旗標",
+          "reviewed_by": "審核者"
+        },
+        "reports": "檢舉",
+        "reports_options": {
+          "all": "全部",
+          "assigned": "已指派",
+          "closed": "已關閉"
+        },
+        "reports_table": {
+          "reported_by": "回報者",
+          "target": "目標",
+          "description": "描述",
+          "assigned_to": "指派給",
+          "status": "狀態",
+          "date": "日期",
+          "ticket_id": "回報編號",
+          "subject": "主題",
+          "details": "詳細資料"
+        },
+        "reports_actions": {
+          "close": "標記為已關閉",
+          "assign_self": "指派給自己",
+          "add_comment": "新增留言"
+        }
+      },
+      "codes": {
+        "redeem": "兌換代碼",
+        "add": "新增代碼",
+        "filters": {
+          "header": "篩選：",
+          "remaining_uses": "剩餘使用次數"
+        },
+        "search": {
+          "results": "找到 {results.totalCount} 筆結果（共 {results.pageCount} 頁）"
+        },
+        "attributes": {
+          "name": {
+            "name": "名稱",
+            "description": "描述",
+            "tags": "標籤",
+            "code": "代碼",
+            "remaining_uses": "剩餘使用次數",
+            "active_period": "有效期間",
+            "effect": "效果",
+            "subscription_effect": "訂閱效果",
+            "created_by": "由 建立",
+            "created_at": "建立時間",
+            "actions": "操作"
+          }
+        },
+        "period": {
+          "unlimited": "無限制"
+        },
+        "trial": {
+          "days": "天試用期",
+          "no_trial": "無試用期",
+          "none": "無"
+        },
+        "system": "系統"
+      },
+      "special_events": {
+        "header": "特殊活動",
+        "create": "建立特殊活動",
+        "add": "新增特殊活動",
+        "results": "找到 {results.length} 個結果",
+        "attributes": {
+          "name": "名稱",
+          "description": "描述",
+          "tags": "標籤",
+          "created_by": "由 建立",
+          "created_at": "建立時間",
+          "actions": "操作",
+          "create": "建立",
+          "cancel": "取消"
+        },
+        "system": "系統",
+        "no_events": "無特殊活動"
+      },
+      "users": {
+        "id": {
+          "back": "返回",
+          "last_updated": "最後更新時間",
+          "search_last_update": "搜尋最後更新時間",
+          "queued": "已加入更新佇列",
+          "stripe": {
+            "customer": "Stripe 客戶",
+            "view": "查看",
+            "no_customer": "尚未關聯的 Stripe 客戶",
+            "roles": "角色"
+          },
+          "actions": {
+            "header": "操作",
+            "sessions": {
+              "header": "工作階段",
+              "create_session": "建立新工作階段",
+              "delete_all": "刪除所有工作階段",
+              "expiration": "到期日於",
+              "token": "令牌",
+              "copy_token": "複製令牌",
+              "create": "建立",
+              "close": "關閉"
+            },
+            "connections": {
+              "header": "連結",
+              "kick": "手動連結 Kick 帳號",
+              "username": "Kick 使用者名稱"
+            },
+            "entitlements": {
+              "header": "權限",
+              "create": "建立權限",
+              "assign": "手動指派權限",
+              "assign_to": "指派權限給",
+              "remove_all": "移除所有權限",
+              "view": "查看權限",
+              "showing": "顯示已指派給 的權限"
+            }
+          },
+          "subscription": {
+            "header": "訂閱",
+            "period": {
+              "header": "訂閱期間",
+              "key": "金鑰",
+              "value": "值",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "複製 ULID",
+              "uuid": "複製 UUID"
+            },
+            "provider": {
+              "id": "提供者 ID",
+              "view": "查看"
+            },
+            "product": {
+              "id": "產品 ID",
+              "view": "查看",
+              "start": "開始",
+              "end": "結束",
+              "is_trial": "是否為試用？",
+              "auto_renew": "是否自動續訂？",
+              "gifted": {
+                "header": "是否為贈送？",
+                "yes": "是 — 由",
+                "no": "否"
+              },
+              "created_by": "由 建立",
+              "redeem": "兌換代碼",
+              "invoice": "發票",
+              "system": "系統",
+              "variant": "產品規格"
+            }
+          },
+          "not_found": "找不到使用者"
+        },
+        "layout": {
+          "users": "使用者"
+        },
+        "page": {
+          "manage": {
+            "header": "管理",
+            "single_user": "管理單一使用者"
+          },
+          "actions": {
+            "header": "操作",
+            "sub_benefits_job": {
+              "header": "訂閱福利任務",
+              "manually": "手動觸發訂閱任務，重新計算所有使用者的權限與訂閱福利。",
+              "rerun": "重新執行"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "使用表情符號",
+      "add_to": "新增到……",
+      "transfer": "轉移",
+      "merge": "合併",
+      "size": "尺寸",
+      "copy_link": "複製連結"
+    },
+    "user": {
+      "about": "關於",
+      "active_emotes": "當前啟用的表情符號",
+      "uploaded": "已上傳",
+      "uploaded_emotes": "已上傳的表情符號"
+    },
+    "settings": {
+      "account": {
+        "title": "帳號",
+        "profile": {
+          "details": "自訂偏好設定並管理細節以滿足您的個人需求",
+          "display_name": "顯示名稱",
+          "display_name_description": "選擇一個主要連結帳號，用於顯示名稱和靜態個人檔案圖片",
+          "profile_picture_description": "選擇一張將在所有平台顯示的個人檔案圖片",
+          "update_profile_picture": "更新個人檔案圖片"
+        },
+        "connections": {
+          "details": "管理並連結外部帳號以提高平台內的存取效率與互通能力"
+        },
+        "security": {
+          "title": "安全性",
+          "details": "管理且自訂您的帳號安全設定",
+          "2fa": "兩步驟驗證",
+          "2fa_details": "使用兩步驟驗證（2FA）來讓您的帳號更安全",
+          "email_details": "透過電子郵件接收驗證碼",
+          "authenticator_app": "驗證器 app",
+          "authenticator_app_details": "安裝一個 app 來生成您的驗證碼",
+          "sign_out_everywhere": "從所有裝置登出",
+          "sign_out_everywhere_details": "點一下即可確保帳號安全並從所有裝置登出",
+          "delete_account_details": "永久刪除平台上的所有個人資訊及相關資料，並停用您的帳戶"
+        }
+      },
+      "appearance": {
+        "title": "外觀",
+        "details": "變更外觀與風格",
+        "theme": {
+          "header": "主題",
+          "options": {
+            "system": "依照系統",
+            "dark": "深色",
+            "light": "淺色"
+          }
+        },
+        "motion": {
+          "header": "減少動態效果",
+          "options": {
+            "system": "依照系統",
+            "enabled": "啟用",
+            "disbaled": "已停用"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "網站版面方向",
+          "options": {
+            "ltr": "由左至右",
+            "rtl": "由右至左"
+          }
+        }
+      },
+      "editors": {
+        "details": "管理並自訂您的編輯者或您編輯的頻道",
+        "editing_for": "編輯對象",
+        "add_editor": "新增編輯者",
+        "not_allowed": "您無法為此使用者管理編輯者"
+      },
+      "notifications": {
+        "details": "即時更新與提醒，讓使用者隨時掌握網站或應用程式內的重要事件、訊息與活動"
+      },
+      "blocked": {
+        "title": "已封鎖",
+        "details": "管理您的限制或禁用內容、使用者或活動",
+        "add_user": "新增封鎖使用者"
+      },
+      "billing": {
+        "title": "帳單",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "使用訂閱積分",
+          "use_credits_details": "您的訂閱積分將會優先用於下次付款時",
+          "cancelled": "訂閱已取消",
+          "cancelled_details": "您的訂閱已被取消，並且您的福利將於 {date} 到期"
+        },
+        "history": {
+          "title": "帳單歷史",
+          "details": "查看與您的帳戶相關的所有付款活動，例如過去的帳單明細和交易紀錄"
+        },
+        "payment_methods": {
+          "details": "檢查並更新您偏好的付款方式",
+          "add_new": "新增",
+          "card": {
+            "title": "卡片資訊",
+            "ends_in": "結束於 {digits}",
+            "expires": "有效期限至 {month}/{year}",
+            "address": "地址",
+            "name": "姓名"
+          }
+        },
+        "table": {
+          "status": "狀態",
+          "amount": "數量",
+          "invoice": "發票"
+        }
+      },
+      "user_table": {
+        "name": "名稱",
+        "last_modified": "上次修改",
+        "permissions": "權限"
+      }
+    },
+    "link": {
+      "linking": "正在連結您的帳號……",
+      "linking_successful": "帳號已成功連結",
+      "linking_failed": "連結失敗"
+    },
+    "extension": {
+      "login": "正在為您登入……",
+      "login_successful": "已登入",
+      "login_failed": "登入失敗",
+      "window": "請確認您是透過擴充功能開啟此視窗"
+    }
+  }
+}

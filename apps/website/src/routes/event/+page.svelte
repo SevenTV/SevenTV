@@ -1,18 +1,13 @@
 <script>
 	import Button from "$/components/input/button.svelte";
 	import { ArrowRight } from "phosphor-svelte";
-
+	import { t } from "svelte-i18n";
 	let enabled = false;
 </script>
 
 <svelte:head>
-	{#if enabled}
-		<title>7TV Winter Games & Gift Sub Event</title>
-	{:else}
-		<title>7TV: No upcoming events</title>
-	{/if}
+	<title>7TV Events</title>
 </svelte:head>
-
 {#if enabled}
 	<div class="layout">
 		<div class="heading">
@@ -30,7 +25,6 @@
 			event! Compete, gift, and enjoy exclusive rewards while engaging with your favorite streamers
 			and their communities!
 		</p>
-
 		<hr />
 
 		<h2>Minecraft Hunger Games</h2>
@@ -200,7 +194,6 @@
 			justify-content: space-between;
 			align-items: center;
 		}
-
 		h1 {
 			margin: 1.4rem 0;
 			margin-bottom: 1rem;
@@ -224,7 +217,7 @@
 {:else}
 	<div class="layout">
 		<div class="heading">
-			<h1>No upcoming events</h1>
+			<h1>{$t("pages.store.events.no_events")}</h1>
 		</div>
 	</div>
 

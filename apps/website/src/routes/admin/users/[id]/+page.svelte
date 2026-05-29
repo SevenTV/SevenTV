@@ -17,6 +17,7 @@
 	import type { DialogMode } from "$/components/dialogs/dialog.svelte";
 	import AdminLinkKickDialog from "$/components/dialogs/admin-link-kick-dialog.svelte";
 	import AdminAssignEntitlementDialog from "$/components/dialogs/admin-assign-entitlement-dialog.svelte";
+	import AdminUnassignEntitlementDialog from "$/components/dialogs/admin-unassign-entitlement-dialog.svelte";
 
 	let { data }: { data: PageData } = $props();
 
@@ -240,6 +241,10 @@
 	let canManageEntitlements = $derived($user?.permissions.admin.manageEntitlements);
 
 	let deleteAllSessionsLoading = $state(false);
+	let banUnbanLoading = $state(false);
+	let banStringState = $state<string>("");
+
+	
 
 	async function deleteAllSessions(userId: string) {
 		deleteAllSessionsLoading = true;
@@ -260,9 +265,63 @@
 		deleteAllSessionsLoading = false;
 	}
 
+	async function handleBanUnban(user: User) {
+		banUnbanLoading = true;
+		if (user.roles.some((r) => r.name === "NoPerms")) {
+			// Unban user by removing NoPerms role
+			const from = { type: EntitlementNodeTypeInput.User, id: user.id };
+			await gqlClient().mutation(
+			graphql(`
+				mutation AdminUnassignEntitlement(
+					$from: EntitlementNodeInput!
+					$to: EntitlementNodeInput!
+				) {
+					entitlementEdges {
+						entitlementEdge(from: $from, to: $to) {
+							delete
+						}
+					}
+				}
+			`),
+			{
+				from: from,
+				to: {
+					type: EntitlementNodeTypeInput.Role,
+					id: "01GHVA0W78000DYB7VMB9MMHQV"
+				},
+			},
+		);
+		banStringState = "Ban User";
+		} else {
+			const from = { type: EntitlementNodeTypeInput.User, id: user.id };
+			await deleteAllSessions(user.id);			
+			await gqlClient().mutation(
+			graphql(`
+				mutation AdminAssignEnititlement($from: EntitlementNodeInput!, $to: EntitlementNodeInput!) {
+					entitlementEdges {
+						create(from: $from, to: $to) {
+							__typename
+						}
+					}
+				}
+			`),
+			{
+				from: from,
+				to: {
+					type: EntitlementNodeTypeInput.Role,
+					id: "01GHVA0W78000DYB7VMB9MMHQV"
+				},
+			},
+		);
+		banStringState = "Unban User";
+		}
+		banUnbanLoading = false;
+	}
+
 	let createSessionDialogMode = $state<DialogMode>("hidden");
 	let linkKickDialogMode = $state<DialogMode>("hidden");
 	let assignEntitlementsDialogMode = $state<DialogMode>("hidden");
+	let unassignEntitlementsDialogMode = $state<DialogMode>("hidden");
 </script>
 
 <div class="layout">
@@ -405,11 +464,42 @@
 							from={{ type: EntitlementNodeTypeInput.User, id: user.id }}
 							fromName={user.mainConnection?.platformDisplayName ?? ""}
 						/>
+						<AdminUnassignEntitlementDialog
+							bind:mode={unassignEntitlementsDialogMode}
+							from={{ type: EntitlementNodeTypeInput.User, id: user.id }}
+							fromName={user.mainConnection?.platformDisplayName ?? ""}
+						/>
 						<div class="action-group">
 							<h3>Entitlements</h3>
 							<div class="buttons">
 								<Button secondary onclick={() => (assignEntitlementsDialogMode = "shown")}>
 									Manually Assign Entitlements
+								</Button>
+								<Button secondary onclick={() => (unassignEntitlementsDialogMode = "shown")}>
+									Manually Unassign Entitlements
+								</Button>
+							</div>
+						</div>
+						<div class="action-group">
+							<h3>Bans</h3>
+							<div class="buttons">
+							{#snippet loadingSpinner()}
+								<Spinner />
+							{/snippet}
+								<Button
+									secondary
+									style="color:var(--danger)"
+									disabled={banUnbanLoading}
+									icon={banUnbanLoading ? loadingSpinner : undefined}
+									onclick={async() => {
+										await handleBanUnban(user);
+									}}
+								>
+									{#if banStringState === "" }
+										{user.roles.some((r) => r.name === "NoPerms") ? "Unban User" : "Ban User"}
+									{:else}
+										{banStringState}
+									{/if}
 								</Button>
 							</div>
 						</div>

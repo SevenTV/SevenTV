@@ -55,9 +55,11 @@
 		icon={isActive ? active : children}
 	>
 		{#if tabLinkIconRight}
-			<span style="flex-grow: 1">{title}</span>
+			<span title={title} class="text-overflow">{title}</span>
 		{:else}
-			{title}
+			<p title={title} class="text-overflow">
+				{title}
+			</p>
 		{/if}
 	</Button>
 	<Button
@@ -71,7 +73,9 @@
 		icon={isActive ? active : children}
 	>
 		{#if isActive}
-			{title}
+			<p title={title} class="text-overflow">
+				{title}
+			</p>
 		{/if}
 	</Button>
 {:else}
@@ -86,9 +90,20 @@
 		icon={isActive ? active : children}
 	>
 		{#if tabLinkIconRight}
-			<span style="flex-grow: 1">{title}</span>
+			<span title={title} class="text-overflow" style="flex-grow: 1">{title}</span>
 		{:else}
-			{title}
+			<p title={title} class="text-overflow">
+				{title}
+			</p>
 		{/if}
 	</Button>
 {/if}
+
+<style lang="scss">
+	.text-overflow {
+		text-overflow: hidden;
+		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+</style>

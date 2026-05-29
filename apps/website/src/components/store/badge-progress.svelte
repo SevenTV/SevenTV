@@ -54,7 +54,7 @@
 								{#snippet icon()}
 									<PaintBrush />
 								{/snippet}
-								Your Badges
+								{$t("pages.store.subscription.your_badges")}
 							</Button>
 						{/snippet}
 						<Button secondary>

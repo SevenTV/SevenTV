@@ -45,6 +45,7 @@ impl From<YoutubeUserData> for PlatformUserData {
 			username: value.snippet.custom_url.unwrap_or_else(|| value.snippet.title.clone()),
 			display_name: value.snippet.title,
 			avatar: value.snippet.thumbnails.map(|t| t.default.url),
+			email: None,
 		}
 	}
 }

@@ -41,7 +41,7 @@ export async function purchasePickems(
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation PurchasePickems(
+				mutation PurchaseBundle(
 					$userId: Id!
 					$pickemsId: Id!
 					$subscriptionPriceId: StripeProductId

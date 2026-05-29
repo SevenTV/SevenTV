@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Yöneticisi",
+    "trending_emotes": "Trend İfadeler",
+    "top_emotes": "En Popüler İfadeler",
+    "global_emotes": "Global İfadeler",
+    "new_emotes": "Yeni İfadeler",
+    "bookmarked_emotes": "Yer İmlerine Eklenen İfadeler",
+    "bookmarked_emote_sets": "Yer İmlerine Eklenmiş İfade Setleri",
+    "bookmarked_users": "Yer İmlerine Eklenmiş Kullanıcılar",
+    "account_settings": "Hesap Ayarları",
+    "editor_settings": "Editör Ayarları",
+    "notification_settings": "Bildirim Ayarları",
+    "blocked_settings": "Engellenen Kullanıcı Ayarları",
+    "billing_settings": "Fatura Ayarları",
+    "admin_emote_public_listing": "İfade Açık Listeleme İstekleri",
+    "admin_emote_personal_use": "İfade Kişisel Kullanım İstekleri",
+    "admin_emote_resolved": "Çözümlenen İfade Talepleri"
+  },
+  "page_errors": {
+    "not_found": "Aradığınız sayfa bulunamadı.",
+    "forbidden": "Bu sayfayı görüntüleme izniniz yok.",
+    "unauthorized": "Bu sayfayı görüntüleme yetkiniz yoktur.",
+    "unexpected": "Sayfayı yenilemeyi deneyebilirsiniz. Sorun devam ederse, lütfen bizimle iletişime geçin.",
+    "generic": "Bir hata oluştu.",
+    "emote_set_load": "İfade seti yüklenemedi",
+    "emote_set_not_found": "İfade seti bulunamadı",
+    "user": "Kullanıcı yüklenemedi"
+  },
+  "words": {
+    "from": "şuradan",
+    "to": "şuna",
+    "with": "ile",
+    "by": "tarafından"
+  },
+  "common": {
+    "sign_in": "Giriş Yap",
+    "sign_out": "Çıkış Yap",
+    "go_back": "Geri Dön",
+    "super_admin": "Süper Yönetici",
+    "skip_to_content": "İçeriklere Geç",
+    "emotes": "{count, plural, one {İfade} other {İfadeler}}",
+    "emote_sets": "{count, plural, one {İfade Seti}other {İfade Setleri}}",
+    "users": "{count, plural,one {Kullanıcı}other {Kullanıcılar}}",
+    "channels": "{count, plural, one {Kanal} other {Kanallar}}",
+    "followers": "{count, plural, one {Takipçi} other {Takipçiler}}",
+    "items": "{count, plural, one {Öğe} other {Öğeler}}",
+    "subscriptions": "{count, plural, one {Abonelik} other {Abonelikler}}",
+    "payment_methods": "{count, plural, one {Ödeme Yöntemi} other {Ödeme Yöntemleri}}",
+    "date": "Tarih",
+    "help": "Yardım",
+    "for": "için",
+    "error": "Hata",
+    "loading": "Yükleniyor...",
+    "paint_bundles": "Boya Paketleri",
+    "notifications": "Bildirimler",
+    "connections": "Bağlantılar",
+    "direct_messages": "Direkt Mesajlar",
+    "mod_comments": "Moderatör Yorumları",
+    "profile_picture": "Profil Resmi",
+    "suggested_emotes": "Önerilen İfadeler",
+    "personal_emotes": "Kişisel İfadeler",
+    "no_more_emotes": "Daha fazla ifade yok",
+    "no_emotes": "İfade yok",
+    "your_subscription": "Aboneliğin",
+    "theme": "Tema",
+    "language": "Dil",
+    "developer_portal": "Geliştirici Portalı",
+    "faq": "Sıkça Sorulan Sorular",
+    "faq_short": "SSS",
+    "privacy": "Gizlilik Politikası",
+    "tos": "Hizmet Şartları",
+    "trending": "Trend Olanlar",
+    "top": "En Popüler",
+    "global": "Global",
+    "new": "Yeni",
+    "Weekly": "Haftalık",
+    "Monthly": "Aylık",
+    "Today": "Bugün",
+    "news": "Haberler",
+    "Default_set": "Varsayılan set",
+    "following": "Takipte",
+    "activity": "Aktivite",
+    "analytics": "Analizler",
+    "statistics": "İstatistikler",
+    "contact": "İletişim",
+    "cosmetics": "Kozmetikler",
+    "editors": "Editörler",
+    "active": "Aktif",
+    "profile": "Profil",
+    "pinned": "Sabitlenmiş",
+    "settings": "Ayarlar",
+    "delete_account": "Hesabı Sil"
+  },
+  "labels": {
+    "enter_text": "Metin Girin",
+    "redeem": "Kod Girin",
+    "search": "Ara",
+    "refetch": "Yeniden getir",
+    "manage_connections": "Bağlantıları Yönet",
+    "manage_editors": "Editörleri Yönet",
+    "none": "Yok",
+    "search_user": "Kullanıcı Ara",
+    "search_country": "Ülke Ara",
+    "search_emote_set": "İfade Seti Ara",
+    "search_users": "{count, plural,one {Bir kullanıcı ara}other {Kullanıcıları ara}}",
+    "tags": "Etiketler",
+    "close": "Kapat",
+    "contribute": "Katkıda bulun",
+    "enter_tags": "Etiket İle Ara",
+    "tag_limit_reached": "{limit} etiket limitine ulaşıldı",
+    "filters": "Filtreler",
+    "no_filters": "Filtresiz",
+    "emote_name": "İfade Adı",
+    "copy_link": "Bağlantıyı Kopyala",
+    "create_emote_set": "Yeni Set Oluştur",
+    "emote_set_name": "İfade Seti Adı",
+    "emote_attribution": "İfade Atfı",
+    "select": "Seç",
+    "selection_mode": "Seçme Modu",
+    "edit": "Düzenle",
+    "capacity": "Kapasite",
+    "enable": "Etkinleştir",
+    "disable": "Devre Dışı Bırak",
+    "disabled": "Devre Dışı",
+    "more": "Daha Fazla",
+    "actions": "Eylemler",
+    "download": "İndir",
+    "report": "Rapor Et",
+    "delete": "Sil",
+    "time_select": {
+      "week": "Bu Hafta",
+      "month": "Bu Ay",
+      "year": "Bu Yıl"
+    },
+    "gift": "Hediye Et",
+    "follow": "Takip Et",
+    "connect": "Bağla",
+    "disconnect": "Bağlantıyı Kes",
+    "email": "E-Posta",
+    "password": "Şifre",
+    "all": "Hepsi",
+    "other": "Diğerleri",
+    "cancel": "İptal Et",
+    "confirm": "Onayla",
+    "proceed": "Devam Et",
+    "save": "Kaydet",
+    "remove": "Sil",
+    "accept": "Onayla",
+    "deny": "Reddet",
+    "enter": "Onayla"
+  },
+  "themes": {
+    "system": "Sistem",
+    "dark": "Karanlık",
+    "light": "Aydınlık"
+  },
+  "flags": {
+    "global": "Global",
+    "trending": "Trend Olanlar",
+    "overlaying": "Kaplayan",
+    "default": "Varsayılan",
+    "personal": "Kişisel",
+    "listed": "Listelenmiş",
+    "unlisted": "Listelenmemiş",
+    "personal_use": "Kişisel Kullanım",
+    "deleted": "Silindi",
+    "private": "Gizli",
+    "personal_use_approved": "Kişisel Kullanıma Onaylanmış",
+    "personal_use_denied": "Kişisel Kullanıma Onaylanmamış",
+    "personal_use_pending": "Kişisel kullanım için incelemede",
+    "renamed": "Yeniden adlandırılmış",
+    "nsfw": "+18",
+    "editor_flags": {
+      "pending": "Beklemede",
+      "accepted": "Kabul Edildi",
+      "rejected": "Reddedildi",
+      "you_accepted": "Kabul Ettiniz",
+      "you_rejected": "Reddettin"
+    }
+  },
+  "notifications": {
+    "system": "Sistem",
+    "approved_for_public": "{emote} İfaden herkese açık listeleme için onaylandı."
+  },
+  "sub_info": {
+    "plan": "Abonelik",
+    "free": "Ücretsiz",
+    "gifted_by": "Hediye eden kişi",
+    "ends": "Abonelik Bitişi",
+    "total": "Toplam",
+    "credits": "Abonelik Kredileri"
+  },
+  "file_limits": {
+    "max_size": "Maksimum dosya boyutu: {size}",
+    "max_resolution": "Maksimum çözünürlük: {width}x{height}",
+    "max_frames": "Maksimum kare sayısı: {count}",
+    "resolution_error": "Çözünürlük {width} x {height} sınırlarını aşmamalı",
+    "duration_error": "Dosya süresi {duration} saniye veya daha kısa olmalı"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "7TV’ye giriş yap",
+      "subtitle": "Devam etmek için oturum aç veya bir hesap oluştur",
+      "continue_with": "{platform} ile devam et",
+      "trouble": "Giriş yaparken sorun mu yaşıyorsun?",
+      "legal_yapping": "Giriş yaparak, bizimle ilgili şartları kabul etmiş oluyorsun",
+      "and": "ve",
+      "linking_new": "Zaten bir 7TV hesabınız var ve yeni bir giriş yöntemi mi eklemek istiyorsunuz? Mevcut hesabınıza giriş yapın ve şuradan yeni hesabınızı bağlayın:",
+      "settings": "ayarlar"
+    },
+    "search": {
+      "emotes": "İfadeler",
+      "users": "Kullanıcılar"
+    },
+    "upload": {
+      "title": "İfade Yükle",
+      "untitled": "İsimsiz",
+      "chat": "Mesaj gönder",
+      "drag_drop": "Yüklemek için sürükleyip bırakın veya",
+      "browse_files": "Dosyalara Göz At",
+      "accept_rules": "Kuralları ve yönergeleri kabul ediyorum",
+      "discard": "İptal et",
+      "upload_guidelines": "İfade Yükleme Kuralları",
+      "upload": "Yükle"
+    },
+    "emote_set": {
+      "title": "Aktif İfade Seti",
+      "create": "İfade Seti Oluştur",
+      "name": "İfade Seti Adı",
+      "label": "İsim",
+      "confirm": "Oluştur",
+      "copy_set": "Seti Kopyala",
+      "special": "Özel",
+      "favourite_sets": {
+        "title": "Favori İfade Setleri",
+        "add": "Ekle ve hepsini yeniden isimlendir",
+        "remove": "Hepsinden kaldır"
+      },
+      "mass_select_feature": {
+        "add": "İfade Setine Ekle",
+        "remove": "İfade Setinden Kaldır",
+        "amount_selected_label": "/20 Seçildi"
+      },
+      "default_emote_set": {
+        "remove": "İfadeyi, {set} Setinden Kaldır",
+        "add": "İfadeyi şu set'e ekle: {set}",
+        "conflicting_name": "Çakışan isim"
+      }
+    },
+    "manage_aliases": {
+      "title": "Manage Emote Aliases",
+      "add_placeholder": "Add new alias.."
+    },
+    "rename_emote": {
+      "title": "{set} seti içerisindeki ifadeyi yeniden isimlendir",
+      "input_placeholder": "Yeni ifade ismi",
+      "confirmation_message": "{set} seti içerisindeki bu ifadeyi yeniden isimlendirmek istediğinizden emin misiniz?",
+      "confirm": "Yeniden isimlendir"
+    },
+    "remove_emote_from_set": {
+      "title": "İfadeyi, {set} Setinden Kaldır",
+      "warning_message": "{set} setinden {emote} ifadesini silmek istediğinizden emin misiniz?",
+      "confirm": "Sil"
+    },
+    "add_emote": {
+      "title": "{emote} ekle",
+      "change_name": "İfade adını değiştir",
+      "confirm": "Onayla",
+      "confirm_changes": "{count, plural, one {1 değişikliği onayla} other {{count} değişiklikleri onayla}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "İfade kuyruğu",
+      "activity": "Aktivite",
+      "comments": "Yorumlar"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "İfade Ekle/Kaldır",
+      "edit_emote_alias": "Edit Emote Alias",
+      "remove_emote": "İfade Setinden Kaldır",
+      "open_in_new_tab": "Yeni Sekmede Aç",
+      "copy_emote_link": "İfade linkini kopyala"
+    },
+    "cart": {
+      "title": "Sepetin",
+      "duration": "Süre",
+      "price": "Fiyat",
+      "preview": "Ön Izleme",
+      "purchase_as_gift": "Hediye olarak satın al",
+      "total": "Toplam"
+    },
+    "editor": {
+      "permissions": "Editör İzinlerini Ayarla",
+      "super_admin": "Süper Yönetici",
+      "emote_sets": "İfade Setleri",
+      "admin": "Yönetici",
+      "emotes": "İfadeler",
+      "user": "Kullanıcı",
+      "manage_personal_emotes": "Kişisel İfade Setini Yönet",
+      "confirm": "Onayla",
+      "no_editors": "Gösterilecek editör yok",
+      "permissions_details": {
+        "manage": "Yönet",
+        "create": "Oluştur",
+        "transfer": "Aktar",
+        "manage_profile": "Profili Yönet",
+        "manage_emotes": "İfadeleri Yönet",
+        "manage_billing": "Faturalandırmayı Yönet",
+        "manage_editors": "Editörleri Yönet",
+        "view_billing": "Fatura Bilgilerini Görüntüle"
+      }
+    },
+    "emote_info": {
+      "processing": "Bu ifade hala işleniyor",
+      "refresh": "Yenile",
+      "download": "İndir"
+    },
+    "copy_emotes": {
+      "title": "Seçilen ifadeleri şuraya kopyala"
+    },
+    "default_set": {
+      "title": "Varsayılan İfade Seti"
+    },
+    "delete_account": {
+      "warning": "Dikkat",
+      "warning_message": "Bu işlem hesabını kalıcı olarak silecektir, ardından değiştiremezsin.",
+      "choose_reasons": "Hesap silme nedenlerini seç",
+      "reasons": {
+        "no_longer_use": "Artık 7TV kullanmıyorum",
+        "privacy_concerns": "Gizlilik endişeleri",
+        "not_useful": "Yararlı değil",
+        "other": "Diğerleri"
+      },
+      "confirm_username": "Kullanıcı adını onaylamak için gir"
+    },
+    "delete_emote_or_set": {
+      "title": "{name} Sil",
+      "warning_message_emote": "Bu, ifadenizi kalıcı olarak silecektir. Bu işlemi geri alamazsınız.",
+      "warning_message_set": "Bu, ifade setinizi kalıcı olarak silecektir. Bu işlemi geri alamazsınız.",
+      "reason": "Neden",
+      "reason_for_deletion": "Silme nedeni"
+    },
+    "edit_emote": {
+      "title": "{emote} Düzenle"
+    },
+    "edit_emote_set": {
+      "title": "İfade Setini Düzenle",
+      "show_on_profile": "Profilde göster",
+      "publicly_listed": "Halka Açık Listelendi"
+    },
+    "remove_emote": {
+      "title": "Seçilen ifadeleri {set} setinden kaldır"
+    },
+    "report_emote": {
+      "title": "İfadeyi Bildir",
+      "choose_reasons": "Nedenleri seç",
+      "reasons": {
+        "my_work": "Bu ifadeyi ben yaptım, ancak başka biri yükledi",
+        "duplicate": "Bu ifade bir kopyadır",
+        "sexual": "Bu ifade pornografik veya aşırı cinsel içerik barındırıyor",
+        "violance": "Bu ifade aşırı şiddet veya kan içeriği gösteriyor",
+        "its_me": "Bu ifade beni tasvir ediyor ve hoşuma gitmiyor",
+        "offensive": "Bu ifadeyi saldırgan buluyorum",
+        "other": "Diğerleri"
+      },
+      "additional_info": "Ek Bilgi",
+      "disclaimer": "Raporlama özelliğinin kötüye kullanılması, erişimin kaldırılmasına neden olabilir."
+    },
+    "transfer_emote": {
+      "title": "{emote} Aktar",
+      "details": "{emote} Aktarılacaktır.",
+      "receipient": "İfade Alıcısı",
+      "transfer": "Aktarmak"
+    },
+    "badge": {
+      "title": "Rozet"
+    },
+    "subscription": {
+      "gifted_by": "Aboneliğiniz size şu kişi tarafından hediye edildi",
+      "cancel_notice": "Aboneliğinizi şimdi sonlandırırsanız, abonelik avantajlarınıza erişiminizi hemen kaybedersiniz. Aboneliğinizi sonlandırmak istediğinizden emin misiniz?",
+      "cancel_confirmation": "Aboneliğinizi iptal etmek istediğinizden emin misiniz? Mevcut fatura döneminizin sonunda abonelik avantajlarınıza erişiminizi kaybedeceksiniz.",
+      "confirm": "Onayla"
+    },
+    "error": {
+      "title": "Hata"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Pick'ems Pass Hediye Et",
+        "gift_to": "Şu Kişiye Pick'ems Pass Hediye Et",
+        "recipient": "Alıcı seç",
+        "back": "Geri",
+        "continue": "Devam et"
+      }
+    },
+    "gift": {
+      "title": "Hediye 1",
+      "gift_to": "Hediye 1 {variantUnit(variant)} şuna",
+      "recipient": "Alıcı seç"
+    },
+    "paint": {
+      "title": "Renk"
+    },
+    "buttons": {
+      "back": "Geri",
+      "continue": "Devam et"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Yüklendi"
+      },
+      "process": {
+        "start": "Yeni bir işleme işi başlatıldı",
+        "success": "İşlem başarıyla tamamlandı",
+        "fail": "İşlem başarısız",
+        "cancel": "İptal edilen işleme işi"
+      },
+      "change_name": {
+        "action": "Yeniden adlandırılmış"
+      },
+      "merge": {
+        "action": "Birleştirilmiş"
+      },
+      "change_owner": {
+        "action": "Sahiplik devredildi"
+      },
+      "change_tags": {
+        "action": "Etiketleri ayarla"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Halka açık listeye eklendi"
+        },
+        "removed_public": {
+          "action": "Halka açık listeden kaldırıldı"
+        },
+        "approved_personal": {
+          "action": "Kişisel kullanım için onaylanmıştır"
+        },
+        "rejected_personal": {
+          "action": "Kişisel kullanım için reddedildi"
+        },
+        "added_overlaying": {
+          "action": "Üstüne bindirme bayrağı eklendi"
+        },
+        "removed_overlaying": {
+          "action": "Üstüne bindirme bayrağı kaldırıldı"
+        },
+        "added_private": {
+          "action": "Özel bayrağı eklendi"
+        },
+        "removed_private": {
+          "action": "Özel bayrağı kaldırıldı"
+        }
+      },
+      "delete": {
+        "action": "Silinmiş"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Etkinlik",
+      "emote": {
+        "deleted_emote": "Silinmiş İfade",
+        "deleted_set": "Silinmiş Set",
+        "by": "tarafından",
+        "created": "Oluşturuldu",
+        "changed_tags": "Şunun için etiketler değiştirildi",
+        "changed_capacity": "Şunun için kapasite değiştirildi",
+        "added": "Eklendi",
+        "removed": "İfade kaldırıldı",
+        "renamed": "İfade tekrar isimlendirildi",
+        "in": "içinde",
+        "from": "şuradan",
+        "to": "şuna",
+        "deleted": "Silinmiş"
+      },
+      "user": {
+        "changed_paint": "Aktif boya şundan değiştirildi",
+        "changed_badge": "Aktif rozet şundan değiştirildi",
+        "removed": "Silindi",
+        "connection": "Bağlantı",
+        "changed_set": "Aktif ifade seti şundan değiştirildi",
+        "added": "Eklendi",
+        "no_badge": "Rozet Yok",
+        "no_paint": "Boya Yok",
+        "deleted": "Silindi"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Giriş yapılıyor...",
+        "logged": "Giriş yapıldı",
+        "failed": "Giriş yapılamadı"
+      },
+      "state": {
+        "logging": "Giriş yapılıyor...",
+        "logged": "Giriş yapıldı",
+        "failed": {
+          "title": "Giriş başarısız",
+          "message": "Bu pencereyi tarayıcı eklentisi üzerinden açtığınızdan emin olun"
+        }
+      }
+    },
+    "home": {
+      "title": "Ana Sayfa",
+      "features": {
+        "emote_slots": "1000 İfade Yuvası",
+        "emote_slots_info": "Herkes 1000 adet özelleştirilebilir kanal ifade yuvasına ücretsiz olarak sahip olur. Tüm ifadelerinizi tek bir yerde saklayın.",
+        "emote_slots_button": "İfadelere Gözat",
+        "emote_sets": "İfade Setleri",
+        "emote_sets_info": "Diğer kullanıcılarla paylaşılabilen veya kanalınıza hızlıca aktarılabilen özelleştirilebilir setler halinde ifade grupları.",
+        "emote_sets_button": "Bir İfade Seti Oluştur",
+        "custom_emotes": "Özel İfade Adları",
+        "custom_emotes_info": "İfadeye yazarı tarafından verilen isim hoşuna gitmedi mi? Sorun değil, sadece kendi kanalın için değiştirebilirsin.",
+        "custom_emotes_button": "İfadelere Gözat",
+        "real-time": "Gerçek Zamanlı Güncellemeler",
+        "real-time_info": "Kanalınızdaki ifadeler tüm izleyiciler için anında değişir. F5'e gerek yok, beklemenize gerek yok.",
+        "real-time_button": "Uzantıyı İndirin",
+        "large_community": "Büyük Topluluk",
+        "large_community_info": "7TV, günlük 2.000.000'den fazla tekil kullanıcıya hizmet vermektedir ve 1.000.000'den fazla halka açık ifade içeren bir kütüphaneye sahiptir.",
+        "large_community_button": "Discord'umuza katılın",
+        "next_gen": "Yeni Nesil Formatlar",
+        "next_gen_info": "Bant genişliği kullanımını azaltmak için WebP ve AVIF gibi daha yeni ve daha optimize edilmiş görüntü formatları kullanıyoruz.",
+        "next_gen_button": "Uzantıyı İndirin"
+      }
+    },
+    "help": {
+      "title": "Yardım"
+    },
+    "directory": {
+      "title": "Dizin",
+      "bookmarked": "Yer İmlerine Eklendi",
+      "sorting": {
+        "title": "Sıralama",
+        "alphabetical": "Alfabetik",
+        "upload_date": "Yükleme Tarihi"
+      },
+      "filters": {
+        "animated": "Canlı",
+        "static": "Statik",
+        "overlaying": "Üstüne bindirme",
+        "personal_use": "Kişisel Kullanım",
+        "exact_match": "Tam Eşleşme"
+      },
+      "size": {
+        "title": "Boyut",
+        "any": "Herhangi Bir Boyut"
+      }
+    },
+    "landing": {
+      "start": "Sohbet deneyiminizi zenginleştiren yüzlerce ifade ve özellik ile yolculuğunuza başlayın. Resmi 7TV Uzantısını veya diğer üçüncü taraf uygulamalarını indirin.",
+      "developers": {
+        "header": "Kaynak-Mevcut",
+        "info": "Tüm kod tabanımız GitHub'da kaynak erişilebilir lisansla mevcuttur. Herkes görüntüleyebilir ve katkıda bulunabilir."
+      },
+      "download": {
+        "start": "Sohbet deneyiminizi zenginleştiren yüzlerce ifade ve özellik ile yolculuğunuza başlayın. Resmi 7TV Uzantısını veya diğer üçüncü taraf uygulamalarını indirin.",
+        "extension": "Web Uzantısı",
+        "stable": "Stabil Sürüm",
+        "nightly": "Gecelik sürüm",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobil Uygulamalar"
+        },
+        "bots": {
+          "header": "Sohbet Botları"
+        }
+      },
+      "features": {
+        "header": "Neden 7TV?",
+        "info": "Platformumuz, sohbet deneyiminizi zenginleştirecek çeşitli kullanışlı özellikler sunar."
+      },
+      "footer": {
+        "affiliated": "7TV, Twitch, Kick, YouTube veya Discord ile bağlantılı değildir",
+        "privacy_policy": "Gizlilik Politikası",
+        "tos": "Hizmet Şartları"
+      },
+      "hero": {
+        "platform": "Herkes İçin",
+        "all": "İfade Platformu",
+        "download": "İndir",
+        "manage": "Twitch, Kick veya YouTube kanallarınız için yüzlerce ifadeyi kolaylıkla yönetin. Sohbet deneyiminizi geliştirin.",
+        "more": "Daha fazla bilgi edin",
+        "xmas": {
+          "header": "NOEL ABONE ETKİNLİĞİ",
+          "info": "Bu Noel'de herhangi birine 1 abonelik hediye edin ve özel bir rozet kazanın!",
+          "gift": "Abonelik hediye et"
+        },
+        "nnys": {
+          "info": "NNYS 2025'te oy verin, özel boya, rozet ve emote seti kazanın.",
+          "vote": "NNYS 2025'te oy verin"
+        },
+        "cs2": {
+          "streamers": "35 YAYINCI",
+          "tournament": "7TV TARAFINDAN DÜZENLENEN TURNUVA",
+          "event": "3 GÜNLÜK ETKİNLİK",
+          "header": "Pick'emini Yap. Ödülleri Kazan.",
+          "info": "7TV'den CS2 Turnuvası",
+          "date": "29 Şubat - 2 Mart",
+          "pickems": "Pick'emlerini yap",
+          "pass": "Bileti al!",
+          "badges_paints": "Rozetler & Renkler Kazan.",
+          "description1": "xQc, OhnePixel, JasonTheWeen ve 32 diğer yayıncı karşı karşıya geliyor",
+          "description2": "7TV tarafından düzenlenen 3 günlük Tek Eleme CS2 turnuvasında."
+        }
+      }
+    },
+    "discover": {
+      "title": "Keşfet",
+      "uploads": "Yüklenen",
+      "followed": "Takip Edilen Hesaplar"
+    },
+    "store": {
+      "title": "Market",
+      "redeem": {
+        "title": "Kullan",
+        "header": "Hediye Kodu Kullan",
+        "subtitle": "Hediye kodu kullanarak özel kozmetik ürünleri ve avantajları açın.",
+        "state": {
+          "idle": "Boşta",
+          "loading": "Yükleniyor",
+          "success": "Başarılı"
+        },
+        "code": "kod",
+        "shown": "göster",
+        "trial": "Deneme aboneliğinizi başarıyla kullandınız"
+      },
+      "purchase": {
+        "success": "Satın alma işleminiz başarıyla tamamlandı"
+      },
+      "subscription": {
+        "banner_title_subbed": "Desteğin İçin Teşekkür Ederiz",
+        "banner_title_unsubbed": "Özel Avantajlar Sağla",
+        "banner_subtitle_subbed": "Özel Abone Avantajlarının Tadını Çıkar!",
+        "banner_subtitle_unsubbed": "Sohbetlerine zenginlik katmak için abone ol.",
+        "badge_progress": {
+          "title": "Rozet İlerlemesi",
+          "left": "{duration} kaldı"
+        },
+        "benefits": {
+          "title": "Abonelik Avantajları",
+          "animated_avatar": "Canlı Profil Resmi",
+          "personal_emotes": "Kişisel İfadeler",
+          "paints": "Kullanıcı İsim Boyaları",
+          "sub_badge": "Abone Rozeti",
+          "raffle_tickets": "Çekiliş Biletleri"
+        },
+        "raffle": "Küresel İfade Çekilişi",
+        "monthly_paints": "Aylık Boyalar",
+        "your_cosmetics": "Kozmetikleriniz",
+        "your_paints": "Renkleriniz",
+        "beomce_a_subscriber": "Abone Olun",
+        "your_badges": "Rozetleriniz",
+        "top_gifters": "En Çok Hediye Gönderenler",
+        "subscribe": "Abone Ol",
+        "subscribed": "Aboneli",
+        "cancel": "Aboneliğini İptal Et",
+        "reactivate": "Aboneliğini Yeniden Aktif Et",
+        "one_monhth": "1 Ay",
+        "one_year": "1 Yıl"
+      },
+      "paint_bundles": {
+        "coming_soon": "Çok Yakında",
+        "banner_title": "Kendini Parlat",
+        "banner_subtitle": "Kullanıcı İsim Boyaları Her Renkte Kendini İfade Etmeni Sağlayacaktır."
+      },
+      "events": {
+        "no_events": "Yaklaşan etkinlik yok",
+        "xmas": "2024 NOEL ETKİNLİĞİ: ÖZEL BİR ROZET KAZANMAK İÇİN 1 ABONELİK HEDİYE ET",
+        "cs2": {
+          "tournament": "7TV Tarafından Düzenlenen CS2 Turnuvası",
+          "cosmetics": "Sonucu tahmin ederek kozmetikler kazanmak ister misiniz? Aşağıya tıklayın!",
+          "twitch": "Twitch'te izle",
+          "bundle": "Paketi satın al",
+          "already_subscribed": "Zaten Abone",
+          "subscribe": "Bugün için {price}, ardından {recurring} olarak devam eder",
+          "billing_cycle": "Tek seferlik ödeme olarak ücretlendirildi",
+          "pickems": {
+            "place": "Pick'emleri yerleştir",
+            "predict": "Kazananları tahmin et",
+            "purchase_pass": "Bileti satın al"
+          },
+          "pass": {
+            "title": "Pick'ems Bileti Hediye Et",
+            "get": "Bileti al",
+            "bundle": "Bilet + {variantName(variant)} Abonelik Paketi"
+          },
+          "schedule": {
+            "header": "Turnuva Takvimi",
+            "stage": "Sahne",
+            "best_of": "En iyi",
+            "start_time": "Başlangıç Saati"
+          },
+          "streamers": {
+            "header": "Yayıncılarla buluş",
+            "info": "En büyük Twitch yayıncıları, topluluklarından bir takım oluşturarak CS tarzı tek eleme usulünde bir turnuvada karşı karşıya gelecekler.",
+            "watch": "Ana etkinliği şurada izleyin",
+            "twitch_channel": "7TV Twitch kanalı",
+            "streamer_pov": "veya en sevdiğiniz yayıncının bakış açısından izleyin."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Yönetici",
+      "overview": "Genel Bakış",
+      "welcome": "Tekrar Hoşgeldin",
+      "enjoy": "Modlamanın keyfini çıkar!",
+      "tickets": {
+        "title": "Biletler",
+        "emotes": {
+          "public_listing": "Halka Açık Listeleme",
+          "personal_use": "Kişisel Kullanım",
+          "resolved": "Çözüldü",
+          "not_implemented": "Uygulanmadı"
+        },
+        "emote_table": {
+          "emote_name": "İfade Adı",
+          "uploader": "Yükleyici",
+          "country": "Ülke",
+          "tags_flags": "Etiketler & İşaretler",
+          "reviewed_by": "İnceleyen"
+        },
+        "reports": "Raporlar",
+        "reports_options": {
+          "all": "Hepsi",
+          "assigned": "Atanmış",
+          "closed": "Kapanmış"
+        },
+        "reports_table": {
+          "reported_by": "Bildiren",
+          "target": "İlgili Kişi",
+          "description": "Açıklama",
+          "assigned_to": "Atanan kişi",
+          "status": "Durum",
+          "date": "Tarih",
+          "ticket_id": "Bilet Kodu",
+          "subject": "Konu",
+          "details": "Detaylar"
+        },
+        "reports_actions": {
+          "close": "Kapalı Olarak İşaretle",
+          "assign_self": "Kendini Ata",
+          "add_comment": "Yorum ekle"
+        }
+      },
+      "codes": {
+        "redeem": "Kodları Kullan",
+        "add": "Kod(ları) Ekle",
+        "filters": {
+          "header": "Filtreler:",
+          "remaining_uses": "Kalan Kullanım"
+        },
+        "search": {
+          "results": "{results.totalCount} sonuç bulundu ({results.pageCount} sayfa)"
+        },
+        "attributes": {
+          "name": {
+            "name": "İsim",
+            "description": "Açıklama",
+            "tags": "Etiketler",
+            "code": "Kod",
+            "remaining_uses": "Kalan Kullanımlar",
+            "active_period": "Aktif Dönem",
+            "effect": "Efekt",
+            "subscription_effect": "Abonelik Efekti",
+            "created_by": "Oluşturan",
+            "created_at": "Oluşturulma zamanı",
+            "actions": "Eylemler"
+          }
+        },
+        "period": {
+          "unlimited": "Sınırsız"
+        },
+        "trial": {
+          "days": "günlük deneme",
+          "no_trial": "Deneme yok",
+          "none": "Yok"
+        },
+        "system": "Sistem"
+      },
+      "special_events": {
+        "header": "Özel Etkinlikler",
+        "create": "Özel Etkinlik Oluştur",
+        "add": "Özel Etkinlik Ekle",
+        "results": "{results.length} sonuç bulundu",
+        "attributes": {
+          "name": "İsim",
+          "description": "Açıklama",
+          "tags": "Etiketler",
+          "created_by": "Oluşturan",
+          "created_at": "Oluşturulma zamanı",
+          "actions": "Eylemler",
+          "create": "Oluştur",
+          "cancel": "İptal Et"
+        },
+        "system": "Sistem",
+        "no_events": "Özel Etkinlik Yok"
+      },
+      "users": {
+        "id": {
+          "back": "Geri",
+          "last_updated": "Son Güncelleme Tarihi",
+          "search_last_update": "Son Güncelleme Tarihi Ara",
+          "queued": "Güncelleme için sıraya alındı",
+          "stripe": {
+            "customer": "Stripe Müşterisi",
+            "view": "Görüntüle",
+            "no_customer": "İlgili Stripe müşterisi yok",
+            "roles": "Roller"
+          },
+          "actions": {
+            "header": "Eylemler",
+            "sessions": {
+              "header": "Oturumlar",
+              "create_session": "Yeni Oturum Oluştur",
+              "delete_all": "Tüm Oturumları Sil",
+              "expiration": "Şu kadar sonra süresi dolacak",
+              "token": "Token",
+              "copy_token": "Token'i Kopyala",
+              "create": "Oluştur",
+              "close": "Kapat"
+            },
+            "connections": {
+              "header": "Bağlantılar",
+              "kick": "Kick'e Manuel Bağlan",
+              "username": "Kick Kullanıcı Adı"
+            },
+            "entitlements": {
+              "header": "Haklar",
+              "create": "Hak oluştur",
+              "assign": "Manuel Hak Ata",
+              "assign_to": "Şuna Hak Ata",
+              "remove_all": "Bütün Hakları Sil",
+              "view": "Hakları Göster",
+              "showing": "Şuna atanan haklar gösteriliyor"
+            }
+          },
+          "subscription": {
+            "header": "Abonelik",
+            "period": {
+              "header": "Abonelik Dönemi",
+              "key": "Anahtar",
+              "value": "Değer",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "ULID'i kopyala",
+              "uuid": "UUID'i kopyala"
+            },
+            "provider": {
+              "id": "Sağlayıcı Kimliği",
+              "view": "Görüntüle"
+            },
+            "product": {
+              "id": "Ürün Kimliği",
+              "view": "Görüntüle",
+              "start": "Başlat",
+              "end": "Bitir",
+              "is_trial": "Deneme Sürümü mü?",
+              "auto_renew": "Otomatik Yenile?",
+              "gifted": {
+                "header": "Hediye mi?",
+                "yes": "Evet - Tarafından",
+                "no": "Hayır"
+              },
+              "created_by": "Oluşturan",
+              "redeem": "Kodu Kullan",
+              "invoice": "Fatura",
+              "system": "Sistem",
+              "variant": "Ürün Varyantı"
+            }
+          },
+          "not_found": "Kullanıcı bulunamadı"
+        },
+        "layout": {
+          "users": "Kullanıcılar"
+        },
+        "page": {
+          "manage": {
+            "header": "Yönet",
+            "single_user": "Tek bir kullanıcıyı yönet"
+          },
+          "actions": {
+            "header": "Eylemler",
+            "sub_benefits_job": {
+              "header": "Abonelik Avantajları Görevleri",
+              "manually": "Abonelik görevini manuel tetikleyerek tüm kullanıcıların haklarını ve abonelik avantajlarını yeniden hesapla.",
+              "rerun": "Yeniden çalıştır"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "İfade Kullan",
+      "add_to": "Ekle...",
+      "transfer": "Aktar",
+      "merge": "Birleştir",
+      "size": "Boyut",
+      "copy_link": "Bağlantıyı Kopyala"
+    },
+    "user": {
+      "about": "Hakkında",
+      "active_emotes": "Aktif İfadeler",
+      "uploaded": "Yüklenen",
+      "uploaded_emotes": "Yüklenen İfadeler"
+    },
+    "settings": {
+      "account": {
+        "title": "Hesap",
+        "profile": {
+          "details": "Tercihlerini özelleştir ve bireysel detaylarını ihtiyaçlarına göre yönet",
+          "display_name": "Görünen İsim",
+          "display_name_description": "Görünecek İsim ve statik profil resim için kullanılacak ana bağlantıyı seç",
+          "profile_picture_description": "Tüm platformlarda görüntülenecek bir profil resmi seç",
+          "update_profile_picture": "Profil Resmini Güncelle"
+        },
+        "connections": {
+          "details": "Erişimi kolaylaştıracak ve platformun içindeki birlikteki çalışabilirliği artıracak dış hesaplarını bağla ve yönet"
+        },
+        "security": {
+          "title": "Güvenlik",
+          "details": "Hesap güvenliğini yönet ve özelleştir",
+          "2fa": "İki Faktörlü Kimlik Doğrulama",
+          "2fa_details": "İki Faktörlü Kimlik Doğrulama (2FA) ile hesabının güvenliğini artır",
+          "email_details": "E-Posta yolu ile doğrulama kodu al",
+          "authenticator_app": "Kimlik Doğrulayıcı Uygulaması",
+          "authenticator_app_details": "Doğrulama kodunu oluşturmak için bir uygulama indir",
+          "sign_out_everywhere": "Her Yerden Çıkış Yap",
+          "sign_out_everywhere_details": "Güvenlik sağla ve tek tıklama ile tüm cihazlardan çıkış yap",
+          "delete_account_details": "Hesabını sonlandırarak, tüm kişisel bilgilerini ve ilişkili verilerini platformdan kalıcı olarak sil"
+        }
+      },
+      "appearance": {
+        "title": "Görünüm",
+        "details": "Görünümü ve hissi değiştirin",
+        "theme": {
+          "header": "Tema",
+          "options": {
+            "system": "Sistem",
+            "dark": "Karanlık",
+            "light": "Aydınlık"
+          }
+        },
+        "motion": {
+          "header": "Azaltılmış Hareket",
+          "options": {
+            "system": "Sistem",
+            "enabled": "Etkin",
+            "disbaled": "Devre Dışı"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Website Düzen Yönü",
+          "options": {
+            "ltr": "Soldan Sağa",
+            "rtl": "Sağdan Sola"
+          }
+        }
+      },
+      "editors": {
+        "details": "Editörlerini veya kanallarını yönet ve özelleştir",
+        "editing_for": "Şu Kişilerin Editörü",
+        "add_editor": "Editör Ekle",
+        "not_allowed": "Bu kullanıcı için editörleri yönetmenize izin verilmiyor"
+      },
+      "notifications": {
+        "details": "Gerçek zamanlı güncellemeler ve uyarılar, kullanıcıları web sitesi veya uygulama içindeki önemli olaylar, mesajlar ve aktiviteler hakkında bilgilendirir"
+      },
+      "blocked": {
+        "title": "Engellenen",
+        "details": "Kısıtlanmış veya yasaklanmış içeriklerini, kullanıcıları veya aktivitelerini yönet",
+        "add_user": "Engellenecek Kullanıcı Ekle"
+      },
+      "billing": {
+        "title": "Faturalandırma",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Abonelik Kredilerini Kullan",
+          "use_credits_details": "Bir sonraki faturalandırmanda önce abonelik kredilerin kullanılacaktır",
+          "cancelled": "Abonelik İptal Edildi",
+          "cancelled_details": "Aboneliğin iptal edilmiştir ve avantajların {date} tarihinde sona erecektir"
+        },
+        "history": {
+          "title": "Faturalama Geçmişi",
+          "details": "Hesabın ile ilişkili tüm ödeme aktivitelerini, geçmiş fatura beyanları ve işlemleri görüntüle"
+        },
+        "payment_methods": {
+          "details": "Tercih ettiğin ödeme yöntemlerini revize et ve güncelle",
+          "add_new": "Yeni Ekle",
+          "card": {
+            "title": "Kart Bilgisi",
+            "ends_in": "{digits} bitiyor",
+            "expires": "Son kullanıcı tarihi {month}/{year}",
+            "address": "Adres",
+            "name": "İsim"
+          }
+        },
+        "table": {
+          "status": "Durum",
+          "amount": "Tutar",
+          "invoice": "Fatura"
+        }
+      },
+      "user_table": {
+        "name": "İsim",
+        "last_modified": "Son Düzenleme",
+        "permissions": "İzinler"
+      }
+    },
+    "link": {
+      "linking": "Hesabınız bağlanıyor...",
+      "linking_successful": "Hesap başarıyla bağlandı",
+      "linking_failed": "Bağlanma Başarısız"
+    },
+    "extension": {
+      "login": "Giriş yapılıyor...",
+      "login_successful": "Giriş yapıldı",
+      "login_failed": "Giriş yapılamadı",
+      "window": "Bu pencereyi uzantı aracılığıyla açtığınızdan emin olun"
+    }
+  }
+}

@@ -15,7 +15,7 @@
 	</div>
 	<h1>{title}</h1>
 	<p>{details}</p>
-	<a href="/">Go Back</a>
+	<a href="/">{$t("common.go_back")}</a>
 </div>
 
 <style lang="scss">
