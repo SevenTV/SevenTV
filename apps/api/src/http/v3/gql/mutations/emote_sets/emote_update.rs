@@ -47,6 +47,22 @@ pub async fn emote_update(
 		)));
 	}
 
+	let owner = tx
+		.find_one(
+			filter::filter! { User { #[query(rename = "_id")] id: emote.owner_id } },
+			None,
+		)
+		.await?
+		.ok_or_else(|| {
+			TransactionError::Custom(ApiError::not_found(
+				ApiErrorCode::BadRequest,
+				"emote owner not found",
+			))
+		})?;
+
+	let mut emote = emote;
+	emote.owner = Some(owner);
+	
 	let emote_set = tx
 		.find_one_and_update(
 			filter::filter! {
