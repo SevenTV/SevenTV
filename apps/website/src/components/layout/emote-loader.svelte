@@ -2,6 +2,7 @@
 	import type {
 		Emote,
 		EmoteSearchResult,
+		EmoteSet,
 		EmoteSetEmote,
 		EmoteSetEmoteSearchResult,
 		EmoteSetKind,
@@ -17,9 +18,11 @@
 	import { type DialogMode } from "../dialogs/dialog.svelte";
 	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
 	import MassEmoteSetPicker from "../mass-emote-set-picker.svelte";
+	import MakeRoomDialog from "../dialogs/make-room-dialog.svelte";
 	import Button from "../input/button.svelte";
 	import Dialog from "../dialogs/dialog.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import { addableEmotes, addableCount, addableDeficit } from "$/lib/emoteSetCapacity";
 
 	const PER_PAGE = 72;
 
@@ -55,6 +58,23 @@
 	let results: Results | undefined = $state();
 	let identifier = $state(0);
 	let massEmoteSetPickerDialogMode = $state<DialogMode>("hidden");
+	let makeRoomMode = $state<DialogMode>("hidden");
+	let makeRoomSet = $state<EmoteSet | undefined>(undefined);
+	let makeRoomRequiredSlots = $state(0);
+
+	function openMakeRoom(set: EmoteSet, requiredSlots: number) {
+		makeRoomSet = set;
+		makeRoomRequiredSlots = requiredSlots;
+		makeRoomMode = "shown";
+		massEmoteSetPickerDialogMode = "shown-without-close";
+	}
+
+	$effect(() => {
+		if (makeRoomMode === "hidden" && massEmoteSetPickerDialogMode === "shown-without-close") {
+			massEmoteSetPickerDialogMode = "shown";
+		}
+	});
+
 	let selectedEmotesMap = $state<{ [key: string]: Emote }>({});
 	let selectedEmotesArray = $derived(Object.values(selectedEmotesMap));
 	let submitting = $state(false);
@@ -81,21 +101,35 @@
 		);
 	});
 
+	// "Addable" emotes for a set = selected emotes not already in it and not
+	// name-conflicting (already-in & conflicts are skipped silently). A set is in
+	// toAdd only if it has ≥1 addable emote AND can fit them all (deficit 0);
+	// otherwise (can't fit them all) it's blocked and offers Make Room.
 	let toAdd = $derived(
-		Object.keys(pickedEmoteSets).filter((k) => pickedEmoteSets[k] && !originalState[k]),
+		$editableEmoteSets
+			.filter(
+				(s) =>
+					pickedEmoteSets[s.id] &&
+					addableCount(s, selectedEmotesArray) > 0 &&
+					addableDeficit(s, selectedEmotesArray) === 0,
+			)
+			.map((s) => s.id),
 	);
 
-	let toRemove = $derived(
-		Object.keys(pickedEmoteSets).filter((k) => !pickedEmoteSets[k] && originalState[k] === alias),
-	);
-
-	let toRename = $derived(
-		Object.keys(pickedEmoteSets).filter(
-			(k) => pickedEmoteSets[k] && originalState[k] && originalState[k] !== alias,
+	let blockedSets = $derived(
+		$editableEmoteSets.filter(
+			(s) => pickedEmoteSets[s.id] && addableDeficit(s, selectedEmotesArray) > 0,
 		),
 	);
 
-	let sumChanges = $derived(toAdd.length + toRemove.length + toRename.length);
+	// The batch directory flow only ADDS emotes (submit() never removes or renames),
+	// so there are no remove/rename changes to report. Keeping these empty prevents
+	// phantom counts and misleading indicators on sets that merely already contain
+	// the first selected emote.
+	let toRemove: string[] = [];
+	let toRename: string[] = [];
+
+	let sumChanges = $derived(toAdd.length);
 
 	function getEmoteKey(emote: Emote, emoteSetEmote?: EmoteSetEmote): string {
 		return emoteSetEmote?.alias || emote.defaultName || emote.id;
@@ -162,24 +196,37 @@
 	// }
 
 	async function submit(emotesToProcess: Emote[]) {
-		const targetSetIds = Object.keys(pickedEmoteSets).filter((id) => pickedEmoteSets[id]);
+		if (submitting) return;
+		// Target sets that can actually receive new emotes (selected, fit all addable).
+		const targets = $editableEmoteSets.filter(
+			(s) =>
+				pickedEmoteSets[s.id] &&
+				addableCount(s, emotesToProcess) > 0 &&
+				addableDeficit(s, emotesToProcess) === 0,
+		);
 
-		if (emotesToProcess.length === 0 || targetSetIds.length === 0) return;
+		if (emotesToProcess.length === 0 || targets.length === 0) return;
 		submitting = true;
 		try {
-			for (const emote of emotesToProcess) {
-				const emoteId = emote.id;
-				const targetAlias = alias || emote.defaultName || "";
-
-				console.log(`Adding ${emote.defaultName} to ${targetSetIds.length} sets...`);
+			for (const set of targets) {
+				// Add only the emotes not already in this set and not name-conflicting,
+				// each under its own default name — no doomed requests, no errors.
+				const toAddHere = addableEmotes(set, emotesToProcess);
 				await Promise.allSettled(
-					targetSetIds.map((setId) => addEmoteToSet(setId, emoteId, targetAlias)),
+					toAddHere.map((e) => addEmoteToSet(set.id, e.id, e.defaultName || "")),
 				);
 			}
-			selectionMode = false;
-			selectionMap = {};
-			selectedEmotesMap = {};
-			massEmoteSetPickerDialogMode = "hidden";
+			// Re-evaluate against the (event-API-updated) store; only close when
+			// no selected set still needs room.
+			const stillBlocked = $editableEmoteSets.some(
+				(s) => pickedEmoteSets[s.id] && addableDeficit(s, emotesToProcess) > 0,
+			);
+			if (!stillBlocked) {
+				selectionMode = false;
+				selectionMap = {};
+				selectedEmotesMap = {};
+				massEmoteSetPickerDialogMode = "hidden";
+			}
 		} catch (error) {
 			console.error("Mass add failed:", error);
 		} finally {
@@ -261,6 +308,8 @@
 			<MassEmoteSetPicker
 				bind:value={pickedEmoteSets}
 				emote={selectedEmotesArray[0]}
+				emotes={selectedEmotesArray}
+				onMakeRoom={openMakeRoom}
 				{alias}
 				hideEmoteDialogMode={() => (massEmoteSetPickerDialogMode = "hidden")}
 				disabled={false}
@@ -271,6 +320,9 @@
 		</div>
 
 		<div class="footer">
+			{#if blockedSets.length > 0}
+				<span class="blocked-note">{$t("dialogs.make_room.not_added")}</span>
+			{/if}
 			<Button onclick={() => (massEmoteSetPickerDialogMode = "hidden")}>
 				{$t("labels.cancel")}
 			</Button>
@@ -299,6 +351,10 @@
 		</div>
 	</div>
 </Dialog>
+
+{#if makeRoomSet}
+	<MakeRoomDialog bind:mode={makeRoomMode} emoteSet={makeRoomSet} requiredSlots={makeRoomRequiredSlots} />
+{/if}
 
 <div class="selection-container" class:expanded={selectionMode}>
 	<div class="toolbar">
@@ -431,5 +487,11 @@
 		justify-content: flex-end;
 		gap: 0.75rem;
 		flex-shrink: 0;
+	}
+
+	.blocked-note {
+		font-size: 0.8125rem;
+		color: var(--admin-unlist);
+		margin-right: auto;
 	}
 </style>
