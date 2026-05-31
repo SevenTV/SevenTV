@@ -4,11 +4,13 @@
 	import Button from "../input/button.svelte";
 	import EmoteDialog from "./emote-dialog.svelte";
 	import { t } from "svelte-i18n";
-	import type { Emote } from "$/gql/graphql";
+	import type { Emote, EmoteSet } from "$/gql/graphql";
 	import Spinner from "../spinner.svelte";
 	import { addEmoteToSet, removeEmoteFromSet, renameEmoteInSet } from "$/lib/setMutations";
 	import EmoteSetPicker from "../emote-set-picker.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import MakeRoomDialog from "./make-room-dialog.svelte";
+	import { setDeficit } from "$/lib/emoteSetCapacity";
 
 	interface Props {
 		mode: DialogMode;
@@ -38,7 +40,11 @@
 	});
 
 	let toAdd = $derived(
-		Object.keys(pickedEmoteSets).filter((k) => pickedEmoteSets[k] && !originalState[k]),
+		$editableEmoteSets
+			.filter(
+				(s) => pickedEmoteSets[s.id] && !originalState[s.id] && setDeficit(s, [data.id]) === 0,
+			)
+			.map((s) => s.id),
 	);
 
 	let toRemove = $derived(
@@ -55,7 +61,35 @@
 
 	let submitting = $state(false);
 
+	// Selected sets that still cannot fit this emote (skipped by Confirm until Make Room is used).
+	let blockedSets = $derived(
+		$editableEmoteSets.filter((s) => pickedEmoteSets[s.id] && setDeficit(s, [data.id]) > 0),
+	);
+
+	let makeRoomMode: DialogMode = $state("hidden");
+	let makeRoomSet: EmoteSet | undefined = $state(undefined);
+	let makeRoomRequiredSlots = $state(0);
+	let makeRoomOpen = $state(false);
+
+	function openMakeRoom(set: EmoteSet, requiredSlots: number) {
+		makeRoomSet = set;
+		makeRoomRequiredSlots = requiredSlots;
+		// Lock the parent dialog so its mouse-trap doesn't close it behind the child.
+		mode = "shown-without-close";
+		makeRoomOpen = true;
+		makeRoomMode = "shown";
+	}
+
+	// When the make-room dialog closes, restore the parent dialog to normal.
+	$effect(() => {
+		if (makeRoomOpen && makeRoomMode === "hidden") {
+			makeRoomOpen = false;
+			mode = "shown";
+		}
+	});
+
 	async function submit() {
+		if (submitting) return;
 		submitting = true;
 
 		for (const setId of toAdd) {
@@ -77,16 +111,25 @@
 			await renameEmoteInSet(setId, data.id, alias);
 		}
 
-		mode = "hidden";
+		submitting = false;
+		if (blockedSets.length === 0) {
+			mode = "hidden";
+		}
 	}
 
 	function hide() {
+		makeRoomOpen = false;
+		makeRoomMode = "hidden";
+		makeRoomSet = undefined;
 		mode = "hidden";
 	}
 </script>
 
 {#snippet buttons()}
-	<Button onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
+	{#if blockedSets.length > 0}
+		<span class="blocked-note">{$t("dialogs.make_room.not_added")}</span>
+	{/if}
+	<Button onclick={hide}>{$t("labels.cancel")}</Button>
 	{#if submitting}
 		<Button primary submit disabled>
 			{#snippet iconRight()}
@@ -140,12 +183,23 @@
 		emote={data}
 		hideEmoteDialogMode={hide}
 		{alias}
+		onMakeRoom={openMakeRoom}
 	/>
 </EmoteDialog>
+
+{#if makeRoomSet}
+	<MakeRoomDialog bind:mode={makeRoomMode} emoteSet={makeRoomSet} requiredSlots={makeRoomRequiredSlots} />
+{/if}
 
 <style lang="scss">
 	.label {
 		font-size: 0.875rem;
 		font-weight: 500;
+	}
+
+	.blocked-note {
+		font-size: 0.8125rem;
+		color: var(--admin-unlist);
+		margin-right: auto;
 	}
 </style>

@@ -12,6 +12,7 @@
 	import DropDown from "../components/drop-down.svelte";
 	import { type DialogMode } from "./dialogs/dialog.svelte";
 	import {
+		Broom,
 		CaretDown,
 		DotsThreeVertical,
 		GitBranch,
@@ -28,6 +29,7 @@
 	import Button from "./input/button.svelte";
 	import { t } from "svelte-i18n";
 	import MenuButton from "./input/menu-button.svelte";
+	import { setDeficit } from "$/lib/emoteSetCapacity";
 
 	export let value: { [key: string]: boolean };
 	export let toAdd: string[] = [];
@@ -37,6 +39,7 @@
 	export let alias: string;
 	export let disabled: boolean = false;
 	export let hideEmoteDialogMode: () => void;
+	export let onMakeRoom: (set: EmoteSet, requiredSlots: number) => void = () => {};
 
 	let menuPosition: { x: number; y: number } | undefined = undefined;
 	let searchQuery = "";
@@ -145,12 +148,36 @@
 		return value ? (JSON.parse(value) ?? undefined) : undefined;
 	}
 
+	function pendingIds(): string[] {
+		return [emote.id];
+	}
+
+	function rowDeficit(set: EmoteSet): number {
+		return value[set.id] ? setDeficit(set, pendingIds()) : 0;
+	}
+
+	// Inline style for a set row: a selected full set gets the amber "needs room"
+	// accent (ring + checkmark); otherwise the usual add/remove/rename border.
+	function rowAccentStyle(set: EmoteSet): string {
+		if (value[set.id] && rowDeficit(set) > 0) {
+			return "flex: 1; --check-accent: var(--admin-unlist);";
+		}
+		const border = toAdd.includes(set.id)
+			? "var(--approve)"
+			: toRemove.includes(set.id)
+				? "var(--danger)"
+				: toRename.includes(set.id)
+					? "var(--rename)"
+					: undefined;
+		return border ? `flex: 1; border-color: ${border};` : "flex: 1;";
+	}
+
 	function isDisabled(set: EmoteSet) {
 		if (disabled) {
 			return true;
 		}
-
-		return title(set) !== undefined;
+		// Full sets stay selectable so Make Room can be offered per row.
+		return isConflictingName(set);
 	}
 
 	function isConflictingName(set: EmoteSet) {
@@ -207,6 +234,26 @@
 	{emoteSetForContextMenu}
 	bind:position={menuPosition}
 />
+
+{#snippet capacityNote(set: EmoteSet)}
+	{@const deficit = rowDeficit(set)}
+	{#if deficit > 0}
+		<span
+			class="make-room-icon"
+			title={$t("dialogs.make_room.over_capacity", { values: { count: deficit } })}
+		>
+			<Broom
+				size={24}
+				style="cursor: pointer; fill: var(--primary); z-index: 5;"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					onMakeRoom(set, deficit);
+				}}
+			/>
+		</span>
+	{/if}
+{/snippet}
 
 <div class="picker">
 	<TextInput placeholder={$t("labels.search_emote_set")} bind:value={searchQuery}>
@@ -292,6 +339,7 @@
 										...($defaultEmoteSet === set.id ? ["default"] : []),
 									]}
 								/>
+								{@render capacityNote(set)}
 								{#if isEmoteAlreadyInSet(set).status}
 									{#if isEmoteAlreadyInSet(set).count > 1}
 										<div class="existing-emote" title="Manage multiple aliases">
@@ -397,24 +445,26 @@
 								{/if}
 							</div>
 						{/snippet}
-						{#if value && value[set.id] !== undefined}
-							<Checkbox
-								option
-								favSetId={set.id}
-								isFavAlready={favEmoteSets.includes(set.id)}
-								{handleEmoteSetIDInFavs}
-								leftLabel={pickerLeftLabel}
-								disabled={isEmoteAlreadyInSet(set).count > 1 || isDisabled(set)}
-								bind:value={value[set.id]}
-								style={`flex: 1;border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : toRename.includes(set.id) ? "var(--rename)" : undefined}`}
-								title={title(set)}
-								favIcon={true}
-							/>
-						{:else}
-							<div class="placeholder">
-								<Spinner />
-							</div>
-						{/if}
+						<div class="set-row">
+							{#if value && value[set.id] !== undefined}
+								<Checkbox
+									option
+									favSetId={set.id}
+									isFavAlready={favEmoteSets.includes(set.id)}
+									{handleEmoteSetIDInFavs}
+									leftLabel={pickerLeftLabel}
+									disabled={isEmoteAlreadyInSet(set).count > 1 || isDisabled(set)}
+									bind:value={value[set.id]}
+									style={rowAccentStyle(set)}
+									title={title(set)}
+									favIcon={true}
+								/>
+							{:else}
+								<div class="placeholder">
+									<Spinner />
+								</div>
+							{/if}
+						</div>
 					{/if}
 				{/each}
 			{/each}
@@ -453,6 +503,7 @@
 								...($defaultEmoteSet === set.id ? ["default"] : []),
 							]}
 						/>
+						{@render capacityNote(set)}
 						{#if isEmoteAlreadyInSet(set).status}
 							{#if isEmoteAlreadyInSet(set).count > 1}
 								<div class="existing-emote" title="Manage multiple aliases">
@@ -558,24 +609,26 @@
 						{/if}
 					</div>
 				{/snippet}
-				{#if value && value[set.id] !== undefined}
-					<Checkbox
-						option
-						favSetId={set.id}
-						isFavAlready={favEmoteSets.includes(set.id)}
-						{handleEmoteSetIDInFavs}
-						leftLabel={pickerLeftLabel}
-						disabled={isEmoteAlreadyInSet(set).count > 1 || isDisabled(set)}
-						bind:value={value[set.id]}
-						style={`flex: 1;border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : toRename.includes(set.id) ? "var(--rename)" : undefined}`}
-						title={title(set)}
-						favIcon={true}
-					/>
-				{:else}
-					<div class="placeholder">
-						<Spinner />
-					</div>
-				{/if}
+				<div class="set-row">
+					{#if value && value[set.id] !== undefined}
+						<Checkbox
+							option
+							favSetId={set.id}
+							isFavAlready={favEmoteSets.includes(set.id)}
+							{handleEmoteSetIDInFavs}
+							leftLabel={pickerLeftLabel}
+							disabled={isEmoteAlreadyInSet(set).count > 1 || isDisabled(set)}
+							bind:value={value[set.id]}
+							style={rowAccentStyle(set)}
+							title={title(set)}
+							favIcon={true}
+						/>
+					{:else}
+						<div class="placeholder">
+							<Spinner />
+						</div>
+					{/if}
+				</div>
 			{/each}
 		</Expandable>
 	{/each}
@@ -662,5 +715,13 @@
 		border-radius: 0.5rem;
 		background-color: var(--bg-medium);
 		border: 1px solid transparent;
+	}
+
+	.set-row {
+		display: contents;
+	}
+	.make-room-icon {
+		display: inline-flex;
+		align-items: center;
 	}
 </style>
