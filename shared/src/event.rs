@@ -508,6 +508,7 @@ pub enum InternalEventEmoteSetData {
 	},
 	RenameEmote {
 		emote: Box<Emote>,
+		emote_owner: Option<Box<FullUser>>,
 		emote_set_emote: EmoteSetEmote,
 		old_alias: String,
 	},
@@ -531,9 +532,7 @@ impl From<InternalEventEmoteSetData> for StoredEventEmoteSetData {
 				emote_id: emote_set_emote.id,
 			},
 			InternalEventEmoteSetData::RenameEmote {
-				emote,
-				emote_set_emote,
-				old_alias,
+				emote, emote_set_emote, old_alias, ..
 			} => StoredEventEmoteSetData::RenameEmote {
 				emote_id: emote.id,
 				old_alias,
@@ -813,6 +812,7 @@ impl InternalEventPayload {
 						data:
 							InternalEventEmoteSetData::RenameEmote {
 								emote,
+								emote_owner,
 								emote_set_emote,
 								old_alias,
 							},
@@ -824,9 +824,11 @@ impl InternalEventPayload {
 							.position(|e| e.id == emote.id)
 							.context("failed to find emote in set")?;
 
+						let owner = emote_owner.map(|u| UserPartialModel::from_db(*u, None, None, cdn_base_url));
+
 						let new_active_emote = ActiveEmoteModel::from_db(
 							emote_set_emote,
-							Some(EmotePartialModel::from_db(*emote, None, cdn_base_url)),
+							Some(EmotePartialModel::from_db(*emote, owner, cdn_base_url)),
 						);
 
 						let mut old_active_emote = new_active_emote.clone();
