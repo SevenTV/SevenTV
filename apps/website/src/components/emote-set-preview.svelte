@@ -2,8 +2,10 @@
 	import { type EmoteSet } from "$/gql/graphql";
 	import { user } from "$/lib/auth";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
+	import { number } from "svelte-i18n";
 	import Flags, { determineHighlightColor, emoteSetToFlags } from "./flags.svelte";
 	import ResponsiveImage from "./responsive-image.svelte";
+	import SetContextMenu from "./set-context-menu.svelte"
 
 	type Props = {
 		data: EmoteSet;
@@ -36,6 +38,14 @@
 
 		return Math.max(slots - emotePreviews.length, 0);
 	});
+
+	let contextPosition = $state<{ x: number; y: number } | undefined>(undefined);
+
+	function openContextMenu(e: MouseEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		contextPosition = { x: e.clientX, y: e.clientY };
+	}
 </script>
 
 <a
@@ -45,6 +55,7 @@
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
 	style:background-color="var(--bg-{bg})"
+	oncontextmenu={openContextMenu}
 >
 	<div class="emotes" style:grid-template-columns="repeat({Math.min(data.capacity ?? 6, 6)}, 1fr)">
 		{#each emotePreviews as emote, i}
@@ -69,6 +80,8 @@
 		</div>
 	{/if}
 </a>
+
+<SetContextMenu setId={data.id} bind:position={contextPosition} />
 
 <style lang="scss">
 	.emote-set {
