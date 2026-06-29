@@ -441,7 +441,7 @@
 								? 0.5
 								: 1};"
 						>
-							<BadgeComponent {badge} size={2 * 16} enableDialog={activeBadge === badge.id} />
+							<BadgeComponent {badge} size={2 * 16} enableDialog={!editingEnabled || activeBadge === badge.id} />
 							<span class="name">{badge.name}</span>
 							{#if badgesLayout === "list"}
 								<span class="description">{badge.description}</span>
