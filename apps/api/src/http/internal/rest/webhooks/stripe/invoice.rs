@@ -5,9 +5,7 @@ use shared::database::product::invoice::{Invoice, InvoiceStatus};
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, SubscriptionId, SubscriptionPeriod, SubscriptionPeriodCreatedBy, SubscriptionPeriodId,
 };
-use shared::database::product::{
-	InvoiceId, StripeProductId, SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant,
-};
+use shared::database::product::{InvoiceId, StripeProductId, SubscriptionProduct, SubscriptionProductVariant};
 use shared::database::queries::{filter, update};
 use shared::database::stripe_errors::{StripeError, StripeErrorId, StripeErrorKind};
 use stripe::Object;
@@ -403,14 +401,15 @@ pub async fn paid(
 			None,
 			Some(InvoiceMetadata::Gift {
 				customer_id,
-				user_id,
+				recipients,
 				product_id,
 				subscription_product_id: Some(subscription_product_id),
 			}),
 		) => {
-			// gift code session
-			// the gift sub payment was successful, now we add one subscription period for
-			// the recipient
+			// gift / prepaid-months purchase session
+			// payment was successful, now we add one subscription period per
+			// recipient (this also covers a user prepaying multiple months for
+			// themselves -> in that case `recipients == [(customer_id, months)]`)
 
 			let subscription_product = global
 				.subscription_product_by_id_loader
@@ -433,24 +432,16 @@ pub async fn paid(
 					))
 				})?;
 
-			let period_duration = subscription_product
-				.variants
-				.iter()
-				.find(|v| v.id == product_id)
-				.map(|v| match v.kind {
-					SubscriptionProductKind::Monthly => chrono::Months::new(1),
-					SubscriptionProductKind::Yearly => chrono::Months::new(12),
-				})
-				.ok_or_else(|| {
-					tracing::warn!(
-						"could not find variant for gift: {} product id: {subscription_product_id}",
-						invoice.id
-					);
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeError,
-						"failed to load subscription product variant",
-					))
-				})?;
+			subscription_product.variants.iter().find(|v| v.id == product_id).ok_or_else(|| {
+				tracing::warn!(
+					"could not find variant for gift: {} product id: {subscription_product_id}",
+					invoice.id
+				);
+				TransactionError::Custom(ApiError::internal_server_error(
+					ApiErrorCode::StripeError,
+					"failed to load subscription product variant",
+				))
+			})?;
 
 			let created = invoice.created.ok_or_else(|| {
 				TransactionError::Custom(ApiError::bad_request(
@@ -459,146 +450,163 @@ pub async fn paid(
 				))
 			})?;
 
-			let start = chrono::DateTime::from_timestamp(created, 0).ok_or_else(|| {
+			let invoice_created_at = chrono::DateTime::from_timestamp(created, 0).ok_or_else(|| {
 				TransactionError::Custom(ApiError::bad_request(
 					ApiErrorCode::StripeError,
 					"invoice created_at is missing",
 				))
 			})?;
 
-			let subscription_id = SubscriptionId {
-				user_id,
-				product_id: subscription_product_id,
-			};
+			let mut affected_subscription_ids = Vec::with_capacity(recipients.len() + 1);
 
-			// Get their current subscription periods
-			let current_periods = tx
-				.find(
-					filter::filter! {
-						SubscriptionPeriod {
-							#[query(serde)]
-							subscription_id,
+			for (user_id, months) in &recipients {
+				let period_duration = chrono::Months::new(*months);
+
+				let subscription_id = SubscriptionId {
+					user_id: *user_id,
+					product_id: subscription_product_id,
+				};
+
+				// Get their current subscription periods
+				let current_periods = tx
+					.find(
+						filter::filter! {
+							SubscriptionPeriod {
+								#[query(serde)]
+								subscription_id,
+							}
+						},
+						None,
+					)
+					.await?;
+
+				// Find all periods that are either in the future or currently active
+				let mut current_periods = current_periods
+					.into_iter()
+					.filter(|period| period.end > chrono::Utc::now())
+					.collect::<Vec<_>>();
+
+				// Sort them by the end date
+				current_periods.sort_by(|a, b| a.end.cmp(&b.end));
+
+				let start = current_periods
+					.last()
+					.map(|period| period.end)
+					.unwrap_or(invoice_created_at);
+
+				let end = start
+					.checked_add_months(period_duration) // It's fine to use this function here since UTC doens't have daylight saving time transitions
+					.ok_or_else(|| {
+						TransactionError::Custom(ApiError::internal_server_error(
+							ApiErrorCode::StripeError,
+							"failed to compute subscription period end",
+						))
+					})?;
+
+				for period in current_periods {
+					if period.start > chrono::Utc::now() {
+						break;
+					}
+					if !period.auto_renew {
+						break;
+					}
+
+					// Cancel the period on the provider
+					match period.provider_id {
+						Some(ProviderSubscriptionId::Stripe(id)) => {
+							stripe::Subscription::update(
+								stripe_client
+									.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription(
+										id.to_string(),
+									)))
+									.await
+									.deref(),
+								&id,
+								stripe::UpdateSubscription {
+									cancel_at_period_end: Some(true),
+									..Default::default()
+								},
+							)
+							.await
+							.map_err(|e| {
+								tracing::error!(error = %e, "failed to update stripe subscription");
+								TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::StripeError,
+									"failed to update stripe subscription",
+								))
+							})?;
 						}
+						Some(ProviderSubscriptionId::Paypal(id)) => {
+							let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
+
+							// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
+							let response = global
+								.http_client
+								.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
+								.bearer_auth(&api_key)
+								.json(&serde_json::json!({
+									"reason": "Subscription canceled by gift"
+								}))
+								.send()
+								.await
+								.map_err(|e| {
+									tracing::error!(error = %e, "failed to cancel paypal subscription");
+									TransactionError::Custom(ApiError::internal_server_error(
+										ApiErrorCode::PaypalError,
+										"failed to cancel paypal subscription",
+									))
+								})?;
+
+							if !response.status().is_success() {
+								tracing::error!(status = %response.status(), "failed to cancel paypal subscription");
+								return Err(TransactionError::Custom(ApiError::internal_server_error(
+									ApiErrorCode::PaypalError,
+									"failed to cancel paypal subscription",
+								)));
+							}
+						}
+						None => {}
+					}
+				}
+				// don't stamp "gifted by" on a user's own prepaid purchase,
+				// only on purchases that actually benefit someone else.
+				let gifted_by = (*user_id != customer_id).then_some(customer_id);
+
+				tx.insert_one(
+					SubscriptionPeriod {
+						id: SubscriptionPeriodId::new(),
+						subscription_id,
+						provider_id: None,
+						start,
+						end,
+						product_id: product_id.clone(),
+						is_trial: false,
+						gifted_by,
+						auto_renew: false,
+						created_by: SubscriptionPeriodCreatedBy::Invoice {
+							invoice_id: invoice.id.clone().into(),
+						},
+						updated_at: chrono::Utc::now(),
+						search_updated_at: None,
 					},
 					None,
 				)
 				.await?;
 
-			// Find all periods that are either in the future or currently active
-			let mut current_periods = current_periods
-				.into_iter()
-				.filter(|period| period.end > chrono::Utc::now())
-				.collect::<Vec<_>>();
-
-			// Sort them by the end date
-			current_periods.sort_by(|a, b| a.end.cmp(&b.end));
-
-			let start = current_periods.last().map(|period| period.end).unwrap_or(start);
-
-			let end = start
-				.checked_add_months(period_duration) // It's fine to use this function here since UTC doens't have daylight saving time transitions
-				.ok_or_else(|| {
-					TransactionError::Custom(ApiError::internal_server_error(
-						ApiErrorCode::StripeError,
-						"invoice created_at is missing",
-					))
-				})?;
-
-			for period in current_periods {
-				if period.start > chrono::Utc::now() {
-					break;
-				}
-
-				if !period.auto_renew {
-					break;
-				}
-
-				// Cancel the period on the provider
-				match period.provider_id {
-					Some(ProviderSubscriptionId::Stripe(id)) => {
-						stripe::Subscription::update(
-							stripe_client
-								.client(super::StripeRequest::Invoice(StripeRequest::CancelSubscription(
-									id.to_string(),
-								)))
-								.await
-								.deref(),
-							&id,
-							stripe::UpdateSubscription {
-								cancel_at_period_end: Some(true),
-								..Default::default()
-							},
-						)
-						.await
-						.map_err(|e| {
-							tracing::error!(error = %e, "failed to update stripe subscription");
-							TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::StripeError,
-								"failed to update stripe subscription",
-							))
-						})?;
-					}
-					Some(ProviderSubscriptionId::Paypal(id)) => {
-						let api_key = paypal_api::api_key(global).await.map_err(TransactionError::Custom)?;
-
-						// https://developer.paypal.com/docs/api/subscriptions/v1/#subscriptions_cancel
-						let response = global
-							.http_client
-							.post(format!("https://api.paypal.com/v1/billing/subscriptions/{id}/cancel"))
-							.bearer_auth(&api_key)
-							.json(&serde_json::json!({
-								"reason": "Subscription canceled by gift"
-							}))
-							.send()
-							.await
-							.map_err(|e| {
-								tracing::error!(error = %e, "failed to cancel paypal subscription");
-								TransactionError::Custom(ApiError::internal_server_error(
-									ApiErrorCode::PaypalError,
-									"failed to cancel paypal subscription",
-								))
-							})?;
-
-						if !response.status().is_success() {
-							tracing::error!(status = %response.status(), "failed to cancel paypal subscription");
-							return Err(TransactionError::Custom(ApiError::internal_server_error(
-								ApiErrorCode::PaypalError,
-								"failed to cancel paypal subscription",
-							)));
-						}
-					}
-					None => {}
-				}
+				affected_subscription_ids.push(subscription_id);
 			}
 
-			tx.insert_one(
-				SubscriptionPeriod {
-					id: SubscriptionPeriodId::new(),
-					subscription_id,
-					provider_id: None,
-					start,
-					end,
-					product_id,
-					is_trial: false,
-					gifted_by: Some(customer_id),
-					auto_renew: false,
-					created_by: SubscriptionPeriodCreatedBy::Invoice {
-						invoice_id: invoice.id.into(),
-					},
-					updated_at: chrono::Utc::now(),
-					search_updated_at: None,
-				},
-				None,
-			)
-			.await?;
+			// include the purchaser's own billing-history subscription id too,
+			// if it isn't already covered by one of the recipients above
+			let purchaser_subscription_id = SubscriptionId {
+				user_id: customer_id,
+				product_id: subscription_product_id,
+			};
+			if !affected_subscription_ids.contains(&purchaser_subscription_id) {
+				affected_subscription_ids.push(purchaser_subscription_id);
+			}
 
-			return Ok(vec![
-				subscription_id,
-				SubscriptionId {
-					user_id: customer_id,
-					product_id: subscription_product_id,
-				},
-			]);
+			return Ok(affected_subscription_ids);
 		}
 		(
 			None,

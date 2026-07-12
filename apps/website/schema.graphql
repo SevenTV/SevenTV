@@ -57,7 +57,7 @@ type BillingMutation {
 	buyBundle(bundleId: Id!, specialEventId: Id): SubscribeResponse!
 	reactivateSubscription(productId: Id!): SubscriptionInfo!
 	redeemCode(code: String!, captchaToken: String!): RedeemResponse!
-	subscribe(variantId: StripeProductId!): SubscribeResponse!
+	subscribe(variantId: StripeProductId!, months: Int): SubscribeResponse!
 }
 
 union CodeEffect = CodeEffectDirectEntitlement | CodeEffectSpecialEvent
@@ -736,6 +736,11 @@ type JobMutation {
 	rerunSubscriptionRefreshJob: Boolean!
 }
 
+input GiftRecipientInput {
+	userId: Id!
+	months: Int
+}
+
 input KickLinkInput {
 	avatarUrl: String
 	displayName: String!
@@ -748,6 +753,7 @@ type Mutation {
 	emoteSets: EmoteSetMutation!
 	emotes: EmoteMutation!
 	entitlementEdges: EntitlementEdgeMutation!
+	giftSubscriptions(recipients: [GiftRecipientInput!]!, variantId: StripeProductId!): SubscribeResponse!
 	jobs: JobMutation!
 	product: ProductMutation!
 	redeemCodes: RedeemCodeMutation!

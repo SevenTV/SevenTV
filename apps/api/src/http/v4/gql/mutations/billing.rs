@@ -15,14 +15,18 @@ use shared::database::user::{FullUser, UserId};
 use shared::database::{Id, MongoCollection};
 
 use crate::global::Global;
-use crate::http::egvault::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
+use crate::http::egvault::metadata::{
+	CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata, MAX_GIFT_RECIPIENTS,
+};
 use crate::http::egvault::redeem::redeem_code_inner;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::guards::{PermissionGuard, RateLimitGuard};
 use crate::http::middleware::session::Session;
 use crate::http::v4::gql::types::billing::SubscriptionInfo;
 use crate::paypal_api;
-use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, CheckoutProduct, EgVaultMutexKey};
+use crate::stripe_common::{
+	create_checkout_session_params, find_or_create_customer, resolve_months, CheckoutProduct, EgVaultMutexKey,
+};
 use crate::sub_refresh_job::SubAge;
 use crate::transactions::{transaction_with_mutex, TransactionError};
 
@@ -40,11 +44,220 @@ pub struct RedeemResponse {
 	pub checkout_url: Option<String>,
 }
 
+fn parse_months(months: Option<i32>, kind: &shared::database::product::SubscriptionProductKind) -> Result<u32, ApiError> {
+	let months = months.unwrap_or(1);
+
+	if months < 1 {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "months must be at least 1"));
+	}
+
+	resolve_months(months as u32, kind)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn create_one_time_purchase_checkout(
+	global: &Arc<Global>,
+	session: &Session,
+	purchaser_id: UserId,
+	customer_id: stripe::CustomerId,
+	product: &SubscriptionProduct,
+	variant: &SubscriptionProductVariant,
+	recipients: &[(UserId, u32)],
+	is_gift: bool,
+	success_url: &str,
+	cancel_url: &str,
+) -> Result<String, ApiError> {
+	let quantities = recipients.iter().map(|(_, months)| *months as u64).collect::<Vec<_>>();
+
+	let mut params = create_checkout_session_params(
+		global,
+		session.ip(),
+		customer_id,
+		CheckoutProduct::Gift(product.provider_id.clone(), quantities),
+		product.default_currency,
+		&variant.currency_prices,
+		success_url,
+		cancel_url,
+	)
+	.await;
+
+	let mut loaded_recipients = Vec::with_capacity(recipients.len());
+	for (recipient_id, months) in recipients {
+		let recipient = global
+			.user_loader
+			.load_fast(global, *recipient_id)
+			.await
+			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+			.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+		loaded_recipients.push((recipient, *months));
+	}
+
+	let description = if is_gift {
+		let names = loaded_recipients
+			.iter()
+			.map(|(r, months)| {
+				let name = r
+					.connections
+					.first()
+					.map(|c| format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id))
+					.unwrap_or_else(|| format!("7TV:{}", r.id));
+				format!("{name} ({months} month(s))")
+			})
+			.collect::<Vec<_>>()
+			.join(", ");
+
+		format!("Gift 7TV Subscriber to {names}")
+	} else {
+		let months = recipients.first().map(|(_, months)| *months).unwrap_or(1);
+		format!("{months} month(s) of 7TV Subscriber")
+	};
+
+	params.mode = Some(stripe::CheckoutSessionMode::Payment);
+	params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
+		description: Some(description),
+		..Default::default()
+	});
+
+	params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
+		enabled: true,
+		invoice_data: Some(stripe::CreateCheckoutSessionInvoiceCreationInvoiceData {
+			metadata: Some(
+				InvoiceMetadata::Gift {
+					customer_id: purchaser_id,
+					recipients: recipients.to_vec(),
+					product_id: variant.id.clone(),
+					subscription_product_id: Some(product.id),
+				}
+				.to_stripe(),
+			),
+			..Default::default()
+		}),
+	});
+
+	params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
+
+	// We don't need the safe client here because this won't be retried
+	stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to create checkout session");
+			ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+		})?
+		.url
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session"))
+}
+
+#[derive(async_graphql::InputObject)]
+pub struct GiftRecipientInput {
+	pub user_id: UserId,
+	pub months: Option<i32>,
+}
+
+#[tracing::instrument(skip_all, name = "gift_subscriptions")]
+pub async fn gift_subscriptions(
+	ctx: &Context<'_>,
+	recipients: Vec<GiftRecipientInput>,
+	variant_id: StripeProductId,
+) -> Result<SubscribeResponse, ApiError> {
+	let global: &Arc<Global> = ctx
+		.data()
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+	let session = ctx
+		.data::<Session>()
+		.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
+
+	let authed_user = session.user()?;
+
+	if !authed_user.has(UserPermission::Billing) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges, 
+			"this user isn't allowed to use billing features",
+		));
+	}
+
+	if recipients.is_empty() {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "recipients must not be empty"));
+	}
+
+	if recipients.len() > MAX_GIFT_RECIPIENTS {
+		return Err(ApiError::bad_request(
+			ApiErrorCode::BadRequest,
+			format!("cannot gift to more than {MAX_GIFT_RECIPIENTS} recipients at once"),
+		));
+	}
+
+	let mut dedup_check = recipients.iter().map(|r| r.user_id).collect::<Vec<_>>();
+	dedup_check.sort();
+	dedup_check.dedup();
+	if dedup_check.len() != recipients.len() {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "duplicate recipient id"));
+	}
+
+	let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
+		.find_one(filter::filter! {
+			SubscriptionProduct {
+				#[query(flatten)]
+				variants: SubscriptionProductVariant {
+					#[query(serde)]
+					id: &variant_id,
+					active: true,
+				}
+			}
+		})
+		.await
+		.map_err(|e| {
+			tracing::error!(error = %e, "failed to find subscription product");
+			ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to find subscription product")
+		})?
+		.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "subscription product not found"))?;
+
+	let variant = product.variants.iter().find(|v| v.id == variant_id && v.active).unwrap().clone();
+
+	// Resolve/validate each recipient's own month count against the variant.
+	let recipients = recipients
+		.into_iter()
+		.map(|r| Ok::<_, ApiError>((r.user_id, parse_months(r.months, &variant.kind)?)))
+		.collect::<Result<Vec<_>, _>>()?;
+
+	let customer_id = match authed_user.stripe_customer_id.clone() {
+		Some(id) => id,
+		None => {
+			// We don't need the safe client here because this won't be retried
+			find_or_create_customer(global, global.stripe_client.client().await, authed_user.id, None).await?
+		}
+	};
+
+	let success_url = global.config.api.website_origin.join("/store?success=1").unwrap().to_string();
+	let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
+
+	let checkout_url = create_one_time_purchase_checkout(
+		global,
+		session,
+		authed_user.id,
+		customer_id,
+		&product,
+		&variant,
+		&recipients,
+		true,
+		&success_url,
+		&cancel_url,
+	)
+	.await?;
+
+	Ok(SubscribeResponse { checkout_url })
+}
+
 #[async_graphql::Object]
 impl BillingMutation {
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
 	#[tracing::instrument(skip_all, name = "BillingMutation::subscribe")]
-	async fn subscribe(&self, ctx: &Context<'_>, variant_id: StripeProductId) -> Result<SubscribeResponse, ApiError> {
+	async fn subscribe(
+		&self,
+		ctx: &Context<'_>,
+		variant_id: StripeProductId,
+		months: Option<i32>,
+	) -> Result<SubscribeResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
@@ -61,7 +274,7 @@ impl BillingMutation {
 			));
 		}
 
-		let gift_for = (self.user_id != authed_user.id).then_some(self.user_id);
+		let is_gift = self.user_id != authed_user.id;
 
 		let product: SubscriptionProduct = SubscriptionProduct::collection(&global.db)
 			.find_one(filter::filter! {
@@ -82,6 +295,8 @@ impl BillingMutation {
 			.ok_or_else(|| ApiError::internal_server_error(ApiErrorCode::LoadError, "subscription product not found"))?;
 
 		let variant = product.variants.into_iter().find(|v| v.id == variant_id && v.active).unwrap();
+		let months = parse_months(months, &variant.kind)?;
+		let is_one_time_purchase = is_gift || months > 1;
 
 		let customer_id = match authed_user.stripe_customer_id.clone() {
 			Some(id) => id,
@@ -95,60 +310,22 @@ impl BillingMutation {
 
 		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
-		let mut params = create_checkout_session_params(
-			global,
-			session.ip(),
-			customer_id,
-			match &gift_for {
-				Some(_) => CheckoutProduct::Gift(product.provider_id),
-				None => CheckoutProduct::Price(variant.id.0.clone()),
-			},
-			product.default_currency,
-			&variant.currency_prices,
-			&success_url,
-			&cancel_url,
-		)
-		.await;
+		let checkout_url = if is_one_time_purchase {
+			let recipient_id = if is_gift { self.user_id } else { authed_user.id };
 
-		if let Some(gift_for) = gift_for {
-			let receiving_user = global
-				.user_loader
-				.load_fast(global, gift_for)
-				.await
-				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
-
-			params.mode = Some(stripe::CheckoutSessionMode::Payment);
-			params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
-				description: Some(format!(
-					"Gift subscription for {} (7TV:{})",
-					receiving_user
-						.connections
-						.first()
-						.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
-						.unwrap_or_else(|| "Unknown User".to_owned()),
-					receiving_user.id
-				)),
-				..Default::default()
-			});
-
-			params.invoice_creation = Some(stripe::CreateCheckoutSessionInvoiceCreation {
-				enabled: true,
-				invoice_data: Some(stripe::CreateCheckoutSessionInvoiceCreationInvoiceData {
-					metadata: Some(
-						InvoiceMetadata::Gift {
-							customer_id: authed_user.id,
-							user_id: receiving_user.id,
-							product_id: variant.id.clone(),
-							subscription_product_id: Some(product.id),
-						}
-						.to_stripe(),
-					),
-					..Default::default()
-				}),
-			});
-
-			params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
+			create_one_time_purchase_checkout(
+				global,
+				session,
+				authed_user.id,
+				customer_id,
+				&product,
+				&variant,
+				&[(recipient_id, months)],
+				is_gift,
+				&success_url,
+				&cancel_url,
+			)
+			.await?
 		} else {
 			let is_subscribed = global
 				.active_subscription_period_by_user_id_loader
@@ -163,6 +340,18 @@ impl BillingMutation {
 				return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "user is already subscribed"));
 			}
 
+			let mut params = create_checkout_session_params(
+				global,
+				session.ip(),
+				customer_id,
+				CheckoutProduct::Price(variant.id.0.clone(), 1),
+				product.default_currency,
+				&variant.currency_prices,
+				&success_url,
+				&cancel_url,
+			)
+			.await;
+
 			params.mode = Some(stripe::CheckoutSessionMode::Subscription);
 			params.subscription_data = Some(stripe::CreateCheckoutSessionSubscriptionData {
 				metadata: Some(
@@ -176,23 +365,21 @@ impl BillingMutation {
 			});
 
 			params.metadata = Some(CheckoutSessionMetadata::Subscription.to_stripe());
-		}
 
-		// We don't need the safe client here because this won't be retried
-		let session_url = stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
-			.await
-			.map_err(|e| {
-				tracing::error!(error = %e, "failed to create checkout session");
-				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
-			})?
-			.url
-			.ok_or_else(|| {
-				ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
-			})?;
+			// We don't need the safe client here because this won't be retried
+			stripe::CheckoutSession::create(global.stripe_client.client().await.deref(), params)
+				.await
+				.map_err(|e| {
+					tracing::error!(error = %e, "failed to create checkout session");
+					ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+				})?
+				.url
+				.ok_or_else(|| {
+					ApiError::internal_server_error(ApiErrorCode::StripeError, "failed to create checkout session")
+				})?
+		};
 
-		Ok(SubscribeResponse {
-			checkout_url: session_url,
-		})
+		Ok(SubscribeResponse { checkout_url })
 	}
 
 	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultPaymentMethod, 1)")]
