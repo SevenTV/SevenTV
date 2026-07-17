@@ -1,0 +1,9 @@
+{
+	"name": "@7tv/monorepo",
+	"private": true,
+	"scripts": {
+		"fmt:rust": "cargo fmt --all",
+		"lint:rust": "cargo fmt --all -- --check",
+		"lint:all": "pnpm run lint && pnpm run lint:rust"
+	}
+}
