@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowSquareOut, CaretDown, DeviceMobile, Robot } from "phosphor-svelte";
+	import { ArrowSquareOut, CaretDown, DeviceMobile, Robot, Television } from "phosphor-svelte";
 	import Logo from "../icons/logo.svelte";
 	import Button from "../input/button.svelte";
 	import ChatterinoLogo from "../icons/chatterino-logo.svelte";
@@ -15,12 +15,14 @@
 		PUBLIC_EXTENSION_FF_RECOMMENDED,
 		PUBLIC_EXTENSION_FF_STABLE,
 		PUBLIC_TWICK_LINK,
+		PUBLIC_FROGGY_TV_LINK,
 	} from "$env/static/public";
 	import weirdSmiley from "$assets/weird-smiley.webp?url";
 	import FrostyLogo from "../icons/frosty-logo.svelte";
 	import DankchatLogo from "../icons/dankchat-logo.svelte";
 	import ChatsenLogo from "../icons/chatsen-logo.svelte";
 	import TwickLogo from "$assets/twick-logo.png?url";
+	import FroggyTvLogo from "$assets/froggy-tv-logo.png?url";
 	import SevenTvNewExtensionLogo from "$assets/7tv-new-extension.png?url";
 	import { browser } from "$app/environment";
 	import { t } from "svelte-i18n";
@@ -197,6 +199,30 @@
 							<img src={TwickLogo} alt="Twick Logo" style="height: 1.5rem;" />
 						{/snippet}
 						<span>Twick</span>
+						{#snippet iconRight()}
+							<ArrowSquareOut />
+						{/snippet}
+					</Button>
+				</div>
+			{/snippet}
+		</DropDown>
+		<DropDown align="left">
+			<Button secondary style="font-size: 1em;">
+				{#snippet icon()}
+					<Television />
+				{/snippet}
+				<span>{$t("pages.landing.download.tv.apps")}</span>
+				{#snippet iconRight()}
+					<CaretDown />
+				{/snippet}
+			</Button>
+			{#snippet dropdown()}
+				<div class="button-list">
+					<Button big secondary href={PUBLIC_FROGGY_TV_LINK}>
+						{#snippet icon()}
+							<img src={FroggyTvLogo} alt="Froggy TV Logo" style="height: 1.5rem;" />
+						{/snippet}
+						<span>Froggy TV</span>
 						{#snippet iconRight()}
 							<ArrowSquareOut />
 						{/snippet}

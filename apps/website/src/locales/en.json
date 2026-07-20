@@ -566,6 +566,9 @@
         "mobile": {
           "apps": "Mobile Apps"
         },
+        "tv": {
+          "apps": "TV Apps"
+        },
         "bots": {
           "header": "Chat Bots"
         }
