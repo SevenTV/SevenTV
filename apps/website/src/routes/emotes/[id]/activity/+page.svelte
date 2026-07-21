@@ -6,14 +6,24 @@
 	import Spinner from "$/components/spinner.svelte";
 	import EmoteEventComponent from "$/components/events/emote-event.svelte";
 	import type { EmoteEvent } from "$/gql/graphql";
+	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
 	async function loadEvents(id: string) {
+		try {
+			return await loadEventsUnsafe(id);
+		} catch (error) {
+			console.error("Failed to load emote activity", error);
+			throw error;
+		}
+	}
+
+	async function loadEventsUnsafe(id: string) {
 		const res = await gqlClient()
 			.query(
 				graphql(`
-					query EmoteEvents($id: Id!) {
+					query EmoteActivityEvents($id: Id!) {
 						emotes {
 							emote(id: $id) {
 								events {
@@ -23,6 +33,77 @@
 										id
 										mainConnection {
 											platformDisplayName
+											platformAvatarUrl
+										}
+										style {
+											activeProfilePicture {
+												images {
+													url
+													mime
+													size
+													width
+													height
+													scale
+													frameCount
+												}
+											}
+											activePaint {
+												id
+												name
+												data {
+													layers {
+														id
+														ty {
+															__typename
+															... on PaintLayerTypeSingleColor {
+																color {
+																	hex
+																}
+															}
+															... on PaintLayerTypeLinearGradient {
+																angle
+																repeating
+																stops {
+																	at
+																	color {
+																		hex
+																	}
+																}
+															}
+															... on PaintLayerTypeRadialGradient {
+																repeating
+																stops {
+																	at
+																	color {
+																		hex
+																	}
+																}
+																shape
+															}
+															... on PaintLayerTypeImage {
+																images {
+																	url
+																	mime
+																	size
+																	scale
+																	width
+																	height
+																	frameCount
+																}
+															}
+														}
+														opacity
+													}
+													shadows {
+														color {
+															hex
+														}
+														offsetX
+														offsetY
+														blur
+													}
+												}
+											}
 										}
 										highestRoleColor {
 											hex
@@ -48,6 +129,77 @@
 												id
 												mainConnection {
 													platformDisplayName
+													platformAvatarUrl
+												}
+												style {
+													activeProfilePicture {
+														images {
+															url
+															mime
+															size
+															width
+															height
+															scale
+															frameCount
+														}
+													}
+													activePaint {
+														id
+														name
+														data {
+															layers {
+																id
+																ty {
+																	__typename
+																	... on PaintLayerTypeSingleColor {
+																		color {
+																			hex
+																		}
+																	}
+																	... on PaintLayerTypeLinearGradient {
+																		angle
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																	}
+																	... on PaintLayerTypeRadialGradient {
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																		shape
+																	}
+																	... on PaintLayerTypeImage {
+																		images {
+																			url
+																			mime
+																			size
+																			scale
+																			width
+																			height
+																			frameCount
+																		}
+																	}
+																}
+																opacity
+															}
+															shadows {
+																color {
+																	hex
+																}
+																offsetX
+																offsetY
+																blur
+															}
+														}
+													}
 												}
 												highestRoleColor {
 													hex
@@ -57,6 +209,77 @@
 												id
 												mainConnection {
 													platformDisplayName
+													platformAvatarUrl
+												}
+												style {
+													activeProfilePicture {
+														images {
+															url
+															mime
+															size
+															width
+															height
+															scale
+															frameCount
+														}
+													}
+													activePaint {
+														id
+														name
+														data {
+															layers {
+																id
+																ty {
+																	__typename
+																	... on PaintLayerTypeSingleColor {
+																		color {
+																			hex
+																		}
+																	}
+																	... on PaintLayerTypeLinearGradient {
+																		angle
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																	}
+																	... on PaintLayerTypeRadialGradient {
+																		repeating
+																		stops {
+																			at
+																			color {
+																				hex
+																			}
+																		}
+																		shape
+																	}
+																	... on PaintLayerTypeImage {
+																		images {
+																			url
+																			mime
+																			size
+																			scale
+																			width
+																			height
+																			frameCount
+																		}
+																	}
+																}
+																opacity
+															}
+															shadows {
+																color {
+																	hex
+																}
+																offsetX
+																offsetY
+																blur
+															}
+														}
+													}
 												}
 												highestRoleColor {
 													hex
@@ -114,12 +337,15 @@
 			<Spinner />
 		</div>
 	{:then events}
-		{#each events as event, index}
-			<EmoteEventComponent {event} />
-			{#if index !== events.length - 1}
-				<hr />
-			{/if}
-		{/each}
+		{#if events.length === 0}
+			<p class="empty">{$t("pages.emote.activity.empty")}</p>
+		{:else}
+			{#each events as event}
+				<EmoteEventComponent {event} />
+			{/each}
+		{/if}
+	{:catch}
+		<p class="empty error">{$t("pages.emote.activity.error")}</p>
 	{/await}
 </div>
 
@@ -137,5 +363,16 @@
 
 	.events {
 		margin-top: 1.5rem;
+	}
+
+	.empty {
+		color: var(--text-light);
+		font-size: 0.85rem;
+		text-align: center;
+		padding: 2rem 0;
+	}
+
+	.empty.error {
+		color: var(--danger);
 	}
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { numberFormat } from "$/lib/utils";
 	import TabLink from "../tab-link.svelte";
-	import { Users, Pulse } from "phosphor-svelte";
+	import { Users, Pulse, Info } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 
 	let { id, channelCount }: { id: string; channelCount?: number } = $props();
@@ -23,6 +23,12 @@
 		<Pulse />
 		{#snippet active()}
 			<Pulse weight="fill" />
+		{/snippet}
+	</TabLink>
+	<TabLink title={$t("common.info")} href="/emotes/{id}/info" responsive>
+		<Info />
+		{#snippet active()}
+			<Info weight="fill" />
 		{/snippet}
 	</TabLink>
 	<!-- <TabLink title={$t("common.statistics")} href="/emotes/{id}/statistics" responsive>

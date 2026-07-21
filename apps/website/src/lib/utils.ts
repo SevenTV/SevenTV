@@ -21,6 +21,32 @@ export function numberFormat() {
 	});
 }
 
+export function exactNumberFormat() {
+	return getNumberFormatter();
+}
+
+/**
+ * Formats a byte count into a human readable string, e.g. 152400 -> "149KB".
+ */
+export function formatBytes(bytes: number): string {
+	if (!Number.isFinite(bytes) || bytes < 0) {
+		return "0B";
+	}
+
+	const units = ["B", "KB", "MB", "GB"];
+	let value = bytes;
+	let unitIndex = 0;
+
+	while (value >= 1024 && unitIndex < units.length - 1) {
+		value /= 1024;
+		unitIndex++;
+	}
+
+	const decimals = unitIndex === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 2;
+
+	return `${value.toFixed(decimals)}${units[unitIndex]}`;
+}
+
 export function isMobileLayout(): boolean {
 	return window.matchMedia("screen and (max-width: 960px)").matches;
 }
