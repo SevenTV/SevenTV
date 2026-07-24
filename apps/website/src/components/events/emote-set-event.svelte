@@ -4,6 +4,8 @@
 	import moment from "moment/min/moment-with-locales";
 	import FromNow from "$/components/from-now.svelte";
 	import ResponsiveImage from "../responsive-image.svelte";
+	import UserProfilePicture from "$/components/user-profile-picture.svelte";
+	import UserName from "$/components/user-name.svelte";
 	import { t } from "svelte-i18n";
 
 	let { event }: { event: EmoteSetEvent } = $props();
@@ -35,8 +37,9 @@
 		{#if by}
 			{$t("pages.activity.emote.by")}
 		{/if}
-		<a href="/users/{actor.id}" class="user-link" style:color={actor.highestRoleColor?.hex}>
-			{actor.mainConnection.platformDisplayName}
+		<a href="/users/{actor.id}" class="user-link">
+			<UserProfilePicture user={actor} size={20} />
+			<UserName user={actor} />
 		</a>
 	{/if}
 {/snippet}
@@ -142,6 +145,13 @@
 
 		a {
 			color: var(--text);
+		}
+
+		.user-link {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			vertical-align: middle;
 		}
 
 		.time {
