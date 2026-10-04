@@ -17,10 +17,6 @@ export const selectionModeInEmotes = writable<boolean>(false);
 export const signInDialogMode = writable<DialogMode>("hidden");
 export const signInDialogPayload = writable<object | undefined>();
 
-export type PageRightLeftLayout = "ltr" | "rtl";
-let currentpageRightToLeft = browser ? (window.localStorage.getItem("pageRightToLeft") as PageRightLeftLayout) : "ltr";
-export const pageRightToLeft = writable<PageRightLeftLayout>(currentpageRightToLeft);
-
 export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 
 export type Theme = "system-theme" | "light-theme" | "dark-theme";
@@ -101,6 +97,16 @@ reducedMotion.subscribe((value) => {
 	}
 });
 
+export type PageRightLeftLayout = "ltr" | "rtl";
+
+export const pageRightToLeft = writable<PageRightLeftLayout>(loadRightToLeft());
+
+function loadRightToLeft(): PageRightLeftLayout {
+	const savedRTL = browser && window.localStorage.getItem("pageRightToLeft");
+	if (savedRTL) return savedRTL as PageRightLeftLayout;
+
+	return "ltr";
+}
 
 pageRightToLeft.subscribe((isRtl) => {
 	if (browser && isRtl) {
@@ -115,6 +121,48 @@ pageRightToLeft.subscribe((isRtl) => {
 			window.localStorage.setItem("pageRightToLeft", "ltr");
 		}
 	}
+});
+
+// Time Format
+
+export type FormatTime = "12h" | "24h";
+
+export const timeFormat = writable<FormatTime>(loadTimeFormat());
+
+function loadTimeFormat(): FormatTime {
+	const savedTimeFormat = browser && window.localStorage.getItem("timeFormat");
+	if (savedTimeFormat) return savedTimeFormat as FormatTime;
+
+	const is24h = !new Intl.DateTimeFormat(navigator.language, { hour: 'numeric' })
+		.format(0)
+		.match(/AM|PM/);
+
+	if (!is24h) {
+		return "12h";
+	} else {
+		return "24h";
+	}
+}
+
+timeFormat.subscribe((value) => {
+	if (browser && value) window.localStorage.setItem("timeFormat", value);
+});
+
+// Date Format
+
+export type FormatDate = "date-format-exact" | "date-format-relative";
+
+export const dateFormat = writable<FormatDate>(loadFormatDate());
+
+function loadFormatDate(): FormatDate {
+	const savedDateFormat = browser && window.localStorage.getItem("dateFormat");
+	if (savedDateFormat) return savedDateFormat as FormatDate;
+
+	return "date-format-relative";
+}
+
+dateFormat.subscribe((value) => {
+	if (browser && value) window.localStorage.setItem("dateFormat", value);
 });
 
 // Layout
