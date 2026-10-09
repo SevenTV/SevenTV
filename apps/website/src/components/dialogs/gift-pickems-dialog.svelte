@@ -42,7 +42,7 @@
 			</p>
 		{:else}
 			<UserSearch
-				placeholder="Search User"
+				placeholder={$t("labels.search_user")}
 				onresultclick={(e, user) => {
 					e.preventDefault();
 					recipient = user;

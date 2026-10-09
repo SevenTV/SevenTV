@@ -250,7 +250,7 @@ Reason/Screenshot:
 			<div class="revert-button-container">
 				<Button
 					big
-					title="Revert action"
+				title={$t("pages.admin.tickets.emote_actions.revert_action")}
 					onclick={async (event) => {
 						event.stopPropagation();
 						await RevertTicketAction(ticket);
@@ -266,10 +266,10 @@ Reason/Screenshot:
 	<form class="layout">
 		{#if mode === "shown"}
 			<div class="navigation-buttons">
-				<Button class="left-arrow" title="Previous" onclick={() => onprevious("previous", ticket)}>
+				<Button class="left-arrow" title={$t("pages.admin.tickets.emote_actions.previous")} onclick={() => onprevious("previous", ticket)}>
 					<CaretLeft size="30" />
 				</Button>
-				<Button class="right-arrow" title="Next" onclick={() => onnext("next", ticket)}>
+				<Button class="right-arrow" title={$t("pages.admin.tickets.emote_actions.next")} onclick={() => onnext("next", ticket)}>
 					<CaretRight size="30" />
 				</Button>
 			</div>
@@ -317,12 +317,12 @@ Reason/Screenshot:
 		<div>
 			<div class="tabs">
 				<TabLink
-					title="Activity Log (17)"
+					title={`${$t("pages.admin.tickets.reports_actions.activity_log")} (17)`}
 					matcher={() => tab === "activity"}
 					onclick={() => (tab = "activity")}
 				/>
 				<TabLink
-					title="Mod Comments (0)"
+					title={`${$t("pages.admin.tickets.reports_actions.mod_comments")} (0)`}
 					matcher={() => tab === "comments"}
 					onclick={() => (tab = "activity")}
 				/>
@@ -354,7 +354,7 @@ Reason/Screenshot:
 				onclick={() => (showRejectDialog = "shown")}
 			>
 				<X />
-				Reject
+				{$t("pages.admin.tickets.emote_actions.reject")}
 			</Button>
 			<Dialog bind:mode={showRejectDialog} width={20}>
 				<div class="secondary-dialog-dialog">
@@ -370,7 +370,7 @@ Reason/Screenshot:
 							{#snippet icon()}
 								<EyeSlash />
 							{/snippet}
-							Unlist
+							{$t("pages.admin.tickets.emote_actions.unlist")}
 						</Button>
 						<Button
 							class="secondary-dialog-action"
@@ -383,14 +383,14 @@ Reason/Screenshot:
 							{#snippet icon()}
 								<Trash />
 							{/snippet}
-							Delete
+							{$t("pages.admin.tickets.emote_actions.delete")}
 						</Button>
 					</div>
 				</div>
 			</Dialog>
 			<Button
 				big
-				title="Open Emote in New Tab"
+				title={$t("pages.admin.tickets.emote_actions.open_emote")}
 				onclick={() => window.open(`/emotes/${ticket.emote.id}`, "_blank")}
 			>
 				{#snippet icon()}
@@ -398,7 +398,7 @@ Reason/Screenshot:
 				{/snippet}
 			</Button>
 			{#if webhookUrl}
-				<Button big title="Copy Watchlist Info" onclick={() => (SpoilerDialogMode = "shown")}>
+				<Button big title={$t("pages.admin.tickets.emote_actions.copy_watchlist")} onclick={() => (SpoilerDialogMode = "shown")}>
 					{#snippet icon()}
 						<Eye />
 					{/snippet}
@@ -418,7 +418,7 @@ Reason/Screenshot:
 							{#snippet icon()}
 								<EyeSlash />
 							{/snippet}
-							Spoiler
+							{$t("pages.admin.tickets.emote_actions.spoiler")}
 						</Button>
 						<Button
 							class="secondary-dialog-action"
@@ -431,7 +431,7 @@ Reason/Screenshot:
 							{#snippet icon()}
 								<Eye />
 							{/snippet}
-							No Spoiler
+							{$t("pages.admin.tickets.emote_actions.no_spoiler")}
 						</Button>
 					</div>
 				</div>
@@ -443,7 +443,7 @@ Reason/Screenshot:
 				onclick={() => onnext("approve", ticket)}
 			>
 				<Check />
-				Approve
+				{$t("pages.admin.tickets.emote_actions.approve")}
 			</Button>
 		</div>
 	</form>

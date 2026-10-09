@@ -108,13 +108,13 @@
 					{/snippet}
 				</TabLink>
 				{#if $user?.permissions.user.manageAny}
-					<TabLink title="Users" href="/admin/users" matcher={customMatcher} big>
+					<TabLink title={$t("pages.admin.users.layout.users")} href="/admin/users" matcher={customMatcher} big>
 						<Users />
 						{#snippet active()}
 							<Users weight="fill" />
 						{/snippet}
 					</TabLink>
-					<TabLink title="Entitlement Graph" href="/admin/graph" big>
+					<TabLink title={$t("pages.admin.graph")} href="/admin/graph" big>
 						<Graph />
 						{#snippet active()}
 							<Graph weight="fill" />
@@ -122,13 +122,13 @@
 					</TabLink>
 				{/if}
 				{#if $user?.permissions.admin.manageRedeemCodes}
-					<TabLink title="Redeem Codes" href="/admin/redeem-codes" big>
+					<TabLink title={$t("pages.admin.codes.redeem")} href="/admin/redeem-codes" big>
 						<Gift />
 						{#snippet active()}
 							<Gift weight="fill" />
 						{/snippet}
 					</TabLink>
-					<TabLink title="Special Events" href="/admin/special-events" big>
+					<TabLink title={$t("pages.admin.special_events.header")} href="/admin/special-events" big>
 						<CalendarBlank />
 						{#snippet active()}
 							<CalendarBlank weight="fill" />

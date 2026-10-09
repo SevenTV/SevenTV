@@ -10,6 +10,7 @@
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "./dialog.svelte";
 	import Dialog from "./dialog.svelte";
+	import { t } from "svelte-i18n";
 
 	interface Props {
 		mode: DialogMode;
@@ -146,27 +147,27 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>Create Entitlements</h1>
+		<h1>{$t("pages.admin.users.id.actions.entitlements.create")}</h1>
 		<hr />
-		<p>Assign entitlements to <b>{from.type.replace("_", " ")} {fromName}</b></p>
+		<p>{$t("pages.admin.users.id.actions.entitlements.assign_to")} <b>{from.type.replace("_", " ")} {fromName}</b></p>
 		<div class="types">
-			Type
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>Role</Radio>
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Badge}>Badge</Radio>
-			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Paint}>Paint</Radio>
+			{$t("pages.admin.users.id.actions.entitlements.types.type")}
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>{$t("pages.admin.users.id.actions.entitlements.types.role")}</Radio>
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Badge}>{$t("pages.admin.users.id.actions.entitlements.types.badge")}</Radio>
+			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Paint}>{$t("pages.admin.users.id.actions.entitlements.types.paint")}</Radio>
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.EmoteSet}>
-				Emote Set
+				{$t("pages.admin.users.id.actions.entitlements.types.emote_set")}
 			</Radio>
 			{#if from.type === EntitlementNodeTypeInput.User}
 				<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.SpecialEvent}>
-					SpecialEvent
+					{$t("pages.admin.users.id.actions.entitlements.types.special_event")}
 				</Radio>
 			{/if}
 		</div>
 		{#if type}
 			{#if type === EntitlementNodeTypeInput.Role}
 				<label>
-					Role
+					{$t("pages.admin.users.id.actions.entitlements.types.role")}
 					{#await roles}
 						<Spinner />
 					{:then roles}
@@ -180,7 +181,7 @@
 				</label>
 			{:else if type === EntitlementNodeTypeInput.Badge}
 				<label>
-					Badge
+					{$t("pages.admin.users.id.actions.entitlements.types.badge")}
 					{#await badges}
 						<Spinner />
 					{:then badges}
@@ -194,7 +195,7 @@
 				</label>
 			{:else if type === EntitlementNodeTypeInput.Paint}
 				<label>
-					Paint
+					{$t("pages.admin.users.id.actions.entitlements.types.paint")}
 					{#await paints}
 						<Spinner />
 					{:then paints}
@@ -207,12 +208,12 @@
 					{/await}
 				</label>
 			{:else if type === EntitlementNodeTypeInput.EmoteSet}
-				<TextInput bind:value={id} placeholder="ID">
-					{type.replace("_", " ")} ID
+				<TextInput bind:value={id} placeholder={$t("pages.admin.users.id.actions.entitlements.types.id")}>
+					{type.replace("_", " ")} {$t("pages.admin.users.id.actions.entitlements.types.id")}
 				</TextInput>
 			{:else}
 				<label>
-					SpecialEvent
+					{$t("pages.admin.users.id.actions.entitlements.types.special_event")}
 					{#await specialEvents}
 						<Spinner />
 					{:then specialEvents}
@@ -228,7 +229,7 @@
 		{/if}
 		{#if from.type === EntitlementNodeTypeInput.User}
 			<div class="sub-entitlement">
-				<Checkbox bind:value={subscription}>Subscription entitlement?</Checkbox>
+				<Checkbox bind:value={subscription}>{$t("pages.admin.users.id.actions.entitlements.types.sub_entitlement")}</Checkbox>
 			</div>
 		{/if}
 
@@ -242,9 +243,9 @@
 				onclick={submit}
 				disabled={loading || !type || !id}
 			>
-				Create Entitlements
+				{$t("pages.admin.users.id.actions.entitlements.create")}
 			</Button>
-			<Button secondary onclick={() => (mode = "hidden")}>Cancel</Button>
+			<Button secondary onclick={() => (mode = "hidden")}>{$t("labels.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>

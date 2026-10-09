@@ -222,7 +222,7 @@
 				{#if actionsPosition === "left" && isActioned}
 					<Button
 						big
-						title="Revert action"
+						title={$t("pages.admin.tickets.emote_actions.revert_action")}
 						onclick={async (event) => {
 							event.stopPropagation();
 							await RevertTicketAction(tickets[i]);
@@ -266,7 +266,7 @@
 				<td class:expanded-tickets={$expandedTickets}>
 					<div class="assigned-user">
 						{#if message.assignees.length == 0}
-							<p class="grey">No assignees</p>
+							<p class="grey">{$t("pages.admin.tickets.reports_table.no_assignees")}</p>
 						{:else}
 							<img
 								class="avatar"
@@ -281,15 +281,15 @@
 					{#if message.status === "OPEN"}
 						<div class="status" style="background-color: #171f17; color: #57ab5a">
 							<EnvelopeOpen />
-							Open
+							{$t("pages.admin.tickets.reports_table.status_open")}
 						</div>
 					{:else if message.status === "ASSIGNED"}
 						<div class="status" style="background-color: #161d26; color: #529bf5">
-							<Spinner />Pending
+							<Spinner />{$t("pages.admin.tickets.reports_table.status_pending")}
 						</div>
 					{:else if message.status === "CLOSED"}
 						<div class="status" style="background-color: #261918; color: #f47068">
-							<LockSimple />Closed
+							<LockSimple />{$t("pages.admin.tickets.reports_table.status_closed")}
 						</div>
 					{/if}
 				</td>
@@ -314,7 +314,7 @@
 				{#if actionsPosition === "right" && isActioned}
 					<Button
 						big
-						title="Revert Action"
+						title={$t("pages.admin.tickets.emote_actions.revert_action")}
 						onclick={async (event) => {
 							event.stopPropagation();
 							tickets[i].isActioned = false;

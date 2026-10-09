@@ -134,7 +134,7 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>{subInfo.activePeriod?.giftedBy ? "End your subscription" : "Cancel your subscription"}</h1>
+		<h1>{subInfo.activePeriod?.giftedBy ? $t("dialogs.subscription.end") : $t("dialogs.subscription.cancel")}</h1>
 		<hr />
 		{#if subInfo.activePeriod?.giftedBy}
 			<p>

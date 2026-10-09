@@ -192,7 +192,7 @@
 </script>
 
 <svelte:head>
-	<title>Redeem Codes - {$t("page_titles.admin_suffix")}</title>
+	<title>{$t("pages.admin.codes.redeem")} - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 <div class="layout">
@@ -203,22 +203,22 @@
 				{#snippet icon()}
 					<Plus />
 				{/snippet}
-				Add Code(s)
+				{$t("pages.admin.codes.add")}
 			</Button>
-			<TextInput placeholder="Search" bind:value={query}>
+			<TextInput placeholder={$t("labels.search")} bind:value={query}>
 				{#snippet icon()}
 					<MagnifyingGlass />
 				{/snippet}
 			</TextInput>
 			<div>
-				Filters:
-				<Checkbox bind:value={remainingUses}>Remaining Uses</Checkbox>
+				{$t("pages.admin.codes.filters.header")}
+				<Checkbox bind:value={remainingUses}>{$t("pages.admin.codes.filters.remaining_uses")}</Checkbox>
 			</div>
 		</div>
 		<div class="buttons">
 			{#await results then results}
 				{#if results}
-					<p>Found {results.totalCount} results ({results.pageCount} pages)</p>
+					<p>{$t("pages.admin.codes.search.results", { values: { "results.totalCount": results.totalCount, "results.pageCount": results.pageCount }})}</p>
 				{/if}
 			{/await}
 			<div class="buttons-horizontal">
@@ -247,17 +247,17 @@
 		<table>
 			<thead>
 				<tr>
-					<th>Name</th>
-					<th>Description</th>
-					<th>Tags</th>
-					<th>Code</th>
-					<th>Remaining Uses</th>
-					<th>Active Period</th>
-					<th>Effect</th>
-					<th>Subscription Effect</th>
-					<th>Created By</th>
-					<th>Created At</th>
-					<th>Actions</th>
+					<th>{$t("pages.admin.codes.attributes.name.name")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.description")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.tags")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.code")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.remaining_uses")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.active_period")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.effect")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.subscription_effect")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.created_by")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.created_at")}</th>
+					<th>{$t("pages.admin.codes.attributes.name.actions")}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -286,7 +286,7 @@
 										{moment(code.activePeriod.start).format()} -
 										{moment(code.activePeriod.end).format()}
 									{:else}
-										Unlimited
+										{$t("pages.admin.codes.period.unlimited")}
 									{/if}
 								</td>
 								<td>
@@ -302,19 +302,19 @@
 									{#if code.subscriptionEffect && code.subscriptionEffect.subscriptionProduct}
 										{code.subscriptionEffect.subscriptionProduct.name} -
 										{#if code.subscriptionEffect.trialDays}
-											{code.subscriptionEffect.trialDays} days trial
+											{$t("pages.admin.codes.trial.days", { values: { count: code.subscriptionEffect.trialDays }})}
 										{:else}
-											No trial
+											{$t("pages.admin.codes.trial.no_trial")}
 										{/if}
 									{:else}
-										None
+										{$t("pages.admin.codes.trial.none")}
 									{/if}
 								</td>
 								<td>
 									{#if code.createdBy}
 										<UserName user={code.createdBy as User} />
 									{:else}
-										System
+										{$t("pages.admin.codes.system")}
 									{/if}
 								</td>
 								<td>

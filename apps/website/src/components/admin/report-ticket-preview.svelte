@@ -150,7 +150,7 @@
 	{#if ticket.isActioned}
 		<div class="revert-dialog">
 			<div class="revert-button-container">
-				<Button big title="Revert action">
+				<Button big title={$t("pages.admin.tickets.emote_actions.revert_action")}>
 					{#snippet icon()}
 						<ArrowCounterClockwise color="lightblue" />
 					{/snippet}
@@ -219,12 +219,12 @@
 		<div>
 			<div class="tabs">
 				<TabLink
-					title="Activity Log (17)"
+					title={`${$t("pages.admin.tickets.reports_actions.activity_log")} (17)`}
 					matcher={() => tab === "activity"}
 					onclick={() => (tab = "activity")}
 				/>
 				<TabLink
-					title="Mod Comments (0)"
+					title={`${$t("pages.admin.tickets.reports_actions.mod_comments")} (0)`}
 					matcher={() => tab === "comments"}
 					onclick={() => (tab = "activity")}
 				/>

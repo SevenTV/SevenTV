@@ -3,11 +3,12 @@
 	import { user } from "$/lib/auth";
 	import { Lightning } from "phosphor-svelte";
 	import ActiveEmoteSetDialog from "../dialogs/active-emote-set-dialog.svelte";
+	import { t } from "svelte-i18n";
 	import type { DialogMode } from "../dialogs/dialog.svelte";
 	import Button from "../input/button.svelte";
 	import Spinner from "../spinner.svelte";
 
-	let { userData = $bindable(), text = "Active Set" }: { userData: Promise<User>; text?: string } =
+	let { userData = $bindable(), text }: { userData: Promise<User>; text?: string } =
 		$props();
 
 	let activeEmoteSetDialog: DialogMode = $state("hidden");
@@ -37,7 +38,7 @@
 				editor.state === UserEditorState.Accepted &&
 				editor.permissions.user.manageProfile,
 		)}
-	{#if !hasPermission && text === "Set Active Set"}
+	{#if !hasPermission && text === $t("pages.user.set_active_set")}
 		<br />
 	{:else}
 		<Button
@@ -50,7 +51,7 @@
 			{#snippet icon()}
 				<Lightning />
 			{/snippet}
-			{userData?.style.activeEmoteSet?.name ?? text}
+			{userData?.style.activeEmoteSet?.name ?? (text ?? $t("pages.user.active_set"))}
 		</Button>
 	{/if}
 {/await}

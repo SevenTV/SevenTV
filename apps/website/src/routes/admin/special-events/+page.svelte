@@ -117,7 +117,7 @@
 </script>
 
 <svelte:head>
-	<title>Special Events - {$t("page_titles.admin_suffix")}</title>
+	<title>{$t("pages.admin.special_events.header")} - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 <div class="layout">
@@ -128,13 +128,13 @@
 				{#snippet icon()}
 					<Plus />
 				{/snippet}
-				Add Special Event
+				{$t("pages.admin.special_events.add")}
 			</Button>
 		</div>
 		<div class="buttons">
 			{#await results then results}
 				{#if results}
-					<p>Found {results.length} results</p>
+					<p>{$t("pages.admin.special_events.results", { values: { "results.length": results.length }})}</p>
 				{/if}
 			{/await}
 		</div>
@@ -143,12 +143,12 @@
 		<table>
 			<thead>
 				<tr>
-					<th>Name</th>
-					<th>Description</th>
-					<th>Tags</th>
-					<th>Created By</th>
-					<th>Created At</th>
-					<th>Actions</th>
+					<th>{$t("pages.admin.special_events.attributes.name")}</th>
+					<th>{$t("pages.admin.special_events.attributes.description")}</th>
+					<th>{$t("pages.admin.special_events.attributes.tags")}</th>
+					<th>{$t("pages.admin.special_events.attributes.created_by")}</th>
+					<th>{$t("pages.admin.special_events.attributes.created_at")}</th>
+					<th>{$t("pages.admin.special_events.attributes.actions")}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -193,7 +193,7 @@
 									{#if specialEvent.createdBy}
 										<UserName user={specialEvent.createdBy as User} />
 									{:else}
-										System
+										{$t("pages.admin.special_events.system")}
 									{/if}
 								</td>
 								<td>
@@ -225,7 +225,7 @@
 						{/each}
 					{:else}
 						<tr>
-							<td colspan="6" style="text-align: center;">No Special Events</td>
+							<td colspan="6" style="text-align: center;">{$t("pages.admin.special_events.no_events")}</td>
 						</tr>
 					{/if}
 				{/await}

@@ -149,7 +149,9 @@
     "remove": "Remove",
     "accept": "Accept",
     "deny": "Deny",
-    "enter": "Enter"
+    "enter": "Enter",
+    "paint_name": "Paint Name",
+    "username": "Username"
   },
   "themes": {
     "system": "System",
@@ -190,14 +192,21 @@
     "gifted_by": "Gifted by",
     "ends": "Sub Ends",
     "total": "Total",
-    "credits": "Sub Credits"
+    "credits": "Sub Credits",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "next_billing": "Next Billing",
+    "previously_subscribed": "Previously Subscribed"
   },
   "file_limits": {
     "max_size": "{size} max file size",
     "max_resolution": "{width}x{height} max resolution",
     "max_frames": "{count} max frames",
     "resolution_error": "Resolution must not exceed {width}x{height}",
-    "duration_error": "Duration must be {duration} seconds or less"
+    "duration_error": "Duration must be {duration} seconds or less",
+    "size_error": "Your file exceeds the maximum file size of {size}.",
+    "aspect_ratio_large": "Image aspect ratio is too large (must be less than 3:1)",
+    "aspect_ratio_small": "Image aspect ratio is too small (must be more than 1:32)"
   },
   "dialogs": {
     "sign_in": {
@@ -223,7 +232,8 @@
       "accept_rules": "I accept the rules and guidelines",
       "discard": "Discard",
       "upload_guidelines": "Emote Upload Guidelines",
-      "upload": "Upload"
+      "upload": "Upload",
+      "preview_notice": "Preview resolutions do not represent final emote resolutions after processing"
     },
     "emote_set": {
       "title": "Active Emote Set",
@@ -238,7 +248,7 @@
         "add": "Add & Rename to all",
         "remove": "Remove from all"
       },
-      "mass_select_feature":{
+      "mass_select_feature": {
         "add": "Add to Emote-Set",
         "remove": "Remove from Emote-Set",
         "amount_selected_label": "/20 Selected"
@@ -380,7 +390,9 @@
       "gifted_by": "Your subscription was gifted to you by",
       "cancel_notice": "Ending your subscription now will make you lose access to your subscription benefits immediately. Are you sure you want to end your subscription?",
       "cancel_confirmation": "Are you sure you want to cancel your subscription? You will lose access to your subscription benefits at the end of your current billing period.",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "end": "End your subscription",
+      "cancel": "Cancel your subscription"
     },
     "error": {
       "title": "Error"
@@ -457,6 +469,11 @@
       "delete": {
         "action": "Deleted"
       }
+    },
+    "admin": {
+      "session": {
+        "title": "Create Session"
+      }
     }
   },
   "pages": {
@@ -496,7 +513,7 @@
         "failed": "Failed to log in"
       },
       "state": {
-       "logging": "Logging you in...",
+        "logging": "Logging you in...",
         "logged": "Logged in",
         "failed": {
           "title": "Login Failed",
@@ -723,7 +740,8 @@
           "uploader": "Uploader",
           "country": "Country",
           "tags_flags": "Tags & Flags",
-          "reviewed_by": "Reviewed By"
+          "reviewed_by": "Reviewed By",
+          "date": "Date"
         },
         "reports": "Reports",
         "reports_options": {
@@ -740,12 +758,33 @@
           "date": "Date",
           "ticket_id": "Ticket ID",
           "subject": "Subject",
-          "details": "Details"
+          "details": "Details",
+          "no_assignees": "No assignees",
+          "status_open": "Open",
+          "status_pending": "Pending",
+          "status_closed": "Closed"
         },
         "reports_actions": {
           "close": "Mark as Closed",
           "assign_self": "Assign Self",
-          "add_comment": "Add comment"
+          "add_comment": "Add comment",
+          "activity_log": "Activity Log",
+          "mod_comments": "Mod Comments"
+        },
+        "emote_actions": {
+          "revert_action": "Revert action",
+          "previous": "Previous",
+          "next": "Next",
+          "reject": "Reject",
+          "unlist": "Unlist",
+          "delete": "Delete",
+          "open_emote": "Open Emote in New Tab",
+          "copy_watchlist": "Copy Watchlist Info",
+          "spoiler": "Spoiler",
+          "no_spoiler": "No Spoiler",
+          "approve": "Approve",
+          "action_success": "{action} Success!",
+          "action_failure": "Couldn't perform {action} successfully!"
         }
       },
       "codes": {
@@ -781,7 +820,20 @@
           "no_trial": "No trial",
           "none": "None"
         },
-        "system": "System"
+        "system": "System",
+        "create_dialog": {
+          "title": "Create {number} {codes}",
+          "number_of_codes": "Number of codes",
+          "generate_random": "Generate random codes",
+          "no_events": "No special events found",
+          "trial_days": "Trial subscription days",
+          "uses_per_code": "Uses per code",
+          "always_active": "Always Active (no expiration)",
+          "start_date": "Start date in {timezone} time",
+          "end_date": "End date in {timezone} time",
+          "code_singular": "code",
+          "code_plural": "codes"
+        }
       },
       "special_events": {
         "header": "Special Events",
@@ -837,7 +889,17 @@
               "assign_to": "Assign entitlements to",
               "remove_all": "Remove All Entitlements",
               "view": "View Entitlements",
-              "showing": "Showing entitlements assigned to"
+              "showing": "Showing entitlements assigned to",
+              "types": {
+                "type": "Type",
+                "role": "Role",
+                "badge": "Badge",
+                "paint": "Paint",
+                "emote_set": "Emote Set",
+                "special_event": "Special Event",
+                "id": "ID",
+                "sub_entitlement": "Subscription entitlement?"
+              }
             }
           },
           "subscription": {
@@ -892,8 +954,15 @@
               "manually": "Manually trigger the subscription job to recalculate entitlements and subscription benefits for all users.",
               "rerun": "Rerun"
             }
-          }
+          },
+          "search_inspect": "Search user to inspect"
         }
+      },
+      "graph": "Entitlement Graph",
+      "graph_options": {
+        "layout": "Layout",
+        "node_size": "Node Size",
+        "search_user": "Search user"
       }
     },
     "emote": {
@@ -908,7 +977,10 @@
       "about": "About",
       "active_emotes": "Active Emotes",
       "uploaded": "Uploaded",
-      "uploaded_emotes": "Uploaded Emotes"
+      "uploaded_emotes": "Uploaded Emotes",
+      "no_active_set": "No active emote set selected.",
+      "set_active_set": "Set Active Set",
+      "active_set": "Active Set"
     },
     "settings": {
       "account": {
@@ -1023,6 +1095,10 @@
       "login_successful": "Logged in",
       "login_failed": "Failed to log in",
       "window": "Make sure to open this window through the extension"
+    },
+    "login": {
+      "title": "Login",
+      "logged_in": "Logged in"
     }
   }
 }

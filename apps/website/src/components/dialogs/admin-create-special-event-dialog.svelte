@@ -50,13 +50,13 @@
 	<form class="layout">
 		<h1>{$t("pages.admin.special_events.create")}</h1>
 		<hr />
-		<TextInput placeholder="Name" bind:value={name} required>
+		<TextInput placeholder={$t("pages.admin.special_events.attributes.name")} bind:value={name} required>
 			{#snippet icon()}
 				<PencilSimple />
 			{/snippet}
 			{$t("pages.admin.special_events.attributes.name")}
 		</TextInput>
-		<TextInput placeholder="Description" bind:value={description}>
+		<TextInput placeholder={$t("pages.admin.special_events.attributes.description")} bind:value={description}>
 			{#snippet icon()}
 				<TextAlignLeft />
 			{/snippet}

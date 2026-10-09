@@ -11,6 +11,7 @@
 	import Select from "../input/select.svelte";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { CreateRedeemCodeBatchInput, CreateRedeemCodeInput } from "$/gql/graphql";
+	import { t } from "svelte-i18n";
 
 	let { mode = $bindable() }: { mode: DialogMode } = $props();
 
@@ -158,7 +159,7 @@
 		reset();
 	}
 
-	let title = $derived(`Create ${number} ${number === 1 ? "code" : "codes"}`);
+	let title = $derived($t("pages.admin.codes.create_dialog.title", { values: { number, codes: number === 1 ? $t("pages.admin.codes.create_dialog.code_singular") : $t("pages.admin.codes.create_dialog.code_plural") } }));
 
 	async function querySpecialEvents() {
 		const res = await gqlClient().query(
@@ -186,13 +187,13 @@
 		<h1>{title}</h1>
 		<hr />
 		<label>
-			Number of codes
+			{$t("pages.admin.codes.create_dialog.number_of_codes")}
 			<input type="number" required min="1" bind:value={number} />
 		</label>
-		<Checkbox bind:value={autoGenerate} disabled={number > 1}>Generate random codes</Checkbox>
+		<Checkbox bind:value={autoGenerate} disabled={number > 1}>{$t("pages.admin.codes.create_dialog.generate_random")}</Checkbox>
 		{#if !autoGenerate}
 			<TextInput
-				placeholder="Code"
+				placeholder={$t("pages.admin.codes.attributes.name.code")}
 				bind:value={code}
 				minlength={1}
 				maxlength={24}
@@ -202,11 +203,11 @@
 				{#snippet icon()}
 					<Gift />
 				{/snippet}
-				Code
+				{$t("pages.admin.codes.attributes.name.code")}
 			</TextInput>
 		{/if}
 		<label>
-			Special Event
+			{$t("pages.admin.special_events.header")}
 			{#await specialEvents}
 				<Spinner />
 			{:then specialEvents}
@@ -221,44 +222,44 @@
 						bind:selected={specialEventId}
 					/>
 				{:else}
-					<p>No special events found</p>
+					<p>{$t("pages.admin.codes.create_dialog.no_events")}</p>
 				{/if}
 			{/await}
 		</label>
 		<label>
-			Trial subscription days
+			{$t("pages.admin.codes.create_dialog.trial_days")}
 			<input type="number" required min="0" bind:value={trialDays} />
 		</label>
 		<label>
-			Uses per code
+			{$t("pages.admin.codes.create_dialog.uses_per_code")}
 			<input type="number" required min="0" bind:value={uses} style="width: 6rem;" />
 		</label>
-		<Checkbox bind:value={noExpiration}>Always Active (no expiration)</Checkbox>
+		<Checkbox bind:value={noExpiration}>{$t("pages.admin.codes.create_dialog.always_active")}</Checkbox>
 		{#if !noExpiration}
 			{@const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone}
 			<label>
-				Start date in {timezone} time
+				{$t("pages.admin.codes.create_dialog.start_date", { values: { timezone }})}
 				<input type="datetime-local" required bind:value={startDate} />
 			</label>
 			<label>
-				End date in {timezone} time
+				{$t("pages.admin.codes.create_dialog.end_date", { values: { timezone }})}
 				<input type="datetime-local" required bind:value={endDate} />
 			</label>
 		{/if}
-		<TextInput placeholder="Name" bind:value={name} required>
+		<TextInput placeholder={$t("pages.admin.codes.attributes.name.name")} bind:value={name} required>
 			{#snippet icon()}
 				<PencilSimple />
 			{/snippet}
-			Name
+			{$t("pages.admin.codes.attributes.name.name")}
 		</TextInput>
-		<TextInput placeholder="Description" bind:value={description}>
+		<TextInput placeholder={$t("pages.admin.codes.attributes.name.description")} bind:value={description}>
 			{#snippet icon()}
 				<TextAlignLeft />
 			{/snippet}
-			Description
+			{$t("pages.admin.codes.attributes.name.description")}
 		</TextInput>
 		<div class="tags">
-			<TagsInput bind:tags>Tags</TagsInput>
+			<TagsInput bind:tags>{$t("pages.admin.codes.attributes.name.tags")}</TagsInput>
 		</div>
 		{#snippet loadingSpinner()}
 			<Spinner />
@@ -280,7 +281,7 @@
 					{title}
 				</Button>
 			{/await}
-			<Button secondary onclick={reset}>Cancel</Button>
+			<Button secondary onclick={reset}>{$t("labels.cancel")}</Button>
 		</div>
 	</form>
 </Dialog>

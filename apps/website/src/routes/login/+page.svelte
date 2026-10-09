@@ -3,10 +3,11 @@
 	import Spinner from "$/components/spinner.svelte";
 	import { user } from "$/lib/auth";
 	import { Check } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 </script>
 
 <svelte:head>
-	<title>Login</title>
+	<title>{$t("pages.login.title")}</title>
 </svelte:head>
 
 <div class="container">
@@ -16,7 +17,7 @@
 		<SignInDialog mode={"shown-without-close"} />
 	{:else}
 		<Check />
-		<h2>Logged in</h2>
+		<h2>{$t("pages.login.logged_in")}</h2>
 	{/if}
 </div>
 
