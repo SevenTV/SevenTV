@@ -7,11 +7,29 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { emotesLayout } from "$/lib/layout";
 	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
+	import TabLink from "$/components/tab-link.svelte";
+	import Button from "$/components/input/button.svelte";
+	import Toggle from "$/components/input/toggle.svelte";
+	import { Plant, Trophy } from "phosphor-svelte";
+	import { t } from "svelte-i18n";
 	import { gql } from "@urql/svelte";
 
 	let { data }: { data: PageData } = $props();
 
-	async function load(_page: number, _perPage: number): Promise<EmoteSearchResult> {
+	type SortOption = "top" | "new";
+	let sortBy = $state<SortOption>("top");
+	let selectionMode = $state(false);
+	let allEmotes = $state<Emote[] | null>(null);
+
+	$effect(() => {
+		data.id;
+		$defaultEmoteSet;
+		allEmotes = null;
+	});
+
+	async function fetchEmotes(): Promise<Emote[]> {
+		if (allEmotes) return allEmotes;
+
 		const variables = {
 			id: data.id,
 			isDefaultSetSet: !!$defaultEmoteSet,
@@ -109,6 +127,9 @@
 								width
 								frameCount
 							}
+							scores {
+								topAllTime
+							}
 							ranking(ranking: TRENDING_WEEKLY)
 							inEmoteSets(emoteSetIds: [$defaultSetId]) @include(if: $isDefaultSetSet) {
 								emoteSetId
@@ -131,34 +152,106 @@
 		if (!emotes) {
 			throw new Error("No emotes found");
 		}
+		allEmotes = emotes as Emote[];
+		return allEmotes;
+	}
+
+	async function load(_page: number, _perPage: number): Promise<EmoteSearchResult> {
+		const emotes = await fetchEmotes();
+		const sorted = [...emotes];
+
+		if (sortBy === "top") {
+			sorted.sort((a, b) => {
+				const scoreDiff = (b.scores?.topAllTime ?? 0) - (a.scores?.topAllTime ?? 0);
+				if (scoreDiff !== 0) return scoreDiff;
+				return b.id.localeCompare(a.id);
+			});
+		} else {
+			sorted.sort((a, b) => b.id.localeCompare(a.id));
+		}
+
 		return {
-			items: emotes as Emote[],
-			totalCount: emotes.length,
+			items: sorted,
+			totalCount: sorted.length,
 			pageCount: 1,
 		};
 	}
 </script>
 
-<div class="buttons">
-	<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
-	<div class="layout-buttons">
+<div class="nav-bar">
+	<div class="nav-left-group">
+		<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} />
+		<nav class="tabs">
+			<TabLink
+				title={$t("common.top")}
+				matcher={() => sortBy === "top"}
+				onclick={() => (sortBy = "top")}
+				responsive
+			>
+				<Trophy />
+				{#snippet active()}
+					<Trophy weight="fill" />
+				{/snippet}
+			</TabLink>
+
+			<TabLink
+				title={$t("common.new")}
+				matcher={() => sortBy === "new"}
+				onclick={() => (sortBy = "new")}
+				responsive
+			>
+				<Plant />
+				{#snippet active()}
+					<Plant weight="fill" />
+				{/snippet}
+			</TabLink>
+		</nav>
+
+		<Button secondary onclick={() => (selectionMode = !selectionMode)}>
+			{$t("labels.select")}
+			{#snippet iconRight()}
+				<Toggle bind:value={selectionMode} />
+			{/snippet}
+		</Button>
+	</div>
+
+	<div class="buttons">
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
-{#key data.id}
-	<EmoteLoader {load} />
+
+{#key data.id + sortBy}
+	<EmoteLoader bind:selectionMode {load} />
 {/key}
 
 <style lang="scss">
-	.buttons {
+	.nav-bar {
 		display: flex;
-		gap: 0.5rem;
 		align-items: center;
 		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 1rem;
 	}
 
-	.layout-buttons {
+	.nav-left-group {
 		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.tabs {
+		display: flex;
+		align-items: center;
+		background-color: var(--bg-light);
+		border-radius: 0.5rem;
+		gap: 0.3rem;
+		padding: 0.3rem;
+	}
+
+	.buttons {
+		display: flex;
+		align-items: center;
 		gap: 0.5rem;
 	}
 </style>
