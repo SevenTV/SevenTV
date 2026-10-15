@@ -89,11 +89,11 @@ impl Os {
 		};
 
 		let win_installer_x86 =
-			format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/Chatterino7.Installer.zip");
+			format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/Chatterino7TV.Installer.exe");
 		let win_portable_x86 =
-			format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/Chatterino7.Portable.zip");
-		let win_installer_arm = format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/{experimental}ARM64-Chatterino7.Installer.zip");
-		let win_portable_arm = format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/{experimental}ARM64-Chatterino7.Portable.zip");
+			format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/Chatterino7TV.Portable.zip");
+		let win_installer_arm = format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/{experimental}ARM64-Chatterino7TV.Installer.exe");
+		let win_portable_arm = format!("https://github.com/SevenTV/chatterino7/releases/download/v{version}/{experimental}ARM64-Chatterino7TV.Portable.zip");
 		match self {
 			Os::Windows => serde_json::json!({
 				"version": v7_version,
