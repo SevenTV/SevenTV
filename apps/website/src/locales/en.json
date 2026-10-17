@@ -42,9 +42,12 @@
     "skip_to_content": "Skip to content",
     "emotes": "{count, plural, one {Emote} other {Emotes}}",
     "emote_sets": "{count, plural, one {Emote Set} other {Emote Sets}}",
+    "paints": "{count, plural, one {Paint} other {Paints}}",
+    "badges": "{count, plural, one {Badge} other {Badges}}",
     "users": "{count, plural, one {User} other {Users}}",
     "channels": "{count, plural, one {Channel} other {Channels}}",
     "followers": "{count, plural, one {Follower} other {Followers}}",
+    "ids": "{count, plural, one {{platform} ID} other {{platform} IDs}}",
     "items": "{count, plural, one {Item} other {Items}}",
     "subscriptions": "{count, plural, one {Subscription} other {Subscriptions}}",
     "payment_methods": "{count, plural, one {Payment Method} other {Payment Methods}}",
@@ -149,7 +152,8 @@
     "remove": "Remove",
     "accept": "Accept",
     "deny": "Deny",
-    "enter": "Enter"
+    "enter": "Enter",
+    "warning": "Warning"
   },
   "themes": {
     "system": "System",
@@ -457,6 +461,14 @@
       "delete": {
         "action": "Deleted"
       }
+    },
+    "merge": {
+      "title": "Merge Account",
+      "merged_into": "Merged Into"
+    },
+    "warning": {
+      "sure": "Are you sure you want to proceed?",
+      "cannot_undo": "You cannot undo this action."
     }
   },
   "pages": {

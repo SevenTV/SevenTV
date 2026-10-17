@@ -756,6 +756,9 @@ type Mutation {
 	userEditors: UserEditorMutation!
 	userSessions: UserSessionMutation!
 	users: UserMutation!
+
+	# THIS IS HERE SO THE V3 MERGE WILL NOT ERROR
+	user(id: Id!): UserOperation!
 }
 
 type Paint {
@@ -1373,6 +1376,9 @@ type UserOperation {
 	manuallyLinkKick(kickChannel: KickLinkInput!): User!
 	removeConnection(platform: Platform!, platformId: String!): User!
 	removeProfilePicture: User!
+
+	# THIS IS HERE SO THE V3 MERGE WILL NOT ERROR
+    merge(id: Id!): Id!
 }
 
 type UserPermission {
