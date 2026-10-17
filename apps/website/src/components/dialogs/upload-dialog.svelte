@@ -66,7 +66,7 @@
 		const file = files[0];
 
 		if (file.size > 7 * 1024 * 1024) {
-			return Promise.resolve("Your file exceeds the maximum file size of 7MiB.");
+			return Promise.resolve($t("file_limits.size_error", { values: { size: "7MiB" } }));
 		}
 
 		if (file.type.startsWith("image")) {
@@ -76,14 +76,14 @@
 			return new Promise((resolve) => {
 				image.onload = () => {
 					if (image.width > 1000 || image.height > 1000) {
-						resolve("Your file exceeds the maximum resolution of 1000x1000.");
+						resolve($t("file_limits.resolution_error", { values: { width: "1000", height: "1000" } }));
 					}
 
 					const aspectRatio = image.width / image.height;
 					if (aspectRatio > 3.0) {
-						resolve("Image aspect ratio is too large (must be less than 3:1)");
+						resolve($t("file_limits.aspect_ratio_large"));
 					} else if (aspectRatio < 1 / 32) {
-						resolve("Image aspect ratio is too small (must be more than 1:32)");
+						resolve($t("file_limits.aspect_ratio_small"));
 					}
 
 					resolve(undefined);
@@ -223,7 +223,7 @@
 				    font-size: 0.75rem;
 				    color: var(--text-light);"
 				>
-					Preview resolutions do not represent final emote resolutions after processing
+					{$t("dialogs.upload.preview_notice")}
 				</p>
 				<div class="buttons">
 					<Button secondary onclick={toggleTheme}>

@@ -343,7 +343,7 @@
 </script>
 
 <svelte:head>
-	<title>Entitlement Graph - {$t("page_titles.admin_suffix")}</title>
+	<title>{$t("pages.admin.graph")} - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 {#if $user?.permissions.user.manageAny}
@@ -358,7 +358,7 @@
 			{/await}
 		{:else}
 			<UserSearch
-				placeholder="Search user"
+				placeholder={$t("pages.admin.graph_options.search_user")}
 				onresultclick={(e, user) => {
 					e.preventDefault();
 					userId = user.id;
@@ -370,9 +370,9 @@
 				{/snippet}
 			</UserSearch>
 		{/if}
-		<Toggle bind:value={layoutStarted}>Layout</Toggle>
+		<Toggle bind:value={layoutStarted}>{$t("pages.admin.graph_options.layout")}</Toggle>
 		<label>
-			Node Size
+			{$t("pages.admin.graph_options.node_size")}
 			<input type="number" bind:value={size} min="1" max="15" step="1" />
 		</label>
 	</div>

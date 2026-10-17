@@ -462,8 +462,8 @@
 						<SegmentedControl
 							bind:value={showUsername}
 							options={[
-								{ value: false, label: "Paint Name" },
-								{ value: true, label: "Username" },
+								{ value: false, label: $t("labels.paint_name") },
+								{ value: true, label: $t("labels.username") },
 							]}
 						/>
 						{#if inventory.paintFilters.length > 0}

@@ -200,9 +200,9 @@
 	</div>
 </div>
 {#if noActiveEmoteSet == true}
-	<div class="info-message">No active emote set selected.</div>
+	<div class="info-message">{$t("pages.user.no_active_set")}</div>
 	<div class="active-emote-set-button">
-		<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} text={"Set Active Set"} />
+		<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} text={$t("pages.user.set_active_set")} />
 	</div>
 {:else}
 	{#key data.id + query}

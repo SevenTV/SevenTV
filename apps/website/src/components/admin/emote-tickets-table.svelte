@@ -146,9 +146,9 @@
 			if (updatedEmote) {
 				ticket.isActioned = true;
 				success = true;
-				onnotification(`${action} Success!`);
+				onnotification($t("pages.admin.tickets.emote_actions.action_success", { values: { action } }));
 			}
-			onnotification(`Couldn't perform ${action} successfully!`);
+			onnotification($t("pages.admin.tickets.emote_actions.action_failure", { values: { action } }));
 		}
 
 		return success;
@@ -211,7 +211,7 @@
 			<th class="sortable" onclick={() => sortTickets("tags")}>
 				{$t("pages.admin.tickets.emote_table.tags_flags")}
 			</th>
-			<th class="sortable" onclick={() => sortTickets("Date")}> Date </th>
+			<th class="sortable" onclick={() => sortTickets("Date")}> {$t("pages.admin.tickets.emote_table.date")} </th>
 
 			{#if actionsPosition === "right"}
 				<EmoteTicketsTableActionsHeader bind:buttonOptions bind:actionsPosition />
@@ -228,7 +228,7 @@
 				{#if actionsPosition === "left" && isActioned}
 					<Button
 						big
-						title="Revert action"
+						title={$t("pages.admin.tickets.emote_actions.revert_action")}
 						onclick={async (event) => {
 							event.stopPropagation();
 							await RevertTicketAction(tickets[i]);
@@ -298,7 +298,7 @@
 				{#if actionsPosition === "right" && isActioned}
 					<Button
 						big
-						title="Revert action"
+						title={$t("pages.admin.tickets.emote_actions.revert_action")}
 						onclick={async (event) => {
 							event.stopPropagation();
 							const revertedFlags = {

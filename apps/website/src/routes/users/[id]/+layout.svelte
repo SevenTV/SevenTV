@@ -259,7 +259,7 @@
 			</TabLink>
 			{#await canManageEditors then manageEditors}
 				{#if manageEditors}
-					<TabLink title="Manage editors" href="/users/{data.id}/editors">
+					<TabLink title={$t("labels.manage_editors")} href="/users/{data.id}/editors">
 						<PencilSimple />
 						{#snippet active()}
 							<PencilSimple weight="fill" />

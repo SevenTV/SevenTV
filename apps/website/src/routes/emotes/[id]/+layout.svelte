@@ -9,7 +9,7 @@
 
 <svelte:head>
 	{#await data.streamed.emote}
-		<title>Loading - {$t("page_titles.suffix")}</title>
+		<title>{$t("common.loading")} - {$t("page_titles.suffix")}</title>
 	{:then emote}
 		<title>{emote.defaultName} - {$t("page_titles.suffix")}</title>
 	{/await}

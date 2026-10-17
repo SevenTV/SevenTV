@@ -18,9 +18,9 @@
 
 		switch (info.activePeriod.subscriptionProductVariant.kind) {
 			case SubscriptionProductKind.Monthly:
-				return "Monthly";
+				return $t("sub_info.monthly");
 			case SubscriptionProductKind.Yearly:
-				return "Yearly";
+				return $t("sub_info.yearly");
 		}
 	}
 </script>
@@ -48,7 +48,7 @@
 				>{data.activePeriod.subscription.state === SubscriptionState.Active &&
 				data.activePeriod.autoRenew &&
 				!data.activePeriod.giftedBy
-					? "Next Billing"
+					? $t("sub_info.next_billing")
 					: $t("sub_info.ends")}</span
 			>
 			<span class="value">
@@ -62,7 +62,7 @@
 		{/if}
 
 		{#if data.totalDays > 0}
-			<span class="key">{data.activePeriod ? $t("sub_info.total") : "Previously Subscribed"}</span>
+			<span class="key">{data.activePeriod ? $t("sub_info.total") : $t("sub_info.previously_subscribed")}</span>
 			<span class="value">
 				<Clock />
 				<span title={moment.duration(data.totalDays, "days").humanize()}>
