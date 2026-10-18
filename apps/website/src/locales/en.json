@@ -91,7 +91,8 @@
     "profile": "Profile",
     "pinned": "Pinned",
     "settings": "Settings",
-    "delete_account": "Delete Account"
+    "delete_account": "Delete Account",
+    "not_required": "Not Required"
   },
   "labels": {
     "enter_text": "Enter text",
@@ -104,6 +105,7 @@
     "search_user": "Search User",
     "search_country": "Search Country",
     "search_emote_set": "Search Emote Set",
+    "search_emotes": "{count, plural, one {Search an emote} other {Search emotes}}",
     "search_users": "{count, plural, one {Search a user} other {Search users}}",
     "tags": "Tags",
     "close": "Close",
@@ -149,7 +151,8 @@
     "remove": "Remove",
     "accept": "Accept",
     "deny": "Deny",
-    "enter": "Enter"
+    "enter": "Enter",
+    "original_emote": "Original Emote"
   },
   "themes": {
     "system": "System",

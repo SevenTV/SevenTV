@@ -7,6 +7,9 @@
 	import Radio from "../input/radio.svelte";
 	import { graphql } from "$/gql";
 	import Spinner from "../spinner.svelte";
+	import UserEmotesSearch from "../user-emotes-search.svelte";
+	import type { Emote } from "$/gql/graphql";
+	import { user } from "$/lib/auth";
 
 	const reasons = [
 		"dialogs.report_emote.reasons.my_work",
@@ -23,12 +26,18 @@
 	let reason = $state<string>();
 	let additionalInfo = $state("");
 
+	let originEmote = $state<Emote>();
+
 	let loading = $state(false);
 
 	async function submit() {
 		if (!reason) return;
 
 		loading = true;
+
+		if (originEmote && "id" in originEmote)
+			additionalInfo =
+				additionalInfo + " Original Emote: " + window.location.origin + "/emotes/" + originEmote.id;
 
 		const res = await gqlClient()
 			.mutation(
@@ -58,6 +67,10 @@
 			mode = "hidden";
 		}
 	}
+
+	$effect(() => {
+		if (mode == "hidden" || !reason || !reason.endsWith(".my_work")) originEmote = undefined;
+	});
 </script>
 
 <Dialog width={40} bind:mode>
@@ -74,6 +87,11 @@
 				</Radio>
 			{/each}
 		</div>
+		{#if typeof reason == "string" && reason.endsWith(".my_work") && $user}
+			<UserEmotesSearch userID={$user.id} bind:selected={originEmote}>
+				<span class="label">{$t("labels.original_emote")} <small>({$t("common.not_required")})</small></span>
+			</UserEmotesSearch>
+		{/if}
 		<TextInput type="textarea" placeholder={$t("labels.enter_text")} bind:value={additionalInfo}>
 			<span class="label">{$t("dialogs.report_emote.additional_info")}</span>
 		</TextInput>
