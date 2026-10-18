@@ -47,6 +47,8 @@ export async function load({ url, fetch }: PageLoadEvent) {
 				throw await res.json();
 			}
 
+			localStorage.setItem("lastLoggedInPlatform", JSON.stringify(platform));
+
 			return;
 		})
 		.catch((res) => {

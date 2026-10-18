@@ -8,16 +8,23 @@
 	import { t } from "svelte-i18n";
 	import { PUBLIC_DISCORD_LINK, PUBLIC_REST_API_V4 } from "$env/static/public";
 	import { page } from "$app/stores";
+	import NewAccountWarning from "./new-account-warning.svelte";
+
+	let areYouSureDialogMode = $state<DialogMode>("hidden");
+	let lastPlatform = $state<string | null>(null);
+	let selectedPlatform = $state<string | null>(null);
 
 	let {
 		mode = $bindable("hidden"),
 		return_payload = $bindable(),
 	}: { mode: DialogMode; return_payload?: object } = $props();
 
-	let loginUrl = $derived.by(() => {
-		let url = `${PUBLIC_REST_API_V4}/auth/login?platform={platform}`;
+	function getLoginUrl(platform: string, return_to?: string): string {
+		let url = `${PUBLIC_REST_API_V4}/auth/login?platform=${platform}`;
+		
 		if ($page.url.pathname !== "/login") {
-			let return_to = $page.url.pathname;
+			if (!return_to) return_to = $page.url.pathname;
+
 			if (return_payload) {
 				return_to += "?";
 				for (const [key, val] of Object.entries(return_payload)) {
@@ -26,13 +33,31 @@
 			}
 			url += `&return_to=${return_to}`;
 		}
-		return url;
-	});
 
-	function withPlatform(platform: string) {
-		return loginUrl.replace("{platform}", platform);
+		return url;
+	}
+
+	function withPlatform(platform: string, force: boolean = false, redirect?: string) {
+		lastPlatform = JSON.parse(localStorage.getItem("lastLoggedInPlatform") || "null");
+
+		selectedPlatform = platform;
+
+		if (lastPlatform && lastPlatform.toLowerCase() !== platform.toLowerCase() && !force) {
+			areYouSureDialogMode = "shown";
+		} else {
+			window.location.href = getLoginUrl(platform, redirect);
+		}
 	}
 </script>
+
+{#if lastPlatform}
+	<NewAccountWarning
+		bind:mode={areYouSureDialogMode}
+		{lastPlatform}
+		logInLast={() => lastPlatform && withPlatform(lastPlatform, false, "/settings")}
+		confirm={() => selectedPlatform && withPlatform(selectedPlatform, true)}
+	/>
+{/if}
 
 <Dialog bind:mode>
 	<div class="layout">
@@ -42,19 +67,19 @@
 			<span class="details">{$t("dialogs.sign_in.subtitle")}</span>
 		</div>
 		<div class="buttons">
-			<Button secondary big href={withPlatform("twitch")}>
+			<Button secondary big onclick={() => withPlatform("twitch")}>
 				{#snippet icon()}
 					<TwitchLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Twitch" } })}
 			</Button>
-			<Button secondary big href={withPlatform("discord")}>
+			<Button secondary big onclick={() => withPlatform("discord")}>
 				{#snippet icon()}
 					<DiscordLogo />
 				{/snippet}
 				{$t("dialogs.sign_in.continue_with", { values: { platform: "Discord" } })}
 			</Button>
-			<Button secondary big href={withPlatform("kick")}>
+			<Button secondary big onclick={() => withPlatform("kick")}>
 				{#snippet icon()}
 					<KickLogo />
 				{/snippet}
