@@ -25,7 +25,7 @@
 		const res = await gqlClient()
 			.query(
 				graphql(`
-					query UserInventory($id: Id!) {
+					query UserCosmeticsInventory($id: Id!) {
 						users {
 							user(id: $id) {
 								inventory(includeInaccessible: true) {
@@ -150,18 +150,19 @@
 			return undefined;
 		}
 
-		const badges = inventory.badges
-			.filter((b) => b.to.badge)
-			.reduce(
-				(map, b) => {
-					map[b.to.badge!.id] = {
-						...(b.to.badge as Badge),
-						accessible: b.accessible,
-					};
-					return map;
-				},
-				{} as { [key: string]: Badge & { accessible?: boolean } },
-			);
+		const badges: {
+			[key: string]: Badge & { accessible?: boolean };
+		} = {};
+
+		for (const entitlement of inventory.badges.filter((b) => b.to.badge)) {
+			const badgeId = entitlement.to.badge!.id;
+			const existing = badges[badgeId];
+
+			badges[badgeId] = {
+				...(entitlement.to.badge as Badge),
+				accessible: existing?.accessible || entitlement.accessible,
+			};
+		}
 
 		const paints: {
 			[key: string]: {
@@ -175,6 +176,7 @@
 
 		for (const entitlement of inventory.paints.filter((p) => p.to.paint)) {
 			const accessible = entitlement.accessible;
+			const paintId = entitlement.to.paint!.id;
 
 			if (entitlement.from.__typename === "EntitlementNodeRole" && entitlement.from.role) {
 				const roleId = entitlement.from.role.id;
@@ -250,6 +252,24 @@
 		};
 	}
 
+	function isBadgeAnimated(badge: Badge) {
+		return badge.images.some((image) => image.frameCount > 1);
+	}
+
+	function isPaintAnimated(paint: Paint) {
+		return paint.data.layers.some(
+			(layer) =>
+				layer.ty.__typename === "PaintLayerTypeImage" &&
+				layer.ty.images.some((image) => image.frameCount > 1),
+		);
+	}
+
+	// ULIDs are lexicographically sortable, so comparing the raw id strings
+	// is equivalent to sorting by creation time ("Erscheinung").
+	function compareIds(a: string, b: string) {
+		return a < b ? -1 : a > b ? 1 : 0;
+	}
+
 	let inventory = $derived(queryInventory(data.id));
 	let userData = $derived(data.streamed.userRequest.value);
 	let hasPermission = $state(false);
@@ -283,9 +303,13 @@
 
 	let paintQuery = $state("");
 	let paintFilter = $state<string>("");
+	let paintTypeFilter = $state<string>("all");
+	let paintSort = $state<string>("date-asc");
 	let paintsLayout = $state<Layout>("big-grid");
 
 	let badgeQuery = $state("");
+	let badgeTypeFilter = $state<string>("all");
+	let badgeSort = $state<string>("date-asc");
 	let badgesLayout = $state<Layout>("big-grid");
 
 	let originalBadgeId: string | null | undefined;
@@ -378,16 +402,64 @@
 	{#if inventory}
 		{@const badgeIds = new Set(
 			Object.values(inventory.badges)
-				.filter((b) => !badgeQuery || b.name.toLowerCase().includes(badgeQuery))
+				.filter((b) => {
+					if (badgeQuery && !b.name.toLowerCase().includes(badgeQuery.trim().toLowerCase())) {
+						return false;
+					}
+					if (badgeTypeFilter === "animated" && !isBadgeAnimated(b)) {
+						return false;
+					}
+					if (badgeTypeFilter === "static" && isBadgeAnimated(b)) {
+						return false;
+					}
+					return true;
+				})
+				.sort((a, b) => {
+					switch (badgeSort) {
+						case "name-desc":
+							return b.name.localeCompare(a.name);
+						case "date-asc":
+							return compareIds(a.id, b.id);
+						case "date-desc":
+							return compareIds(b.id, a.id);
+						default:
+							return a.name.localeCompare(b.name);
+					}
+				})
 				.map((b) => b.id),
 		)}
 		{@const paintIds = new Set(
 			Object.values(inventory.paints)
-				.filter(
-					(p) =>
-						(!paintFilter || p.sourceKey === paintFilter) &&
-						(!paintQuery || p.paint.name.toLowerCase().includes(paintQuery.trim().toLowerCase())),
-				)
+				.filter((p) => {
+					if (paintFilter && p.sourceKey !== paintFilter) {
+						return false;
+					}
+					if (paintQuery && !p.paint.name.toLowerCase().includes(paintQuery.trim().toLowerCase())) {
+						return false;
+					}
+					if (paintTypeFilter === "animated" && !isPaintAnimated(p.paint)) {
+						return false;
+					}
+					if (paintTypeFilter === "static" && isPaintAnimated(p.paint)) {
+						return false;
+					}
+					return true;
+				})
+				.sort((a, b) => {
+					const nameA = a.paint.name.length > 0 ? a.paint.name : a.paint.id;
+					const nameB = b.paint.name.length > 0 ? b.paint.name : b.paint.id;
+
+					switch (paintSort) {
+						case "name-desc":
+							return nameB.localeCompare(nameA);
+						case "date-asc":
+							return compareIds(a.paint.id, b.paint.id);
+						case "date-desc":
+							return compareIds(b.paint.id, a.paint.id);
+						default:
+							return nameA.localeCompare(nameB);
+					}
+				})
 				.map((p) => p.paint.id),
 		)}
 		<div class="layout">
@@ -407,6 +479,23 @@
 								{/snippet}
 							</TextInput>
 						</HideOn>
+						<Select
+							bind:selected={badgeTypeFilter}
+							options={[
+								{ label: $t("labels.all"), value: "all" },
+								{ label: $t("pages.directory.filters.animated"), value: "animated" },
+								{ label: $t("pages.directory.filters.static"), value: "static" },
+							]}
+						/>
+						<Select
+							bind:selected={badgeSort}
+							options={[
+								{ label: $t("labels.sort_name_asc"), value: "name-asc" },
+								{ label: $t("labels.sort_name_desc"), value: "name-desc" },
+								{ label: $t("labels.sort_date_desc"), value: "date-desc" },
+								{ label: $t("labels.sort_date_asc"), value: "date-asc" },
+							]}
+						/>
 						<LayoutButtons bind:value={badgesLayout} allowedLayouts={["big-grid", "list"]} />
 					</div>
 				</div>
@@ -479,6 +568,23 @@
 								{/snippet}
 							</TextInput>
 						</HideOn>
+						<Select
+							bind:selected={paintTypeFilter}
+							options={[
+								{ label: $t("labels.all"), value: "all" },
+								{ label: $t("pages.directory.filters.animated"), value: "animated" },
+								{ label: $t("pages.directory.filters.static"), value: "static" },
+							]}
+						/>
+						<Select
+							bind:selected={paintSort}
+							options={[
+								{ label: $t("labels.sort_name_asc"), value: "name-asc" },
+								{ label: $t("labels.sort_name_desc"), value: "name-desc" },
+								{ label: $t("labels.sort_date_desc"), value: "date-desc" },
+								{ label: $t("labels.sort_date_asc"), value: "date-asc" },
+							]}
+						/>
 						<LayoutButtons bind:value={paintsLayout} allowedLayouts={["big-grid", "list"]} />
 					</div>
 				</div>
@@ -583,6 +689,7 @@
 
 	.buttons {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.5rem;
 		align-items: center;
 	}

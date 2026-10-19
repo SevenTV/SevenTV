@@ -13,6 +13,8 @@
 	import FromNow from "$/components/from-now.svelte";
 	import PaintComponent from "../paint.svelte";
 	import BadgeComponent from "../badge.svelte";
+	import UserProfilePicture from "$/components/user-profile-picture.svelte";
+	import UserName from "$/components/user-name.svelte";
 	import { t } from "svelte-i18n";
 
 	let { event }: { event: UserEvent } = $props();
@@ -50,8 +52,9 @@
 		{#if by}
 			{$t("pages.activity.emote.by")}
 		{/if}
-		<a href="/users/{actor.id}" class="user-link" style:color={actor.highestRoleColor?.hex}>
-			{actor.mainConnection.platformDisplayName}
+		<a href="/users/{actor.id}" class="user-link">
+			<UserProfilePicture user={actor} size={20} />
+			<UserName user={actor} />
 		</a>
 	{/if}
 {/snippet}
@@ -112,9 +115,7 @@
 			>
 		{:else if event.data.__typename === "EventUserDataDelete"}
 			<Trash />
-			<span class="text"
-				>{$t("pages.activity.user.deleted")} {@render userLink(event.actor)}</span
-			>
+			<span class="text">{$t("pages.activity.user.deleted")} {@render userLink(event.actor)}</span>
 		{/if}
 		<span class="time">
 			<FromNow date={moment(event.createdAt)} />
@@ -140,6 +141,13 @@
 
 		a {
 			color: var(--text);
+		}
+
+		.user-link {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			vertical-align: middle;
 		}
 
 		.time {
