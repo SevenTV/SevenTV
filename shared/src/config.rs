@@ -300,8 +300,11 @@ pub struct RateLimitPrefixBucket {
 #[derive(Debug, Clone, Serialize, Deserialize, smart_default::SmartDefault)]
 #[serde(default)]
 pub struct IncomingRequestConfig {
-	/// The IP header to use for incoming requests
-	pub ip_header: Option<String>,
+	// This was a single header before, but supporting multiple headers is more flexible
+	//pub ip_header: Option<String>,
+
+	/// The IP headers to use for incoming requests
+	pub ip_headers: Vec<String>,
 	/// A set of trusted proxies that we should use for incoming requests
 	pub trusted_proxies: Vec<ipnet::IpNet>,
 	/// IP Ranges that are trusted and can ignore the proxy header (if not

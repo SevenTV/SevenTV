@@ -146,7 +146,7 @@
 			<span class="label">{$t("common.settings")}</span>
 			<div class="settings">
 				<Checkbox bind:value={zeroWidth}>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox bind:value={privateFlag}>Private</Checkbox>
+				<Checkbox bind:value={privateFlag}>{$t("flags.private")}</Checkbox>
 				{#if $user?.permissions.emote.manageAny}
 					<Checkbox bind:value={publicListed}>{$t("flags.listed")}</Checkbox>
 					<Checkbox bind:value={approvedPersonal}>{$t("flags.personal_use_approved")}</Checkbox>

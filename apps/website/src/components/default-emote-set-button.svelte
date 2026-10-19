@@ -5,6 +5,7 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import { user } from "$/lib/auth";
 	import { editableEmoteSets } from "$/lib/emoteSets";
+	import { t } from "svelte-i18n";
 
 	let emoteSetName = $derived(
 		$defaultEmoteSet ? $editableEmoteSets.find((e) => e.id === $defaultEmoteSet)?.name : undefined,
@@ -16,6 +17,6 @@
 		{#snippet icon()}
 			<FolderSimple />
 		{/snippet}
-		{emoteSetName ?? "Default Set"}
+		{emoteSetName ?? $t("common.Default_set")}
 	</Button>
 {/if}

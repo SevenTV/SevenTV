@@ -16,6 +16,7 @@
 		class="name"
 		title={user.mainConnection?.platformDisplayName}
 		style:color={user.highestRoleColor?.hex}
+		style:overflow={(user.mainConnection?.platformDisplayName?.length ?? 0) > 14 ? "hidden" : "unset"}
 		{...restProps}
 	>
 		{user.mainConnection?.platformDisplayName}
@@ -23,7 +24,11 @@
 {/snippet}
 
 {#if user.style.activePaint}
-	<Paint paint={user.style.activePaint} enableDialog={enablePaintDialog} style="display: inline; color: {user.highestRoleColor?.hex || null};">
+	<Paint
+		paint={user.style.activePaint}
+		enableDialog={enablePaintDialog}
+		style="display: inline; color: {user.highestRoleColor?.hex || null};"
+	>
 		{@render name()}
 	</Paint>
 {:else}
@@ -32,7 +37,6 @@
 
 <style lang="scss">
 	.name {
-		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}

@@ -237,6 +237,7 @@
 		query;
 		resultSelectedIndex = -1;
 	});
+	let indexTabIncrement = 0;
 </script>
 
 <svelte:window {onkeydown} />
@@ -261,10 +262,10 @@
 			{#if results && (results.users.items.length > 0 || results.emotes.items.length > 0)}
 				<div id="globalResults" class="results">
 					{#if results.emotes.items}
-						<span class="label">{$t("dialogs.editor.emotes")}</span>
+						<span class="label">{$t("dialogs.search.emotes")}</span>
 					{/if}
 					{#each results.emotes.items as result}
-						<Button href="/emotes/{result.id}" class="item">
+						<Button href="/emotes/{result.id}" class="item" tabindex={indexTabIncrement++}>
 							{#snippet icon()}
 								<ResponsiveImage images={result.images} width={16 * 2} />
 							{/snippet}
@@ -281,13 +282,13 @@
 						<hr />
 					{/if}
 					{#if results.users.items}
-						<span class="label">Users</span>
-						<div class="users-scroll-wrapper">
-							{#each results.users.items as result}
-								<ChannelPreview user={result} size={2} />
-							{/each}
-						</div>
+						<span class="label">{$t("dialogs.search.users")}</span>
 					{/if}
+					<div class="users-scroll-wrapper">
+						{#each results.users.items as result}
+							<ChannelPreview user={result} size={2} tabIndex={indexTabIncrement++} />
+						{/each}
+					</div>
 				</div>
 			{/if}
 		{/await}
@@ -297,6 +298,12 @@
 <style lang="scss">
 	:global(label.input):focus-within > .results {
 		display: flex;
+	}
+
+	.users-scroll-wrapper {
+		max-height: 43vh;
+		overflow-y: auto;
+		overflow-x: hidden;
 	}
 
 	.results {
@@ -327,12 +334,6 @@
 		}
 	}
 
-	.users-scroll-wrapper {
-		max-height: 43vh;
-		overflow-y: auto;
-		overflow-x: hidden;
-	}
-	
 	@keyframes expand-down {
 		from {
 			height: 2rem;

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+	use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer};
 use shared::database::product::invoice::InvoiceDisputeStatus;
@@ -73,15 +73,16 @@ pub struct Sale {
 	// pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Copy, Clone, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SaleState {
-	Completed,
-	PartiallyRefunded,
-	Pending,
-	Refunded,
-	Denied,
-}
+// #[derive(Debug, Copy, Clone, serde::Deserialize)]
+// #[serde(rename_all = "snake_case")]
+#[warn(dead_code)]
+// pub enum SaleState {
+// 	Completed,
+// 	PartiallyRefunded,
+// 	Pending,
+// 	Refunded,
+// 	Denied,
+// }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Amount {
@@ -158,16 +159,16 @@ pub struct Subscription {
 	// pub create_time: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Copy, Clone, serde::Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SubscriptionStatus {
-	ApprovalPending,
-	Approved,
-	Active,
-	Suspended,
-	Cancelled,
-	Expired,
-}
+// #[derive(Debug, Copy, Clone, serde::Deserialize)]
+// #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+// pub enum SubscriptionStatus {
+// 	ApprovalPending,
+// 	Approved,
+// 	Active,
+// 	Suspended,
+// 	Cancelled,
+// 	Expired,
+// }
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Subscriber {

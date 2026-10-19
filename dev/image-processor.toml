@@ -30,6 +30,7 @@ name = "nats"
 kind = "nats"
 url = "nats://nats:4222"
 message_encoding = "protobuf"
+servers = ["nats:4222"]
 
 [management.grpc]
 enabled = true
@@ -40,3 +41,4 @@ enabled = false
 
 [telemetry.server]
 enabled = false
+

@@ -1,0 +1,1028 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Admin",
+    "trending_emotes": "Trending Emotes",
+    "top_emotes": "Top Emotes",
+    "global_emotes": "Global Emotes",
+    "new_emotes": "New Emotes",
+    "bookmarked_emotes": "Bookmarked Emotes",
+    "bookmarked_emote_sets": "Bookmarked Emote Sets",
+    "bookmarked_users": "Bookmarked Users",
+    "account_settings": "Account Settings",
+    "editor_settings": "Editor Settings",
+    "notification_settings": "Notification Settings",
+    "blocked_settings": "Blocked Settings",
+    "billing_settings": "Billing Settings",
+    "admin_emote_public_listing": "Emote Public Listing Requests",
+    "admin_emote_personal_use": "Emote Personal Use Requests",
+    "admin_emote_resolved": "Resolved Emote Tickets"
+  },
+  "page_errors": {
+    "not_found": "The page you were looking for could not be found.",
+    "forbidden": "You do not have permission to view this page.",
+    "unauthorized": "You are unauthorised to view this page.",
+    "unexpected": "You can try refreshing the page. If the problem persists, please contact us.",
+    "generic": "An error occurred.",
+    "emote_set_load": "Failed to load emote set",
+    "emote_set_not_found": "Emote set not found",
+    "user": "Failed to load user"
+  },
+  "words": {
+    "from": "from",
+    "to": "to",
+    "with": "with",
+    "by": "by"
+  },
+  "common": {
+    "sign_in": "Sign In",
+    "sign_out": "Sign Out",
+    "go_back": "Go Back",
+    "super_admin": "Super Admin",
+    "skip_to_content": "Skip to content",
+    "emotes": "{count, plural, one {Emote} other {Emotes}}",
+    "emote_sets": "{count, plural, one {Emote Set} other {Emote Sets}}",
+    "users": "{count, plural, one {User} other {Users}}",
+    "channels": "{count, plural, one {Channel} other {Channels}}",
+    "followers": "{count, plural, one {Follower} other {Followers}}",
+    "items": "{count, plural, one {Item} other {Items}}",
+    "subscriptions": "{count, plural, one {Subscription} other {Subscriptions}}",
+    "payment_methods": "{count, plural, one {Payment Method} other {Payment Methods}}",
+    "date": "Date",
+    "help": "Help",
+    "for": "for",
+    "error": "Error",
+    "loading": "Loading...",
+    "paint_bundles": "Paint Bundles",
+    "notifications": "Notifications",
+    "connections": "Connections",
+    "direct_messages": "Direct Messages",
+    "mod_comments": "Mod Comments",
+    "profile_picture": "Profile Picture",
+    "suggested_emotes": "Suggested Emotes",
+    "personal_emotes": "Personal Emotes",
+    "no_more_emotes": "No more emotes",
+    "no_emotes": "No emotes",
+    "your_subscription": "Your Subscription",
+    "theme": "Theme",
+    "language": "Language",
+    "developer_portal": "Developer Portal",
+    "faq": "Frequently Asked Questions",
+    "faq_short": "FAQ",
+    "privacy": "Privacy Policy",
+    "tos": "Terms of Service",
+    "trending": "Trending",
+    "top": "Top",
+    "global": "Global",
+    "new": "New",
+    "Weekly": "Weekly",
+    "Monthly": "Monthly",
+    "Today": "Today",
+    "news": "News",
+    "Default_set": "Default Set",
+    "following": "Following",
+    "activity": "Activity",
+    "analytics": "Analytics",
+    "statistics": "Statistics",
+    "contact": "Contact",
+    "cosmetics": "Cosmetics",
+    "editors": "Editors",
+    "active": "Active",
+    "profile": "Profile",
+    "pinned": "Pinned",
+    "settings": "Settings",
+    "delete_account": "Delete Account"
+  },
+  "labels": {
+    "enter_text": "Enter text",
+    "redeem": "Enter code",
+    "search": "Search",
+    "refetch": "Refetch",
+    "manage_connections": "Manage Connections",
+    "manage_editors": "Manage Editors",
+    "none": "None",
+    "search_user": "Search User",
+    "search_country": "Search Country",
+    "search_emote_set": "Search Emote Set",
+    "search_users": "{count, plural, one {Search a user} other {Search users}}",
+    "tags": "Tags",
+    "close": "Close",
+    "contribute": "Contribute",
+    "enter_tags": "Enter tags",
+    "tag_limit_reached": "Tag limit of {limit} reached",
+    "filters": "Filters",
+    "no_filters": "No Filters",
+    "emote_name": "Emote Name",
+    "copy_link": "Copy Link",
+    "create_emote_set": "Create New Set",
+    "emote_set_name": "Emote Set Name",
+    "emote_attribution": "Emote Attribution",
+    "select": "Select",
+    "selection_mode": "Selection Mode",
+    "edit": "Edit",
+    "capacity": "Capacity",
+    "enable": "Enable",
+    "disable": "Disable",
+    "disabled": "Disabled",
+    "more": "More",
+    "actions": "Actions",
+    "download": "Download",
+    "report": "Report",
+    "delete": "Delete",
+    "time_select": {
+      "week": "This Week",
+      "month": "This Month",
+      "year": "This Year"
+    },
+    "gift": "Gift",
+    "follow": "Follow",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "email": "Email",
+    "password": "Password",
+    "all": "All",
+    "other": "Other",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "proceed": "Proceed",
+    "save": "Save",
+    "remove": "Remove",
+    "accept": "Accept",
+    "deny": "Deny",
+    "enter": "Enter"
+  },
+  "themes": {
+    "system": "System",
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "flags": {
+    "global": "Global",
+    "trending": "Trending",
+    "overlaying": "Overlaying",
+    "default": "Default",
+    "personal": "Personal",
+    "listed": "Listed",
+    "unlisted": "Unlisted",
+    "personal_use": "Personal Use",
+    "deleted": "Deleted",
+    "private": "Private",
+    "personal_use_approved": "Approved Personal Use",
+    "personal_use_denied": "Denied Personal Use",
+    "personal_use_pending": "Personal Use Pending Review",
+    "renamed": "Renamed",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "you_accepted": "You Accepted",
+      "you_rejected": "You Rejected"
+    }
+  },
+  "notifications": {
+    "system": "System",
+    "approved_for_public": "Your emote {emote} has been approved for public listing."
+  },
+  "sub_info": {
+    "plan": "Plan",
+    "free": "Free",
+    "gifted_by": "Gifted by",
+    "ends": "Sub Ends",
+    "total": "Total",
+    "credits": "Sub Credits"
+  },
+  "file_limits": {
+    "max_size": "{size} max file size",
+    "max_resolution": "{width}x{height} max resolution",
+    "max_frames": "{count} max frames",
+    "resolution_error": "Resolution must not exceed {width}x{height}",
+    "duration_error": "Duration must be {duration} seconds or less"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Sign in to 7TV",
+      "subtitle": "Sign in or create an account to continue",
+      "continue_with": "Continue with {platform}",
+      "trouble": "Trouble signing in?",
+      "legal_yapping": "By signing in, you agree to our",
+      "and": "and",
+      "linking_new": "Already have a 7TV account and plan on linking a new connection? Sign in with your existing connection and link the new one in the",
+      "settings": "settings"
+    },
+    "search": {
+      "emotes": "Emotes",
+      "users": "Users"
+    },
+    "upload": {
+      "title": "Upload Emote",
+      "untitled": "Untitled",
+      "chat": "Send a message",
+      "drag_drop": "Drag & Drop to upload, or",
+      "browse_files": "Browse Files",
+      "accept_rules": "I accept the rules and guidelines",
+      "discard": "Discard",
+      "upload_guidelines": "Emote Upload Guidelines",
+      "upload": "Upload"
+    },
+    "emote_set": {
+      "title": "Active Emote Set",
+      "create": "Create Emote Set",
+      "name": "Emote Set Name",
+      "label": "Name",
+      "confirm": "Create",
+      "copy_set": "Copy Set",
+      "special": "Special",
+      "favourite_sets": {
+        "title": "Favourite Emote Sets",
+        "add": "Add & Rename to all",
+        "remove": "Remove from all"
+      },
+      "mass_select_feature": {
+        "add": "Add to Emote-Set",
+        "remove": "Remove from Emote-Set",
+        "amount_selected_label": "/20 Selected"
+      },
+      "default_emote_set": {
+        "remove": "Remove Emote from {set}",
+        "add": "Add Emote to {set}",
+        "conflicting_name": "Conflicting Name"
+      }
+    },
+    "manage_aliases": {
+      "title": "Manage Emote Aliases",
+      "add_placeholder": "Add new alias.."
+    },
+    "rename_emote": {
+      "title": "Rename Emote in {set}",
+      "input_placeholder": "New emote name",
+      "confirmation_message": "Are you sure you want to rename this emote in {set}?",
+      "confirm": "Rename"
+    },
+    "remove_emote_from_set": {
+      "title": "Remove Emote from {set}",
+      "warning_message": "Are you sure you want to remove {emote} from {set}?",
+      "confirm": "Remove"
+    },
+    "add_emote": {
+      "title": "Add {emote} to",
+      "change_name": "Change emote name",
+      "confirm": "Confirm",
+      "confirm_changes": "{count, plural, one {Confirm 1 change} other {Confirm {count} changes}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Emote queue",
+      "activity": "Activity",
+      "comments": "Comments"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Add/Remove Emote",
+      "edit_emote_alias": "Edit Emote Alias",
+      "remove_emote": "Remove Emote From Set",
+      "open_in_new_tab": "Open in New Tab",
+      "copy_emote_link": "Copy Emote Link"
+    },
+    "cart": {
+      "title": "Your Cart",
+      "duration": "Duration",
+      "price": "Price",
+      "preview": "Preview",
+      "purchase_as_gift": "Purchase as a gift",
+      "total": "Total"
+    },
+    "editor": {
+      "permissions": "Set Editor Permissions",
+      "super_admin": "Super Admin",
+      "emote_sets": "Emote Sets",
+      "admin": "Admin",
+      "emotes": "Emotes",
+      "user": "User",
+      "manage_personal_emotes": "Manage Personal Emote Set",
+      "confirm": "Confirm",
+      "no_editors": "No editors to show",
+      "permissions_details": {
+        "manage": "Manage",
+        "create": "Create",
+        "transfer": "Transfer",
+        "manage_profile": "Manage Profile",
+        "manage_emotes": "Manage Emotes",
+        "manage_billing": "Manage Billing",
+        "manage_editors": "Manage Editors",
+        "view_billing": "View Billing Information"
+      }
+    },
+    "emote_info": {
+      "processing": "This emote is still processing",
+      "refresh": "Refresh",
+      "download": "Download"
+    },
+    "copy_emotes": {
+      "title": "Copy selected emotes to"
+    },
+    "default_set": {
+      "title": "Default Emote Set"
+    },
+    "delete_account": {
+      "warning": "Warning",
+      "warning_message": "This action will delete your account permanently. You cannot undo this action.",
+      "choose_reasons": "Choose the reasons for account deletion",
+      "reasons": {
+        "no_longer_use": "I no longer use 7TV",
+        "privacy_concerns": "Privacy concerns",
+        "not_useful": "Not useful",
+        "other": "Other"
+      },
+      "confirm_username": "Enter your username to confirm"
+    },
+    "delete_emote_or_set": {
+      "title": "Delete {name}",
+      "warning_message_emote": "This will delete your emote permanently. You cannot undo this action.",
+      "warning_message_set": "This will delete your emote set permanently. You cannot undo this action.",
+      "reason": "Reason",
+      "reason_for_deletion": "Reason for deletion"
+    },
+    "edit_emote": {
+      "title": "Edit {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Edit Emote Set",
+      "show_on_profile": "Show on Profile",
+      "publicly_listed": "Publicly Listed"
+    },
+    "remove_emote": {
+      "title": "Remove selected emotes from {set}"
+    },
+    "report_emote": {
+      "title": "Report Emote",
+      "choose_reasons": "Choose the reasons",
+      "reasons": {
+        "my_work": "I made this emote but it was uploaded by someone else",
+        "duplicate": "This emote is a duplicate",
+        "sexual": "This emote contains pornographic or overly sexualised imagery",
+        "violance": "This emote displays extreme violence or gore",
+        "its_me": "This emote depicts me and I don't like it",
+        "offensive": "I find this emote offensive",
+        "other": "Other"
+      },
+      "additional_info": "Additional Information",
+      "disclaimer": "Abuse of the report feature may lead to your access being revoked."
+    },
+    "transfer_emote": {
+      "title": "Transfer {emote}",
+      "details": "This will transfer {emote}.",
+      "receipient": "Emote Receipient",
+      "transfer": "Transfer"
+    },
+    "badge": {
+      "title": "Badge"
+    },
+    "subscription": {
+      "gifted_by": "Your subscription was gifted to you by",
+      "cancel_notice": "Ending your subscription now will make you lose access to your subscription benefits immediately. Are you sure you want to end your subscription?",
+      "cancel_confirmation": "Are you sure you want to cancel your subscription? You will lose access to your subscription benefits at the end of your current billing period.",
+      "confirm": "Confirm"
+    },
+    "error": {
+      "title": "Error"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Gift Pick'ems Pass",
+        "gift_to": "Gift Pick'ems Pass to",
+        "recipient": "Select recipient",
+        "back": "Back",
+        "continue": "Continue"
+      }
+    },
+    "gift": {
+      "title": "Gift 1",
+      "gift_to": "Gift 1 {variantUnit(variant)} to",
+      "recipient": "Select recipient"
+    },
+    "paint": {
+      "title": "Paint"
+    },
+    "buttons": {
+      "back": "Back",
+      "continue": "Continue"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Uploaded"
+      },
+      "process": {
+        "start": "Started a new processing job",
+        "success": "Successfully finished processing",
+        "fail": "Failed processing",
+        "cancel": "Cancelled processing job"
+      },
+      "change_name": {
+        "action": "Renamed"
+      },
+      "merge": {
+        "action": "Merged"
+      },
+      "change_owner": {
+        "action": "Transferred ownership"
+      },
+      "change_tags": {
+        "action": "Set tags to"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Approved for public listing"
+        },
+        "removed_public": {
+          "action": "Removed from public listing"
+        },
+        "approved_personal": {
+          "action": "Approved for personal use"
+        },
+        "rejected_personal": {
+          "action": "Rejected for personal use"
+        },
+        "added_overlaying": {
+          "action": "Added flag overlaying"
+        },
+        "removed_overlaying": {
+          "action": "Removed flag overlaying"
+        },
+        "added_private": {
+          "action": "Added flag private"
+        },
+        "removed_private": {
+          "action": "Removed flag private"
+        }
+      },
+      "delete": {
+        "action": "Deleted"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Activity",
+      "emote": {
+        "deleted_emote": "Deleted Emote",
+        "deleted_set": "Deleted Set",
+        "by": "by",
+        "created": "Created",
+        "changed_tags": "Changed tags for",
+        "changed_capacity": "Changed capacity for",
+        "added": "Added",
+        "removed": "Removed emote",
+        "renamed": "Renamed emote",
+        "in": "in",
+        "from": "from",
+        "to": "to",
+        "deleted": "Deleted"
+      },
+      "user": {
+        "changed_paint": "Changed active paint from",
+        "changed_badge": "Changed active badge from",
+        "removed": "Removed",
+        "connection": "Connection",
+        "changed_set": "Changed active emote set from",
+        "added": "Added",
+        "no_badge": "No Badge",
+        "no_paint": "No Paint",
+        "deleted": "Deleted"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Logging you in...",
+        "logged": "Logged in",
+        "failed": "Failed to log in"
+      },
+      "state": {
+        "logging": "Logging you in...",
+        "logged": "Logged in",
+        "failed": {
+          "title": "Login Failed",
+          "message": "Make sure to open this window through the extension"
+        }
+      }
+    },
+    "home": {
+      "title": "Home",
+      "features": {
+        "emote_slots": "1000 Emote Slots",
+        "emote_slots_info": "Everyone gets 1000 customisable channel emote slots, all for free. Keep all your emotes in one place.",
+        "emote_slots_button": "Browse Emotes",
+        "emote_sets": "Emote Sets",
+        "emote_sets_info": "Group emotes in customisable sets that can be shared with other users or quickly swapped onto your channel.",
+        "emote_sets_button": "Create an Emote Set",
+        "custom_emotes": "Custom Emote Names",
+        "custom_emotes_info": "Don't like the name given to an emote by its author? That's fine, you can change it for your channel only.",
+        "custom_emotes_button": "Browse Emotes",
+        "real-time": "Real-Time Updates",
+        "real-time_info": "Changing emotes in your channel happens instantly, for all viewers. No F5 required, no more waiting.",
+        "real-time_button": "Download the Extension",
+        "large_community": "Large Community",
+        "large_community_info": "7TV serves 2,000,000+ daily unique users and has a library of over 1,000,000 public emotes.",
+        "large_community_button": "Join our Discord",
+        "next_gen": "Next-gen Formats",
+        "next_gen_info": "We use newer, more optimised image formats like WebP and AVIF, to reduce bandwidth usage.",
+        "next_gen_button": "Download the Extension"
+      }
+    },
+    "help": {
+      "title": "Help"
+    },
+    "directory": {
+      "title": "Directory",
+      "bookmarked": "Bookmarked",
+      "sorting": {
+        "title": "Sorting",
+        "alphabetical": "Alphabetical",
+        "upload_date": "Upload Date"
+      },
+      "filters": {
+        "animated": "Animated",
+        "static": "Static",
+        "overlaying": "Overlaying",
+        "personal_use": "Personal Use",
+        "exact_match": "Exact Match"
+      },
+      "size": {
+        "title": "Size",
+        "any": "Any Size"
+      }
+    },
+    "landing": {
+      "start": "Start your journey with hundreds of emotes and features that enhance your chatting experience. Download the Official 7TV Extension or other 3rd party tools.",
+      "developers": {
+        "header": "Source-Available",
+        "info": "Our entire codebase is available on GitHub with a source-available licence. Anyone can view and contribute."
+      },
+      "download": {
+        "start": "Start your journey with hundreds of emotes and features that enhance your chatting experience. Download the Official 7TV Extension or other 3rd party tools.",
+        "extension": "Web Extension",
+        "recommended": "Recommended",
+        "stable": "Stable Release",
+        "nightly": "Nightly Release",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobile Apps"
+        },
+        "bots": {
+          "header": "Chat Bots"
+        }
+      },
+      "features": {
+        "header": "Why 7TV?",
+        "info": "Our platform offers a variety of useful features that will enhance your chatting experience."
+      },
+      "footer": {
+        "affiliated": "7TV is not affiliated with Twitch, Kick or Discord",
+        "privacy_policy": "Privacy Policy",
+        "tos": "Terms of Service"
+      },
+      "hero": {
+        "platform": "The Emote Platform",
+        "all": "for All",
+        "download": "Download",
+        "manage": "Manage hundreds of emotes for your Twitch and sKick channels with ease. Enhance your chatting experience.",
+        "more": "Learn more",
+        "xmas": {
+          "header": "X-MAS SUB EVENT",
+          "info": "Gift 1 sub to anyone this christmas and get a special badge!",
+          "gift": "Gift a sub"
+        },
+        "nnys": {
+          "info": "Vote on NNYS 2025 to get an exclusive paint, badge & emote set.",
+          "vote": "Vote in NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 STREAMERS",
+          "tournament": "7TV HOSTED TOURNAMENT",
+          "event": "3 DAY EVENT",
+          "header": "Place your Pick'ems. Win Prizes.",
+          "info": "7TV Hoster CS2 Tournament",
+          "date": "Feb. 29th - Mar. 2nd",
+          "pickems": "Place your pick'ems",
+          "pass": "Get the pass!",
+          "badges_paints": "Win Badges & Paints.",
+          "description1": "xQc, OhnePixel, JasonTheWeen and 32 other streamers go head to head",
+          "description2": "in a 3-day Single Elimination 7TV Hosted CS2 tournament."
+        }
+      }
+    },
+    "discover": {
+      "title": "Discover",
+      "uploads": "Uploads",
+      "followed": "Followed accounts"
+    },
+    "store": {
+      "title": "Store",
+      "redeem": {
+        "title": "Redeem",
+        "header": "Redeem a Gift Code",
+        "subtitle": "Redeem a gift code to unlock exclusive cosmetics and benefits.",
+        "state": {
+          "idle": "Idle",
+          "loading": "Loading",
+          "success": "Success"
+        },
+        "code": "code",
+        "shown": "shown",
+        "trial": "You successfully redeemed your trial subscription"
+      },
+      "purchase": {
+        "success": "Your purchase was successfully completed"
+      },
+      "subscription": {
+        "banner_title_subbed": "Thank You For the Support",
+        "banner_title_unsubbed": "Unlock Special Perks",
+        "banner_subtitle_subbed": "Enjoy Your Special Subscriber Perks!",
+        "banner_subtitle_unsubbed": "Subscribe to Enhance Your Chatting Experience.",
+        "badge_progress": {
+          "title": "Badge Progress",
+          "left": "{duration} left"
+        },
+        "benefits": {
+          "title": "Subscription Benefits",
+          "animated_avatar": "Animated Profile Picture",
+          "personal_emotes": "Personal Emotes",
+          "paints": "Nametag Paints",
+          "sub_badge": "Subscriber Badge",
+          "raffle_tickets": "Raffle Tickets"
+        },
+        "raffle": "Global Emote Raffle",
+        "monthly_paints": "Monthly Paints",
+        "your_cosmetics": "Your Cosmetics",
+        "your_paints": "Your Paints",
+        "beomce_a_subscriber": "Become a Subscriber",
+        "your_badges": "Your Badges",
+        "top_gifters": "Top Gifters",
+        "subscribe": "Subscribe",
+        "subscribed": "Subscribed",
+        "cancel": "Cancel Subscription",
+        "reactivate": "Reactivate Subscription",
+        "one_monhth": "1 Month",
+        "one_year": "1 Year"
+      },
+      "paint_bundles": {
+        "coming_soon": "Coming Soon",
+        "banner_title": "Make Yourself Glow",
+        "banner_subtitle": "Nametag Paints Will Let You Express Yourself in Every Hue."
+      },
+      "events": {
+        "no_events": "No upcoming events",
+        "xmas": "X-MAS 2024 EVENT: GIFT 1 SUB TO GET A SPECIAL BADGE",
+        "cs2": {
+          "tournament": "7TV Hosted CS2 Tournament",
+          "cosmetics": "Want to earn cosmetics for predicting the outcome? Click below!",
+          "twitch": "VIEW TWITCH",
+          "bundle": "Purchase Bundle",
+          "already_subscribed": "Already Subscribed",
+          "subscribe": "{price} today, then {recurring}",
+          "billing_cycle": "Billed as one-time purchase",
+          "pickems": {
+            "place": "Place Pick'ems",
+            "predict": "Predict Winners",
+            "purchase_pass": "Purchase Pass"
+          },
+          "pass": {
+            "title": "Pick'ems Pass",
+            "get": "Get Pass",
+            "bundle": "Pass + {variantName(variant)} Subscription Bundle"
+          },
+          "schedule": {
+            "header": "Tournament Schedule",
+            "stage": "Stage",
+            "best_of": "Best of",
+            "start_time": "Start Time"
+          },
+          "streamers": {
+            "header": "Meet the Streamers",
+            "info": "A prominent line-up of Twitch Streamers build a team from their communities who go head-to-head in a CS-Style Single Elimination Tournament.",
+            "watch": "Watch the main event on the",
+            "twitch_channel": "7TV Twitch Channel",
+            "streamer_pov": "or through your favourite streamer's POV."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Admin",
+      "overview": "Overview",
+      "welcome": "Welcome back",
+      "enjoy": "Enjoy modding!",
+      "tickets": {
+        "title": "Tickets",
+        "emotes": {
+          "public_listing": "Public Listing",
+          "personal_use": "Personal Use",
+          "resolved": "Resolved",
+          "not_implemented": "Not Implemented"
+        },
+        "emote_table": {
+          "emote_name": "Emote Name",
+          "uploader": "Uploader",
+          "country": "Country",
+          "tags_flags": "Tags & Flags",
+          "reviewed_by": "Reviewed By"
+        },
+        "reports": "Reports",
+        "reports_options": {
+          "all": "All",
+          "assigned": "Assigned",
+          "closed": "Closed"
+        },
+        "reports_table": {
+          "reported_by": "Reported by",
+          "target": "Target",
+          "description": "Description",
+          "assigned_to": "Assigned to",
+          "status": "Status",
+          "date": "Date",
+          "ticket_id": "Ticket ID",
+          "subject": "Subject",
+          "details": "Details"
+        },
+        "reports_actions": {
+          "close": "Mark as Closed",
+          "assign_self": "Assign Self",
+          "add_comment": "Add comment"
+        }
+      },
+      "codes": {
+        "redeem": "Redeem Codes",
+        "add": "Add Code(s)",
+        "filters": {
+          "header": "Filters:",
+          "remaining_uses": "Remaining Uses"
+        },
+        "search": {
+          "results": "Found {results.totalCount} results ({results.pageCount} pages)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Name",
+            "description": "Description",
+            "tags": "Tags",
+            "code": "Code",
+            "remaining_uses": "Remaining Uses",
+            "active_period": "Active Period",
+            "effect": "Effect",
+            "subscription_effect": "Subscription Effect",
+            "created_by": "Created By",
+            "created_at": "Created At",
+            "actions": "Actions"
+          }
+        },
+        "period": {
+          "unlimited": "Unlimited"
+        },
+        "trial": {
+          "days": "days trial",
+          "no_trial": "No trial",
+          "none": "None"
+        },
+        "system": "System"
+      },
+      "special_events": {
+        "header": "Special Events",
+        "create": "Create Special Event",
+        "add": "Add Special Event",
+        "results": "Found {results.length} results",
+        "attributes": {
+          "name": "Name",
+          "description": "Description",
+          "tags": "Tags",
+          "created_by": "Created By",
+          "created_at": "Created At",
+          "actions": "Actions",
+          "create": "Create",
+          "cancel": "Cancel"
+        },
+        "system": "System",
+        "no_events": "No Special Events"
+      },
+      "users": {
+        "id": {
+          "back": "Back",
+          "last_updated": "Last Updated At",
+          "search_last_update": "Search Last Updated At",
+          "queued": "Queued for update",
+          "stripe": {
+            "customer": "Stripe Customer",
+            "view": "View",
+            "no_customer": "No stripe customer associated",
+            "roles": "Roles"
+          },
+          "actions": {
+            "header": "Actions",
+            "sessions": {
+              "header": "Sessions",
+              "create_session": "Create New Session",
+              "delete_all": "Delete All Sessions",
+              "expiration": "Expiration date in",
+              "token": "Token",
+              "copy_token": "Copy Token",
+              "create": "Create",
+              "close": "Close"
+            },
+            "connections": {
+              "header": "Connections",
+              "kick": "Manually Link Kick",
+              "username": "Kick Username"
+            },
+            "entitlements": {
+              "header": "Entitlements",
+              "create": "Create Entitlements",
+              "assign": "Manually Assign Entitlements",
+              "assign_to": "Assign entitlements to",
+              "remove_all": "Remove All Entitlements",
+              "view": "View Entitlements",
+              "showing": "Showing entitlements assigned to"
+            }
+          },
+          "subscription": {
+            "header": "Subscription",
+            "period": {
+              "header": "Subscription Periods",
+              "key": "Key",
+              "value": "Value",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Copy ULID",
+              "uuid": "Copy UUID"
+            },
+            "provider": {
+              "id": "Provider ID",
+              "view": "View"
+            },
+            "product": {
+              "id": "Product ID",
+              "view": "View",
+              "start": "Start",
+              "end": "End",
+              "is_trial": "Is Trial?",
+              "auto_renew": "Auto Renew?",
+              "gifted": {
+                "header": "Gifted?",
+                "yes": "Yes - By",
+                "no": "No"
+              },
+              "created_by": "Created By",
+              "redeem": "Redeem Code",
+              "invoice": "Invoice",
+              "system": "System",
+              "variant": "Product Variant"
+            }
+          },
+          "not_found": "User not found"
+        },
+        "layout": {
+          "users": "Users"
+        },
+        "page": {
+          "manage": {
+            "header": "Manage",
+            "single_user": "Manage a single user"
+          },
+          "actions": {
+            "header": "Actions",
+            "sub_benefits_job": {
+              "header": "Subscription Benefits Job",
+              "manually": "Manually trigger the subscription job to recalculate entitlements and subscription benefits for all users.",
+              "rerun": "Rerun"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Use Emote",
+      "add_to": "Add to...",
+      "transfer": "Transfer",
+      "merge": "Merge",
+      "size": "Size",
+      "copy_link": "Copy Link"
+    },
+    "user": {
+      "about": "About",
+      "active_emotes": "Active Emotes",
+      "uploaded": "Uploaded",
+      "uploaded_emotes": "Uploaded Emotes"
+    },
+    "settings": {
+      "account": {
+        "title": "Account",
+        "profile": {
+          "details": "Customise preferences and manage details to suit your individual needs",
+          "display_name": "Display Name",
+          "display_name_description": "Choose a main connection that will be used for your display name and static profile picture",
+          "profile_picture_description": "Choose a profile picture that will be displayed on all platforms",
+          "update_profile_picture": "Update Profile Picture"
+        },
+        "connections": {
+          "details": "Manage and link external accounts to streamline access and enhance interoperability within the platform"
+        },
+        "security": {
+          "title": "Security",
+          "details": "Manage and customise your account security",
+          "2fa": "Two Factor Authentication",
+          "2fa_details": "Enhance the security of your account with Two-Factor Authentication (2FA)",
+          "email_details": "Receive a verification code via email",
+          "authenticator_app": "Authenticator App",
+          "authenticator_app_details": "Install an app to generate your verification code",
+          "sign_out_everywhere": "Sign Out Everywhere",
+          "sign_out_everywhere_details": "Ensure security and log out from all devices with a single click",
+          "delete_account_details": "Permanently remove all personal information and associated data from the platform, terminating your account"
+        }
+      },
+      "appearance": {
+        "title": "Appearance",
+        "details": "Change the look and feel",
+        "theme": {
+          "header": "Theme",
+          "options": {
+            "system": "System",
+            "dark": "Dark",
+            "light": "Light"
+          }
+        },
+        "motion": {
+          "header": "Reduced Motion",
+          "options": {
+            "system": "System",
+            "enabled": "Enabled",
+            "disbaled": "Disabled"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Website Direction Layout",
+          "options": {
+            "ltr": "Left to Right",
+            "rtl": "Right to Left"
+          }
+        }
+      },
+      "editors": {
+        "details": "Manage and customise your editors or channels your edit for",
+        "editing_for": "Editing For",
+        "add_editor": "Add Editor",
+        "not_allowed": "You are not allowed to manage editors for this user"
+      },
+      "notifications": {
+        "details": "Real-time updates and alerts, keeping users informed about important events, messages, and activities within the website or application"
+      },
+      "blocked": {
+        "title": "Blocked",
+        "details": "Manage your restricted or prohibited content, users, or activities",
+        "add_user": "Add Blocked User"
+      },
+      "billing": {
+        "title": "Billing",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Use Subscription Credits",
+          "use_credits_details": "Your subscription credits will be used first for your next billing",
+          "cancelled": "Subscription Cancelled",
+          "cancelled_details": "Your subscription has been cancelled and your benefits will expire on {date}"
+        },
+        "history": {
+          "title": "Billing History",
+          "details": "See all payment activities associated with your account, such as past billing statements and transactions"
+        },
+        "payment_methods": {
+          "details": "Check and update your preferred payment methods",
+          "add_new": "Add New",
+          "card": {
+            "title": "Card Info",
+            "ends_in": "Ends in {digits}",
+            "expires": "Expires {month}/{year}",
+            "address": "Address",
+            "name": "Name"
+          }
+        },
+        "table": {
+          "status": "Status",
+          "amount": "Amount",
+          "invoice": "Invoice"
+        }
+      },
+      "user_table": {
+        "name": "Name",
+        "last_modified": "Last Modified",
+        "permissions": "Permissions"
+      }
+    },
+    "link": {
+      "linking": "Linking Your Account...",
+      "linking_successful": "Account Successfully Linked",
+      "linking_failed": "Linking Failed"
+    },
+    "extension": {
+      "login": "Logging you in...",
+      "login_successful": "Logged in",
+      "login_failed": "Failed to log in",
+      "window": "Make sure to open this window through the extension"
+    }
+  }
+}

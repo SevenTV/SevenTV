@@ -22,6 +22,8 @@
 	let price = $derived(
 		priceFormat("EUR").format((499 + (variant?.price.amount ?? 0)) / 100 - 1.49),
 	);
+	// let discounted = $derived(priceFormat("EUR").format((300 + (variant?.price.amount ?? 0)) / 100));
+	let recurring = $derived(priceFormat("EUR").format((variant?.price.amount ?? 0) / 100));
 	let disabled = $derived(!!(variant && $isSubscribed));
 
 	let giftDialog: DialogMode = $state("hidden");

@@ -9,7 +9,6 @@
 	import TextInput from "../input/text-input.svelte";
 	import Spinner from "../spinner.svelte";
 	import type { DialogMode } from "./dialog.svelte";
-	import { t } from "svelte-i18n";
 	import Dialog from "./dialog.svelte";
 
 	interface Props {
@@ -147,12 +146,9 @@
 
 <Dialog bind:mode>
 	<form class="layout">
-		<h1>{$t("pages.admin.users.id.actions.entitlements.create")}</h1>
+		<h1>Create Entitlements</h1>
 		<hr />
-		<p>
-			{$t("pages.admin.users.id.actions.entitlements.assign_to")}
-			<b>{from.type.replace("_", " ")} {fromName}</b>
-		</p>
+		<p>Assign entitlements to <b>{from.type.replace("_", " ")} {fromName}</b></p>
 		<div class="types">
 			Type
 			<Radio bind:group={type} name="to-type" value={EntitlementNodeTypeInput.Role}>Role</Radio>

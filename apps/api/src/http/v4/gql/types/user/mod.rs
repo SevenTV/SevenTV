@@ -340,6 +340,16 @@ impl User {
 		// so that we can find the events related to those emote_sets.
 		// Ideally we should just query this on typesense using a JOIN.
 		// This is a temporary solution until we have a better way to query this.
+
+		// check if user has the Role `NoActivity`, if they do, return empty vec
+
+		let no_activity_role_id: RoleId = "644JAH244N89EAJGXHMC2W48RY".parse().expect("Invalid Role ID format");
+
+		let full_user = &self.full_user;
+		if full_user.computed.roles.contains(&no_activity_role_id) {
+			return Ok(vec![]);
+		}
+
 		let targets = global
 			.emote_set_by_user_id_loader
 			.load(self.id)
@@ -379,18 +389,16 @@ impl User {
 	}
 
 	#[tracing::instrument(skip_all, name = "User::inventory")]
-	async fn inventory(&self, ctx: &Context<'_>) -> Result<UserInventory, ApiError> {
+	async fn inventory(
+		&self,
+		ctx: &Context<'_>,
+		#[graphql(default = false)] include_inaccessible: bool,
+	) -> Result<UserInventory, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
 
-		let full_user = global
-			.user_loader
-			.load_user(global, self.full_user.user.clone())
-			.await
-			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?;
-
-		Ok(UserInventory::from_user(&full_user))
+		Ok(UserInventory::from_user(self, include_inaccessible, global).await?)
 	}
 
 	#[tracing::instrument(skip_all, name = "User::billing")]
@@ -427,7 +435,6 @@ impl User {
 	async fn created_at(&self) -> chrono::DateTime<chrono::Utc> {
 		self.id.timestamp()
 	}
-
 }
 
 impl From<shared::database::user::FullUser> for User {

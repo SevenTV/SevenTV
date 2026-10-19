@@ -532,6 +532,11 @@ impl EmoteSetOperation {
 							ApiErrorCode::BadRequest,
 							"emote is not allowed in personal emote sets",
 						)));
+					} else if !db_emote.flags.contains(EmoteFlags::PublicListed) {
+						return Err(TransactionError::Custom(ApiError::bad_request(
+							ApiErrorCode::BadRequest,
+							"emote must be approved for public listing first to be added to a personal emote set",
+						)));
 					} else if !db_emote.flags.contains(EmoteFlags::ApprovedPersonal) {
 						let id = EmoteModerationRequestId::new();
 						let country_code = global
@@ -980,7 +985,7 @@ impl EmoteSetOperation {
 						shared::database::emote_set::EmoteSet {
 							#[query(rename = "_id")]
 							id: self.emote_set.id,
-							#[query(flatten)]
+							#[query(elem_match)]
 							emotes: shared::database::emote_set::EmoteSetEmote {
 								id: emote_id,
 								alias,

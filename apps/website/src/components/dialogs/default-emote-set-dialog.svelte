@@ -78,7 +78,7 @@
 		<h1>{$t("dialogs.default_set.title")}</h1>
 		<hr />
 		<div class="picker">
-			<TextInput placeholder="Search Emote Set" bind:value={searchQuery}>
+			<TextInput placeholder={$t("labels.search_emote_set")} bind:value={searchQuery}>
 				{#snippet icon()}
 					<MagnifyingGlass />
 				{/snippet}

@@ -211,10 +211,10 @@
 			{#if data.imagesPending}
 				<div class="processing">
 					<Cpu />
-					This emote is still processing
+					{$t("dialogs.emote_info.processing")}
 					{#if data}
 						<button class="refresh" onclick={() => data && invalidate(`emotes:${data.id}`)}>
-							Refresh
+							{$t("dialogs.emote_info.refresh")}
 						</button>
 					{/if}
 				</div>

@@ -48,6 +48,10 @@ pub struct Cdn {
 	/// Cache capacity in bytes
 	#[default(size::Size::from_gigabytes(1))]
 	pub cache_capacity: size::Size,
+	/// Browser max-age of content
+	#[default(std::time::Duration::from_secs(60 * 60 * 24 * 7))]
+	#[serde(with = "humantime_serde")]
+	pub max_age: std::time::Duration,
 	/// Max concurrent requests to the origin
 	#[default(200)]
 	pub max_concurrent_requests: u64,

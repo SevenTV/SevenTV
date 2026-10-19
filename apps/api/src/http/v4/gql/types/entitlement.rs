@@ -296,6 +296,7 @@ pub struct EntitlementNodeGlobalDefaultEntitlementGroup {
 }
 
 #[derive(Default, async_graphql::SimpleObject, Clone, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub struct EntitlementNodeAllCosmetics {
 	#[graphql(deprecation = true)]
 	pub noop: bool,

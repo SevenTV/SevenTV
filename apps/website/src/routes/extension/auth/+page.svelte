@@ -5,7 +5,6 @@
 	import { browser } from "$app/environment";
 	import { Check, X } from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-
 	let state = $state<"loading" | "failed" | "success">("loading");
 
 	$effect(() => {
@@ -28,25 +27,25 @@
 
 <svelte:head>
 	{#if state === "loading"}
-		<title>{$t("pages.extension.login")}</title>
+		<title>{$t("pages.auth.title.logging")}</title>
 	{:else if state === "success"}
-		<title>{$t("pages.extension.login_successful")}</title>
+		<title>{$t("pages.auth.title.logged")}</title>
 	{:else if state === "failed"}
-		<title>{$t("pages.extension.login_failed")}</title>
+		<title>{$t("pages.auth.title.failed")}</title>
 	{/if}
 </svelte:head>
 
 <div class="container">
 	{#if state === "loading"}
 		<Spinner />
-		<h2>{$t("pages.extension.login")}</h2>
+		<h2>{$t("pages.auth.state.logging")}</h2>
 	{:else if state === "success"}
 		<Check />
-		<h2>{$t("pages.extension.login_successful")}</h2>
+		<h2>{$t("pages.auth.state.logged")}</h2>
 	{:else if state === "failed"}
 		<X />
-		<h2>{$t("pages.extension.login_failed")}</h2>
-		<p>{$t("pages.extension.window")}</p>
+		<h2>{$t("pages.auth.state.failed.title")}</h2>
+		<p>{$t("pages.auth.state.failed.message")}</p>
 	{/if}
 </div>
 

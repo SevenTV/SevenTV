@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Admin",
+    "trending_emotes": "Populární Emoty",
+    "top_emotes": "Top Emoty",
+    "global_emotes": "Globální Emoty",
+    "new_emotes": "Nové Emoty",
+    "bookmarked_emotes": "Uložené Emoty",
+    "bookmarked_emote_sets": "Uložené Sady Emotů",
+    "bookmarked_users": "Uložení Uživatelé",
+    "account_settings": "Nastavení Účtu",
+    "editor_settings": "Nastavení Editorů",
+    "notification_settings": "Nastavení Oznámení",
+    "blocked_settings": "Nastavení Zablokování",
+    "billing_settings": "Nastavení Fakturace",
+    "admin_emote_public_listing": "Žádosti o Zveřejnění Emotů",
+    "admin_emote_personal_use": "Žádosti o Osobní Použití Emotu",
+    "admin_emote_resolved": "Vyřešené Emote Tikety"
+  },
+  "page_errors": {
+    "not_found": "Stránka, kterou hledáš, není k dispozici.",
+    "forbidden": "Nemáš oprávnění k zobrazení této stránky.",
+    "unauthorized": "Nemáš povolení k zobrazení této stránky.",
+    "unexpected": "Můžeš zkusit aktualizovat stránku. Pokud problém přetrvává, kontaktuj nás.",
+    "generic": "Došlo k chybě.",
+    "emote_set_load": "Načtení sady emotů se nezdařilo",
+    "emote_set_not_found": "Sada emotů nebyla nalezena",
+    "user": "Načtení uživatele se nezdařilo"
+  },
+  "words": {
+    "from": "z",
+    "to": "na",
+    "with": "s",
+    "by": "uživatelem"
+  },
+  "common": {
+    "sign_in": "Přihlásit se",
+    "sign_out": "Odhlásit se",
+    "go_back": "Jít Zpět",
+    "super_admin": "Super Admin",
+    "skip_to_content": "Přeskočit na obsah",
+    "emotes": "{count, plural, one {Emote} few {Emoty} other {Emotů}}",
+    "emote_sets": "{count, plural, one {Sada Emotů} few {Sady Emotů} other {Sad Emotů}}",
+    "users": "{count, plural, one {Uživatel} few {Uživatelé} other {Uživatelů}}",
+    "channels": "{count, plural, one {Kanál} few {Kanály} other {Kanálů}}",
+    "followers": "{count, plural, one {Sledující} few {Sledující} other {Sledujících}}",
+    "items": "{count, plural, one {Položka} few {Položky} other {Položek}}",
+    "subscriptions": "{count, plural, one {Předplatné} few {Předplatná} other {Předplatných}}",
+    "payment_methods": "{count, plural, one {Způsob Platby} few {Způsoby Platby} other {Způsobů Platby}}",
+    "date": "Datum",
+    "help": "Nápověda",
+    "for": "pro",
+    "error": "Chyba",
+    "loading": "Načítání...",
+    "paint_bundles": "Balíčky Barev",
+    "notifications": "Oznámení",
+    "connections": "Propojení",
+    "direct_messages": "Přímé Zprávy",
+    "mod_comments": "Komentáře Moderátorů",
+    "profile_picture": "Profilový Obrázek",
+    "suggested_emotes": "Navrhované Emoty",
+    "personal_emotes": "Osobní Emoty",
+    "no_more_emotes": "Žádné další emoty",
+    "no_emotes": "Žádné emoty",
+    "your_subscription": "Tvé Předplatné",
+    "theme": "Motiv",
+    "language": "Jazyk",
+    "developer_portal": "Vývojářský Portál",
+    "faq": "Často Kladené Otázky",
+    "faq_short": "FAQ",
+    "privacy": "Zásady ochrany osobních údajů",
+    "tos": "Podmínky Použití",
+    "trending": "Populární",
+    "top": "Top",
+    "global": "Globální",
+    "new": "Nové",
+    "Weekly": "Týdně",
+    "Monthly": "Měsíčně",
+    "Today": "Dnes",
+    "news": "Novinky",
+    "Default_set": "Výchozí Sada",
+    "following": "Sledováno",
+    "activity": "Aktivita",
+    "analytics": "Analytika",
+    "statistics": "Statistika",
+    "contact": "Kontakt",
+    "cosmetics": "Vzhled",
+    "editors": "Editoři",
+    "active": "Aktivní",
+    "profile": "Profil",
+    "pinned": "Připnuté",
+    "settings": "Nastavení",
+    "delete_account": "Smazat Účet"
+  },
+  "labels": {
+    "enter_text": "Zadej text",
+    "redeem": "Zadej kód",
+    "search": "Hledat",
+    "refetch": "Načíst Znovu",
+    "manage_connections": "Správa Propojení",
+    "manage_editors": "Správa Editorů",
+    "none": "Žádné",
+    "search_user": "Hledat Uživatele",
+    "search_country": "Hledat Zemi",
+    "search_emote_set": "Hledat Sadu Emotů",
+    "search_users": "{count, plural, one {Hledat uživatele} other {Hledat uživatele}}",
+    "tags": "Tagy",
+    "close": "Zavřít",
+    "contribute": "Přispět",
+    "enter_tags": "Zadej tagy",
+    "tag_limit_reached": "Dosáhli jste limitu {limit} tagů",
+    "filters": "Filtry",
+    "no_filters": "Žádné Filtry",
+    "emote_name": "Název Emotu",
+    "copy_link": "Zkopírovat Odkaz",
+    "create_emote_set": "Vytvořit Novou Sadu Emotů",
+    "emote_set_name": "Název Sady Emotů",
+    "emote_attribution": "Připsání Emotu",
+    "select": "Vybrat",
+    "selection_mode": "Režim Výběru",
+    "edit": "Upravit",
+    "capacity": "Kapacita",
+    "enable": "Povolit",
+    "disable": "Zakázat",
+    "disabled": "Vypnuto",
+    "more": "Více",
+    "actions": "Akce",
+    "download": "Stáhnout",
+    "report": "Nahlásit",
+    "delete": "Smazat",
+    "time_select": {
+      "week": "Tento Týden",
+      "month": "Tento Měsíc",
+      "year": "Tento Rok"
+    },
+    "gift": "Darovat",
+    "follow": "Sledovat",
+    "connect": "Propojit",
+    "disconnect": "Odpojit",
+    "email": "Email",
+    "password": "Heslo",
+    "all": "Vše",
+    "other": "Jiné",
+    "cancel": "Zrušit",
+    "confirm": "Potvrdit",
+    "proceed": "Pokračovat",
+    "save": "Uložit",
+    "remove": "Odstranit",
+    "accept": "Přijmout",
+    "deny": "Odmítnout",
+    "enter": "Zadat"
+  },
+  "themes": {
+    "system": "Systémový",
+    "dark": "Tmavý",
+    "light": "Světlý"
+  },
+  "flags": {
+    "global": "Globální",
+    "trending": "Populární",
+    "overlaying": "Překrývající",
+    "default": "Výchozí",
+    "personal": "Osobní",
+    "listed": "Uvedené",
+    "unlisted": "Neuvedené",
+    "personal_use": "Osobní Použití",
+    "deleted": "Smazán",
+    "private": "Soukromé",
+    "personal_use_approved": "Schváleno Osobní Použití",
+    "personal_use_denied": "Zakázáno Osobní Použití",
+    "personal_use_pending": "Osobní Použití Čeká na Schválení",
+    "renamed": "Přejmenováno",
+    "nsfw": "NSFW",
+    "editor_flags": {
+      "pending": "Čeká na Schválení",
+      "accepted": "Přijaté",
+      "rejected": "Odmítnuto",
+      "you_accepted": "Přijal/a Jsi",
+      "you_rejected": "Odmítl/a Jsi"
+    }
+  },
+  "notifications": {
+    "system": "Systém",
+    "approved_for_public": "Tvůj emote {emote} byl schválen pro zveřejnění."
+  },
+  "sub_info": {
+    "plan": "Plán",
+    "free": "Zdarma",
+    "gifted_by": "Darované od",
+    "ends": "Předplatné Končí",
+    "total": "Celkem",
+    "credits": "Kredity na Předplatné"
+  },
+  "file_limits": {
+    "max_size": "{size} maximální velikost souboru",
+    "max_resolution": "{width}x{height} maximální rozlišení",
+    "max_frames": "{count} maximum snímků",
+    "resolution_error": "Rozlišení nesmí přesahovat {width}x{height}",
+    "duration_error": "Délka musí být {duration} vteřin nebo míň"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Přihlásit se do 7TV",
+      "subtitle": "Chceš-li pokračovat, přihlas se nebo si vytvoř účet",
+      "continue_with": "Pokračovat přes {platform}",
+      "trouble": "Potíže s přihlášením?",
+      "legal_yapping": "Přihlášením souhlasíte s našimi",
+      "and": "a",
+      "linking_new": "Už máš účet 7TV a chceš přidat nové propojení? Přihlaš se pomocí svého stávajícího propojení a propoj nové v",
+      "settings": "nastavení"
+    },
+    "search": {
+      "emotes": "Emoty",
+      "users": "Uživatelé"
+    },
+    "upload": {
+      "title": "Nahrát Emote",
+      "untitled": "Bez názvu",
+      "chat": "Odeslat zprávu",
+      "drag_drop": "Přetáhni a pusť pro nahrání, nebo",
+      "browse_files": "Procházet Soubory",
+      "accept_rules": "Přijímám pravidla a pokyny",
+      "discard": "Zrušit",
+      "upload_guidelines": "Pravidla Nahrávání Emotů",
+      "upload": "Nahrát"
+    },
+    "emote_set": {
+      "title": "Aktivní Sada Emotů",
+      "create": "Vytvořit Sadu Emotů",
+      "name": "Název Sady Emotů",
+      "label": "Název",
+      "confirm": "Vytvořit",
+      "copy_set": "Zkopírovat Sadu",
+      "special": "Speciální",
+      "favourite_sets": {
+        "title": "Oblíbené Sady Emotů",
+        "add": "Přidat a Přejmenovat pro všechny",
+        "remove": "Odstranit ze všech"
+      },
+      "mass_select_feature": {
+        "add": "Přidat do Sady Emotů",
+        "remove": "Odstranit ze Sady Emotů",
+        "amount_selected_label": "/20 Vybraných"
+      },
+      "default_emote_set": {
+        "remove": "Odstranit Emote z {set}",
+        "add": "Přidat Emote do {set}",
+        "conflicting_name": "Duplicitní Název"
+      }
+    },
+    "manage_aliases": {
+      "title": "Správa Aliasů Emotu",
+      "add_placeholder": "Přidat nový alias.."
+    },
+    "rename_emote": {
+      "title": "Přejmenovat Emote v {set}",
+      "input_placeholder": "Nový název emotu",
+      "confirmation_message": "Jsi si jistý/á, že chceš přejmenovat tento emote v {set}?",
+      "confirm": "Přejmenovat"
+    },
+    "remove_emote_from_set": {
+      "title": "Odstranit Emote z {set}",
+      "warning_message": "Jsi si jistý/á, že chceš odstranit {emote} z {set}?",
+      "confirm": "Odstranit"
+    },
+    "add_emote": {
+      "title": "Přidat {emote} do",
+      "change_name": "Změnit název emotu",
+      "confirm": "Potvrdit",
+      "confirm_changes": "{count, plural, one {Potvrdit 1 změnu} few {Potvrdit {count} změny} other {Potvrdit {count} změn}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Fronta emotů",
+      "activity": "Aktivita",
+      "comments": "Komentáře"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Přidat/Odstranit Emote",
+      "edit_emote_alias": "Upravit Alias Emotu",
+      "remove_emote": "Odstranit Emote Ze Sady",
+      "open_in_new_tab": "Otevřít v Nové Záložce",
+      "copy_emote_link": "Zkopírovat Odkaz Emotu"
+    },
+    "cart": {
+      "title": "Tvůj Košík",
+      "duration": "Doba trvání",
+      "price": "Cena",
+      "preview": "Náhled",
+      "purchase_as_gift": "Zakoupit jako dárek",
+      "total": "Celkem"
+    },
+    "editor": {
+      "permissions": "Nastavit Oprávnění Editora",
+      "super_admin": "Super Admin",
+      "emote_sets": "Sady Emotů",
+      "admin": "Admin",
+      "emotes": "Emoty",
+      "user": "Uživatel",
+      "manage_personal_emotes": "Spravovat Osobní Sadu Emotů",
+      "confirm": "Potvrdit",
+      "no_editors": "Žádní editoři k zobrazení",
+      "permissions_details": {
+        "manage": "Spravovat",
+        "create": "Vytvořit",
+        "transfer": "Převést",
+        "manage_profile": "Spravovat Profil",
+        "manage_emotes": "Spravovat Emoty",
+        "manage_billing": "Spravovat Fakturaci",
+        "manage_editors": "Spravovat Editory",
+        "view_billing": "Zobrazit Fakturační Údaje"
+      }
+    },
+    "emote_info": {
+      "processing": "Tento emote se stále zpracovává",
+      "refresh": "Obnovit",
+      "download": "Stáhnout"
+    },
+    "copy_emotes": {
+      "title": "Kopírovat vybrané emoty do"
+    },
+    "default_set": {
+      "title": "Výchozí Sada Emotů"
+    },
+    "delete_account": {
+      "warning": "Varování",
+      "warning_message": "Tato akce povede k permanentnímu smazání tvého účtu. Tuto akci nelze vrátit zpět.",
+      "choose_reasons": "Vyber důvody pro smazání účtu",
+      "reasons": {
+        "no_longer_use": "Už nepoužívám 7TV",
+        "privacy_concerns": "Obavy o soukromí",
+        "not_useful": "Neužitečné",
+        "other": "Jiné"
+      },
+      "confirm_username": "Zadej své uživatelské jméno pro potvrzení"
+    },
+    "delete_emote_or_set": {
+      "title": "Smazat {name}",
+      "warning_message_emote": "Tímto trvale smažeš svůj emote. Tuto akci nelze vrátit zpět.",
+      "warning_message_set": "Tímto trvale smažeš svou sadu emotů. Tuto akci nelze vrátit zpět.",
+      "reason": "Důvod",
+      "reason_for_deletion": "Důvod smazání"
+    },
+    "edit_emote": {
+      "title": "Upravit {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Upravit Sadu Emotů",
+      "show_on_profile": "Zobrazit na Profilu",
+      "publicly_listed": "Zveřejněné"
+    },
+    "remove_emote": {
+      "title": "Odstranit vybrané emoty z {set}"
+    },
+    "report_emote": {
+      "title": "Nahlásit Emote",
+      "choose_reasons": "Vyber důvody",
+      "reasons": {
+        "my_work": "Vytvořil jsem tento emote, ale nahrál ho někdo jiný",
+        "duplicate": "Tento emote je duplicitní",
+        "sexual": "Tento emote obsahuje pornografické nebo přehnaně sexualizované snímky",
+        "violance": "Tento emote zobrazuje extrémní násilí nebo gore",
+        "its_me": "Tento emote mě vykresluje a nesouhlasím s tím",
+        "offensive": "Tento emote mi připadá urážlivý",
+        "other": "Jiné"
+      },
+      "additional_info": "Dodatečné Informace",
+      "disclaimer": "Zneužití funkce nahlášení může vézt k odebrání tvého přístupu."
+    },
+    "transfer_emote": {
+      "title": "Převést {emote}",
+      "details": "Toto převede {emote}.",
+      "receipient": "Příjemce Emotu",
+      "transfer": "Převést"
+    },
+    "badge": {
+      "title": "Odznak"
+    },
+    "subscription": {
+      "gifted_by": "Tvé předplatné ti daroval/a",
+      "cancel_notice": "Ukončením předplatného okamžitě ztratíš přístup k předplatitelským výhodám. Jsi si jistý/á, že chceš své předplatné ukončit?",
+      "cancel_confirmation": "Jsi si jistý/á, že chceš zrušit své předplatné? Na konci aktuálního zúčtovacího období ztratíš přístup k předplatitelským výhodám.",
+      "confirm": "Potvrdit"
+    },
+    "error": {
+      "title": "Chyba"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Darovat Pick'ems Pass",
+        "gift_to": "Darovat Pick'ems Pass uživateli",
+        "recipient": "Vybrat příjemce",
+        "back": "Zpět",
+        "continue": "Pokračovat"
+      }
+    },
+    "gift": {
+      "title": "Darovat 1",
+      "gift_to": "Darovat 1 {variantUnit(variant)} uživateli",
+      "recipient": "Vybrat příjemce"
+    },
+    "paint": {
+      "title": "Barva"
+    },
+    "buttons": {
+      "back": "Zpět",
+      "continue": "Pokračovat"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Nahráno"
+      },
+      "process": {
+        "start": "Zahájena úloha ke zpracování",
+        "success": "Zpracování úspěšně dokončeno",
+        "fail": "Zpracování se nezdařilo",
+        "cancel": "Úloha zpracování byla zrušena"
+      },
+      "change_name": {
+        "action": "Přejmenováno"
+      },
+      "merge": {
+        "action": "Sloučeno"
+      },
+      "change_owner": {
+        "action": "Vlastnictví převedeno"
+      },
+      "change_tags": {
+        "action": "Tagy nastaveny na"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Schváleno ke zveřejnění"
+        },
+        "removed_public": {
+          "action": "Odstraněno ze zveřejnění"
+        },
+        "approved_personal": {
+          "action": "Schváleno pro osobní použití"
+        },
+        "rejected_personal": {
+          "action": "Odmítnuto pro osobní použití"
+        },
+        "added_overlaying": {
+          "action": "Přidán překrývající flag"
+        },
+        "removed_overlaying": {
+          "action": "Odstraněn překrývající flag"
+        },
+        "added_private": {
+          "action": "Přidán soukromý flag"
+        },
+        "removed_private": {
+          "action": "Odstraněn soukromý flag"
+        }
+      },
+      "delete": {
+        "action": "Smazán"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Aktivita",
+      "emote": {
+        "deleted_emote": "Smazaný Emote",
+        "deleted_set": "Smazaná Sada",
+        "by": "od",
+        "created": "Vytvořeno",
+        "changed_tags": "Změněny tagy pro",
+        "changed_capacity": "Změněna kapacita pro",
+        "added": "Přidán",
+        "removed": "Odstraněný emote",
+        "renamed": "Přejmenovaný emote",
+        "in": "v",
+        "from": "z",
+        "to": "na",
+        "deleted": "Smazán"
+      },
+      "user": {
+        "changed_paint": "Změněna aktivní barva z",
+        "changed_badge": "Změněn aktivní odznak z",
+        "removed": "Odstraněn",
+        "connection": "Propojení",
+        "changed_set": "Změněna aktivní sada emotů z",
+        "added": "Přidán",
+        "no_badge": "Žádný Odznak",
+        "no_paint": "Žádná Barva",
+        "deleted": "Smazán"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Přihlašování...",
+        "logged": "Přihlášen",
+        "failed": "Přihlášení selhalo"
+      },
+      "state": {
+        "logging": "Přihlašování...",
+        "logged": "Přihlášen",
+        "failed": {
+          "title": "Přihlášení selhalo",
+          "message": "Nezapomeňte toto okno otevřít prostřednictvím rozšíření"
+        }
+      }
+    },
+    "home": {
+      "title": "Domů",
+      "features": {
+        "emote_slots": "1000 Slotů Pro Emoty",
+        "emote_slots_info": "Každý má 1000 přizpůsobitelných slotů pro emoty na svém kanále, a to zcela zdarma. Měj všechny své emoty na jednom místě.",
+        "emote_slots_button": "Prohlížet Emoty",
+        "emote_sets": "Sady Emotů",
+        "emote_sets_info": "Sjednoť emoty do přizpůsobitelných sad, které mohou být sdíleny s ostatními uživateli nebo rychle převedeny na tvůj kanál.",
+        "emote_sets_button": "Vytvořit Sadu Emotů",
+        "custom_emotes": "Vlastní Názvy Emotů",
+        "custom_emotes_info": "Nelíbí se ti, jak autor pojmenoval emote? To je v pořádku, můžeš ho změnit pouze na svém kanále.",
+        "custom_emotes_button": "Prohlížet Emoty",
+        "real-time": "Aktualizace v Reálném Čase",
+        "real-time_info": "Změna emotů na tvém kanále probíhá okamžitě, pro všechny diváky. F5 není potřeba, už žádné čekání.",
+        "real-time_button": "Stáhnout Rozšíření",
+        "large_community": "Velká Komunita",
+        "large_community_info": "7TV denně využívá přes 2 000 000 unikátních uživatelů a má knihovnu s více než 1 000 000 veřejných emotů.",
+        "large_community_button": "Připoj se k našemu Discordu",
+        "next_gen": "Formáty Nové Generace",
+        "next_gen_info": "Používáme novější, optimalizovanější formáty obrázků jako WebP nebo AVIF, abychom snížili využití šířky pásma.",
+        "next_gen_button": "Stáhnout Rozšíření"
+      }
+    },
+    "help": {
+      "title": "Nápověda"
+    },
+    "directory": {
+      "title": "Adresář",
+      "bookmarked": "Uloženo",
+      "sorting": {
+        "title": "Seřazení",
+        "alphabetical": "Abecedně",
+        "upload_date": "Datum Nahrání"
+      },
+      "filters": {
+        "animated": "Animované",
+        "static": "Statické",
+        "overlaying": "Překrývající",
+        "personal_use": "Osobní Použití",
+        "exact_match": "Přesná Shoda"
+      },
+      "size": {
+        "title": "Velikost",
+        "any": "Jakákoliv Velikost"
+      }
+    },
+    "landing": {
+      "start": "Začněte svou cestu se stovkami emotů a funkcí, které vylepší váš zážitek z chatování. Stáhněte si oficiální rozšíření 7TV nebo jiné nástroje třetích stran.",
+      "developers": {
+        "header": "Dostupný zdrojový kód",
+        "info": "Celý náš kód je k dispozici na GitHubu s licencí umožňující přístup ke zdrojovému kódu. Kdokoliv si ho může prohlédnout a přispět."
+      },
+      "download": {
+        "start": "Začni svou cestu se stovkami emotů a funkcí, které vylepší tvůj zážitek z chatování. Stáhni si Oficiální 7TV Rozšíření nebo jiné nástroje třetích stran.",
+        "extension": "Webové Rozšíření",
+        "stable": "Stabilní Vydání",
+        "nightly": "Nightly Vydání",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobilní Aplikace"
+        },
+        "bots": {
+          "header": "Chatboti"
+        }
+      },
+      "features": {
+        "header": "Proč 7TV?",
+        "info": "Naše platforma nabízí řadu užitečných funkcí, které vylepší tvůj zážitek z chatování."
+      },
+      "footer": {
+        "affiliated": "7TV není spojeno se službami Twitch, Kick, YouTube ani Discord",
+        "privacy_policy": "Zásady ochrany osobních údajů",
+        "tos": "Podmínky Použití"
+      },
+      "hero": {
+        "platform": "Emote Platforma",
+        "all": "pro Všechny",
+        "download": "Stáhnout",
+        "manage": "Snadno spravuj stovky emotů pro své Twitch, Youtube nebo Kick kanály. Vylepši svůj zážitek z chatování.",
+        "more": "Zjistit více",
+        "xmas": {
+          "header": "X-MAS SUB EVENT",
+          "info": "Daruj 1 předplatné komukoliv během Vánoc a získej speciální odznak!",
+          "gift": "Darovat předplatné"
+        },
+        "nnys": {
+          "info": "Hlasuj na NNYS 2025 a získej exkluzivní barvu, odznak a sadu emotů.",
+          "vote": "Hlasuj v NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 STREAMERŮ",
+          "tournament": "7TV HOSTOVANÝ TURNAJ",
+          "event": "3 DENNÍ EVENT",
+          "header": "Umísti své Pick'ems. Vyhraj Ceny.",
+          "info": "CS2 Turnaj Pořádaný 7TV",
+          "date": "Únor 29. - Březen 2.",
+          "pickems": "Umísti své pick'ems",
+          "pass": "Získej pass!",
+          "badges_paints": "Vyhraj Odznaky a Barvy.",
+          "description1": "xQc, OhnePixel, JasonTheWeen a dalších 32 streamerů se utkají v přímém souboji",
+          "description2": "v 3-denním Vyřazovacím CS2 Turnaji pořádaném 7TV."
+        }
+      }
+    },
+    "discover": {
+      "title": "Objevovat",
+      "uploads": "Nahrané",
+      "followed": "Sledované účty"
+    },
+    "store": {
+      "title": "Obchod",
+      "redeem": {
+        "title": "Uplatnit",
+        "header": "Uplatnit Dárkový Kód",
+        "subtitle": "Uplatni dárkový kód pro odemknutí exkluzivního vzhledu a výhod.",
+        "state": {
+          "idle": "Nečinný",
+          "loading": "Načítání",
+          "success": "Úspěch"
+        },
+        "code": "kód",
+        "shown": "zobrazen",
+        "trial": "Úspěšně jsi uplatnil/a své zkušební předplatné"
+      },
+      "purchase": {
+        "success": "Tvůj nákup byl úspěšně dokončen"
+      },
+      "subscription": {
+        "banner_title_subbed": "Děkujeme Za Tvou Podporu",
+        "banner_title_unsubbed": "Odemkni Speciální Výhody",
+        "banner_subtitle_subbed": "Užívej si Své Speciální Předplatitelské Výhody!",
+        "banner_subtitle_unsubbed": "Předplácej pro Zlepšení Svého Zážitku z Chatování.",
+        "badge_progress": {
+          "title": "Postup Odznaku",
+          "left": "Zbývá {duration}"
+        },
+        "benefits": {
+          "title": "Výhody Předplatného",
+          "animated_avatar": "Animovaný Profilový Obrázek",
+          "personal_emotes": "Osobní Emoty",
+          "paints": "Barvy Jména",
+          "sub_badge": "Předplatitelský Odznak",
+          "raffle_tickets": "Losovací Lístky"
+        },
+        "raffle": "Slosování o Globální Emote",
+        "monthly_paints": "Měsíční Barvy",
+        "your_cosmetics": "Tvůj Vzhled",
+        "your_paints": "Tvé Barvy",
+        "beomce_a_subscriber": "Staň se Předplatitelem",
+        "your_badges": "Tvé odznaky",
+        "top_gifters": "Top Dárci",
+        "subscribe": "Předplatit",
+        "subscribed": "Předplaceno",
+        "cancel": "Zrušit Předplatné",
+        "reactivate": "Obnovit Předplatné",
+        "one_monhth": "1 Měsíc",
+        "one_year": "1 Rok"
+      },
+      "paint_bundles": {
+        "coming_soon": "Již Brzy",
+        "banner_title": "Buď Vidět",
+        "banner_subtitle": "S Barvou Jména se Můžeš Vyjádřit v Jakémkoliv Odstínu."
+      },
+      "events": {
+        "no_events": "Žádné nadcházející eventy",
+        "xmas": "X-MAS 2024 EVENT: DARUJ 1 SUB A ZÍSKEJ SPECIÁLNÍ ODZNAK",
+        "cs2": {
+          "tournament": "CS2 Turnaj Pořádaný 7TV",
+          "cosmetics": "Chceš získat speciální vzhled za předpověď výsledku? Klikni níže!",
+          "twitch": "ZOBRAZIT TWITCH",
+          "bundle": "Koupit Balíček",
+          "already_subscribed": "Již Předplacen",
+          "subscribe": "{price} dnes, poté {recurring}",
+          "billing_cycle": "Účtováno jako jednorázový nákup",
+          "pickems": {
+            "place": "Umísti Pick'ems",
+            "predict": "Předpověď Vítěze",
+            "purchase_pass": "Koupit Pass"
+          },
+          "pass": {
+            "title": "Pick'ems Pass",
+            "get": "Získat Pass",
+            "bundle": "Pass + {variantName(variant)} Balíček Předplatného"
+          },
+          "schedule": {
+            "header": "Rozpis Turnaje",
+            "stage": "Stage",
+            "best_of": "Nejlepší z",
+            "start_time": "Čas Zahájení"
+          },
+          "streamers": {
+            "header": "Poznej Streamery",
+            "info": "Významný line-up Twitch Streamerů sestaví týmy ze svých komunit, které se střetnou tváří v tvář ve Vyřazovacím Turnaji na styl CS.",
+            "watch": "Sleduj hlavní event na",
+            "twitch_channel": "7TV Twitch Kanál",
+            "streamer_pov": "nebo přes POV tvého oblíbeného streamera."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Admin",
+      "overview": "Přehled",
+      "welcome": "Vítej zpět",
+      "enjoy": "Příjemné moderování!",
+      "tickets": {
+        "title": "Tickety",
+        "emotes": {
+          "public_listing": "Zveřejnění",
+          "personal_use": "Osobní Použití",
+          "resolved": "Vyřešeno",
+          "not_implemented": "Nezavedeno"
+        },
+        "emote_table": {
+          "emote_name": "Název Emotu",
+          "uploader": "Uploader",
+          "country": "Země",
+          "tags_flags": "Tagy a Flagy",
+          "reviewed_by": "Prověřeno Od"
+        },
+        "reports": "Nahlášení",
+        "reports_options": {
+          "all": "Vše",
+          "assigned": "Přiřazeno",
+          "closed": "Uzavřeno"
+        },
+        "reports_table": {
+          "reported_by": "Nahlášeno od",
+          "target": "Předmět",
+          "description": "Popis",
+          "assigned_to": "Přiřazeno k",
+          "status": "Stav",
+          "date": "Datum",
+          "ticket_id": "ID Tiketu",
+          "subject": "Důvod",
+          "details": "Podrobnosti"
+        },
+        "reports_actions": {
+          "close": "Označit jako Uzavřené",
+          "assign_self": "Přiřadit Sebe",
+          "add_comment": "Přidat komentář"
+        }
+      },
+      "codes": {
+        "redeem": "Uplatnit Kódy",
+        "add": "Přidat Kód(y)",
+        "filters": {
+          "header": "Filtry:",
+          "remaining_uses": "Zbývající Použití"
+        },
+        "search": {
+          "results": "Nalezeno {results.totalCount} výsledků ({results.pageCount} stran)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Název",
+            "description": "Popis",
+            "tags": "Tagy",
+            "code": "Kód",
+            "remaining_uses": "Zbývající Použití",
+            "active_period": "Aktivní Období",
+            "effect": "Efekt",
+            "subscription_effect": "Efekt Předplatného",
+            "created_by": "Vytvořil",
+            "created_at": "Vytvořeno v",
+            "actions": "Akce"
+          }
+        },
+        "period": {
+          "unlimited": "Neomezené"
+        },
+        "trial": {
+          "days": "dní zkušebního období",
+          "no_trial": "Žádné zkušební období",
+          "none": "Žádné"
+        },
+        "system": "Systém"
+      },
+      "special_events": {
+        "header": "Speciální Eventy",
+        "create": "Vytvořit Speciální Event",
+        "add": "Přidat Speciální Event",
+        "results": "Nalezeno {results.length} výsledků",
+        "attributes": {
+          "name": "Název",
+          "description": "Popis",
+          "tags": "Tagy",
+          "created_by": "Vytvořil",
+          "created_at": "Vytvořeno v",
+          "actions": "Akce",
+          "create": "Vytvořit",
+          "cancel": "Zrušit"
+        },
+        "system": "Systém",
+        "no_events": "Žádné Speciální Eventy"
+      },
+      "users": {
+        "id": {
+          "back": "Zpět",
+          "last_updated": "Naposledy Aktualizováno",
+          "search_last_update": "Hledání Naposledy Aktualizováno",
+          "queued": "Čeká na aktualizaci",
+          "stripe": {
+            "customer": "Stripe Zákazník",
+            "view": "Zobrazit",
+            "no_customer": "Žádný zákazník Stripe není přiřazen",
+            "roles": "Role"
+          },
+          "actions": {
+            "header": "Akce",
+            "sessions": {
+              "header": "Relace",
+              "create_session": "Vytvořit Novou Relaci",
+              "delete_all": "Smazat Všechny Relace",
+              "expiration": "Datum expirace v",
+              "token": "Token",
+              "copy_token": "Zkopírovat Token",
+              "create": "Vytvořit",
+              "close": "Zavřít"
+            },
+            "connections": {
+              "header": "Propojení",
+              "kick": "Manuálně Propojit Kick",
+              "username": "Kick Uživatelské Jméno"
+            },
+            "entitlements": {
+              "header": "Nároky",
+              "create": "Vytvořit Nároky",
+              "assign": "Manuálně Přiřadit Nároky",
+              "assign_to": "Přiřadit nároky k",
+              "remove_all": "Odstranit Všechny Nároky",
+              "view": "Zobrazit Nároky",
+              "showing": "Zobrazit nároky přiřazené k"
+            }
+          },
+          "subscription": {
+            "header": "Předplatné",
+            "period": {
+              "header": "Období Předplatného",
+              "key": "Klíč",
+              "value": "Hodnota",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Zkopírovat ULID",
+              "uuid": "Zkopírovat UUID"
+            },
+            "provider": {
+              "id": "ID Poskytovatele",
+              "view": "Zobrazit"
+            },
+            "product": {
+              "id": "ID Produktu",
+              "view": "Zobrazit",
+              "start": "Začátek",
+              "end": "Konec",
+              "is_trial": "Je Zkušební?",
+              "auto_renew": "Automatická Obnova?",
+              "gifted": {
+                "header": "Darováno?",
+                "yes": "Ano - Od",
+                "no": "Ne"
+              },
+              "created_by": "Vytvořil",
+              "redeem": "Uplatnit Kód",
+              "invoice": "Faktura",
+              "system": "Systém",
+              "variant": "Varianta Produktu"
+            }
+          },
+          "not_found": "Uživatel nenalezen"
+        },
+        "layout": {
+          "users": "Uživatelé"
+        },
+        "page": {
+          "manage": {
+            "header": "Spravovat",
+            "single_user": "Spravovat jednoho uživatele"
+          },
+          "actions": {
+            "header": "Akce",
+            "sub_benefits_job": {
+              "header": "Úloha Výhod Předplatného",
+              "manually": "Ručně spusťte úlohu předplatného, aby se přepočítaly nároky a výhody předplatného pro všechny uživatele.",
+              "rerun": "Opakování"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Použít Emote",
+      "add_to": "Přidat do...",
+      "transfer": "Převést",
+      "merge": "Sloučit",
+      "size": "Velikost",
+      "copy_link": "Zkopírovat Odkaz"
+    },
+    "user": {
+      "about": "O uživateli",
+      "active_emotes": "Aktivní Emoty",
+      "uploaded": "Nahrané",
+      "uploaded_emotes": "Nahrané Emoty"
+    },
+    "settings": {
+      "account": {
+        "title": "Účet",
+        "profile": {
+          "details": "Přizpůsob si preference a spravuj detaily podle tvých individuálních potřeb",
+          "display_name": "Přezdívka",
+          "display_name_description": "Vyber hlavní propojení, které bude použito pro tvoji přezdívku a statický profilový obrázek",
+          "profile_picture_description": "Vyber profilový obrázek, který se bude zobrazovat na všech platformách",
+          "update_profile_picture": "Aktualizovat Profilový Obrázek"
+        },
+        "connections": {
+          "details": "Spravuj a propoj externí účty pro zefektivnění přístupu a zvýšení interoperability v rámci platformy"
+        },
+        "security": {
+          "title": "Zabezpečení",
+          "details": "Spravuj a upravuj zabezpečení tvého účtu",
+          "2fa": "Dvoufaktorová autentizace",
+          "2fa_details": "Zvyš bezpečnost svého účtu pomocí dvoufaktorové autentizace (2FA)",
+          "email_details": "Obdržet ověřovací kód přes email",
+          "authenticator_app": "Autentizační Aplikace",
+          "authenticator_app_details": "Nainstaluj si aplikaci pro vygenerování tvého ověřovacího kódu",
+          "sign_out_everywhere": "Odhlásit Se Všude",
+          "sign_out_everywhere_details": "Zajisti bezpečnost a odhlaš se ze všech zařízení jedním kliknutím",
+          "delete_account_details": "Trvale odstraníš všechny osobní údaje a související data z platformy, čímž dojde k smazání tvého účtu"
+        }
+      },
+      "appearance": {
+        "title": "Vzhled",
+        "details": "Změň vzhled a dojem",
+        "theme": {
+          "header": "Motiv",
+          "options": {
+            "system": "Systémový",
+            "dark": "Tmavý",
+            "light": "Světlý"
+          }
+        },
+        "motion": {
+          "header": "Snížený Pohyb",
+          "options": {
+            "system": "Systémový",
+            "enabled": "Povolen",
+            "disbaled": "Zakázán"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Směrové Rozvržení Webu",
+          "options": {
+            "ltr": "Zleva Doprava",
+            "rtl": "Zprava Doleva"
+          }
+        }
+      },
+      "editors": {
+        "details": "Spravuj a upravuj své editory nebo kanály, kde jsi editorem",
+        "editing_for": "Edituješ Pro",
+        "add_editor": "Přidat Editora",
+        "not_allowed": "Nemáš oprávnění spravovat editory pro tohoto uživatele"
+      },
+      "notifications": {
+        "details": "Aktualizace v reálném čase a upozornění, které udržují uživatele informované o důležitých událostech, zprávách a aktivitách na webových stránkách nebo v aplikaci"
+      },
+      "blocked": {
+        "title": "Zablokování",
+        "details": "Spravuj tebou omezený nebo zakázaný obsah, uživatele nebo aktivity",
+        "add_user": "Přidat Zablokovaného Uživatele"
+      },
+      "billing": {
+        "title": "Fakturace",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Využít Kredity na Předplatné",
+          "use_credits_details": "Tvé kredity na předplatné budou použity při příští fakturaci",
+          "cancelled": "Předplatné Zrušeno",
+          "cancelled_details": "Tvé předplatné bylo zrušeno a tvé výhody vyprší dne {date}"
+        },
+        "history": {
+          "title": "Historie Fakturace",
+          "details": "Zobrazit všechny platební aktivity spojené s tvým účtem, jako jsou předchozí fakturační výpisy a transakce"
+        },
+        "payment_methods": {
+          "details": "Zkontroluj a aktualizuj své preferované způsoby platby",
+          "add_new": "Přidat Nové",
+          "card": {
+            "title": "Údaje o Kartě",
+            "ends_in": "Končící {digits}",
+            "expires": "Platnost vyprší {month}/{year}",
+            "address": "Adresa",
+            "name": "Jméno"
+          }
+        },
+        "table": {
+          "status": "Stav",
+          "amount": "Částka",
+          "invoice": "Faktura"
+        }
+      },
+      "user_table": {
+        "name": "Jméno",
+        "last_modified": "Poslední Úprava",
+        "permissions": "Oprávnění"
+      }
+    },
+    "link": {
+      "linking": "Propojování Tvého Účtu...",
+      "linking_successful": "Účet Úspěšně Propojen",
+      "linking_failed": "Propojení Selhalo"
+    },
+    "extension": {
+      "login": "Přihlašování...",
+      "login_successful": "Přihlášen",
+      "login_failed": "Přihlášení se nezdařilo",
+      "window": "Nezapomeňte toto okno otevřít prostřednictvím rozšíření"
+    }
+  }
+}

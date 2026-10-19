@@ -109,6 +109,10 @@ async function queryEmoteSets(setIds: string[]) {
 									items {
 										id
 										alias
+										emote{
+											id
+											defaultName
+										}
 									}
 									totalCount
 								}

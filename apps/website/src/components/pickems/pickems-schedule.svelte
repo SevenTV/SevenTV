@@ -1,33 +1,48 @@
 <script lang="ts">
-	import { t } from "svelte-i18n";
+	interface Props {
+		onShowTooltip: (stage: string) => void;
+		onHideTooltip: () => void;
+	}
+
+	let { onShowTooltip, onHideTooltip }: Props = $props();
 	let schedule = [
 		{
 			day: "Day 1",
-			date: "Feb. 28th",
-			stage: "Round of 16",
-			bestOf: "1 Map",
-			startTime: "10:00 AM EST / 3:00 PM GMT",
+			date: "October 23",
+			stages: [
+				"EU Upper Bracket – Round 1 & Round 2",
+				"EU Lower Bracket – Round 1 (2 elimination matches)",
+				"NA Upper Bracket – Round 1 & Round 2",
+			],
+			startTime: "11:30 AM CEST / 5:30 AM ET",
 		},
 		{
 			day: "Day 2",
-			date: "Mar. 1st",
-			stage: "Quarterfinals",
-			bestOf: "1 Map",
-			startTime: "12:00 PM EST / 5:00 PM GMT",
+			date: "October 24",
+			stages: ["EU Lower Bracket – Round 2 & Round 3", "NA Lower Bracket – Round 1 & Round 2"],
+			startTime: "11:30 AM CEST / 5:30 AM ET",
 		},
 		{
 			day: "Day 3",
-			date: "Mar. 2nd",
-			stage: "Semifinals + Finals + Showmatch",
-			bestOf: "3 Maps",
-			startTime: "10:00 AM EST / 3:00 PM GMT",
+			date: "October 25",
+			stages: [
+				"EU Upper Bracket Semifinal + Lower Bracket Round 4",
+				"NA Upper Bracket Semifinal + Lower Bracket Round 4",
+			],
+			startTime: "11:30 AM CEST / 5:30 AM ET",
+		},
+		{
+			day: "Day 4",
+			date: "October 26",
+			stages: ["NA & EU Finals", "Showmatch", "Grand Final"],
+			startTime: "11:30 AM CET / 6:30 AM ET",
 		},
 	];
 </script>
 
 <div class="container">
 	<div class="header">
-		<h1>{$t("pages.store.events.cs2.schedule.header")}</h1>
+		<h1>Tournament Schedule</h1>
 	</div>
 
 	<div class="schedule-grid">
@@ -38,16 +53,26 @@
 					<span>{match.date}</span>
 				</div>
 				<div class="match-details">
-					<div class="match-row">
-						<span>{$t("pages.store.events.cs2.schedule.stage")}</span>
-						<span>{match.stage}</span>
+					<div class="match-row stages">
+						{#each match.stages as stage, i}
+							<div
+								class="stage-item"
+								onmouseenter={() => onShowTooltip(stage)}
+								onmouseleave={onHideTooltip}
+								aria-label={stage}
+								role="button"
+								tabindex="0"
+							>
+								<span
+									style="text-decoration: underline; color: #a78bfa; cursor: pointer; transition: color 0.2s;"
+								>
+									Stage {i + 1}
+								</span>
+							</div>
+						{/each}
 					</div>
 					<div class="match-row">
-						<span>{$t("pages.store.events.cs2.schedule.best_of")}</span>
-						<span>{match.bestOf}</span>
-					</div>
-					<div class="match-row">
-						<span>{$t("pages.store.events.cs2.schedule.start_time")}</span>
+						<span>Start Time</span>
 						<span>{match.startTime}</span>
 					</div>
 				</div>
@@ -97,6 +122,28 @@
 				}
 			}
 		}
+		.stages {
+			margin-bottom: 1rem;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+		.stages span:not(:first-child) {
+			display: block;
+			margin-left: 1.5rem;
+		}
+
+		.stage-item {
+			position: relative;
+			display: inline-block;
+			margin-right: 1rem;
+			cursor: pointer;
+		}
+		.stage-item:last-child {
+			margin-right: 0;
+		}
+		.stage-item:hover span {
+			text-decoration: underline;
+		}
 
 		.schedule-grid {
 			display: flex;
@@ -144,7 +191,6 @@
 						.match-row {
 							flex-direction: column !important;
 						}
-
 					}
 				}
 			}
@@ -157,5 +203,4 @@
 			}
 		}
 	}
-
 </style>

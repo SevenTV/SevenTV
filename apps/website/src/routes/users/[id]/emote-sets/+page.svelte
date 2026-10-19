@@ -9,6 +9,7 @@
 	import { user } from "$/lib/auth";
 	import { UserEditorState } from "$/gql/graphql";
 	import ActiveEmoteSetButton from "$/components/users/active-emote-set-button.svelte";
+	import { t } from "svelte-i18n";
 
 	let { data }: { data: PageData } = $props();
 
@@ -31,7 +32,7 @@
 				{#snippet icon()}
 					<Plus />
 				{/snippet}
-				Create New Set
+				{$t("labels.create_emote_set")}
 			</Button>
 		{/if}
 	{/await}

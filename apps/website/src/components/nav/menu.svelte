@@ -9,6 +9,7 @@
 		Check,
 		Gear,
 		GlobeHemisphereWest,
+		GlobeSimple,
 		House,
 		LockSimple,
 		Moon,
@@ -29,6 +30,10 @@
 	import { filterRoles } from "$/lib/utils";
 	import UserName from "../user-name.svelte";
 	import NumberBadge from "../number-badge.svelte";
+	import type { CountryCode } from "$/components/admin/CountriesFilter";
+	import CountryFlag from "../country-flag.svelte";
+
+
 
 	let { onCloseRequest }: { onCloseRequest?: () => void } = $props();
 
@@ -43,6 +48,11 @@
 
 	function setTheme(newTheme: Theme) {
 		$theme = newTheme;
+		onCloseRequest?.();
+	}
+
+	function setLanguage(newLocale: string) {
+		$locale = newLocale;
 		onCloseRequest?.();
 	}
 
@@ -115,10 +125,6 @@
 			<hr class="hide-on-mobile" />
 		{/if}
 		<div class="link-list">
-			<!-- <MenuButton showCaret on:click={(e) => setMenu(e, Menu.Language)}>
-				<GlobeHemisphereWest />
-				{$t("common.language")}
-			</MenuButton> -->
 			<MenuButton iconRight={caret} onclick={(e) => setMenu(e, "theme")}>
 				{#if $theme === "system-theme"}
 					<Sliders />
@@ -128,6 +134,10 @@
 					<Moon />
 				{/if}
 				{$t("common.theme")}
+			</MenuButton>
+			<MenuButton iconRight={caret} onclick={(e) => setMenu(e, "language")}>
+				<GlobeHemisphereWest />
+				{$t("common.language")}
 			</MenuButton>
 			<MenuButton href="/settings" onclick={onCloseRequest}>
 				<Gear />
@@ -160,20 +170,24 @@
 			</div>
 		{/if}
 	{:else if menu === "language"}
-		<MenuButton onclick={() => (menu = "root")}>
+	<MenuButton style="width: 100%" onclick={() => (menu = "root")}>
 			<CaretLeft />
 			{$t("common.language")}
 		</MenuButton>
-		<div class="link-list">
+		<div class="link-list" style="max-height: 16rem; overflow-y: auto;">
 			{#each Object.keys($dictionary) as l}
 				<MenuButton onclick={() => ($locale = l)}>
-					<GlobeHemisphereWest />
+					<CountryFlag
+						code={l as CountryCode}	
+						name={localeNames[l] || l}
+						width={1.2 * 24}
+					/>
 					{localeNames[l] || l}
 				</MenuButton>
 			{/each}
 		</div>
 	{:else if menu === "theme"}
-		<MenuButton onclick={() => (menu = "root")}>
+		<MenuButton style="width: 100%" onclick={() => (menu = "root")}>
 			<CaretLeft />
 			{$t("common.theme")}
 		</MenuButton>
@@ -205,7 +219,7 @@
 
 <style lang="scss">
 	.menu {
-		display: flex;
+		display:flow-root;
 		flex-direction: column;
 
 		text-align: left;

@@ -111,7 +111,11 @@
 
 		if (emote.deleted) flags.push("deleted");
 
-		if (typeof emote?.flags?.approvedPersonal != "undefined" && !emote.flags.approvedPersonal && setKind == EmoteSetKind.Personal)
+		if (
+			typeof emote?.flags?.approvedPersonal != "undefined" &&
+			!emote.flags.approvedPersonal &&
+			setKind == EmoteSetKind.Personal
+		)
 			flags.push("personal_use_pending");
 
 		return flags;
@@ -180,11 +184,11 @@
 <script lang="ts">
 	import {
 		Check,
-		ClockUser,
 		EyeSlash,
 		Fire,
 		FolderSimple,
 		GlobeSimple,
+		ClockUser,
 		Hourglass,
 		House,
 		Lightning,
@@ -218,23 +222,31 @@
 		global: $t("flags.global"),
 		trending: $t("flags.trending"),
 		overlaying: $t("flags.overlaying"),
-		private: "Private",
+		private: $t("flags.private"),
 		unlisted: $t("flags.unlisted"),
 		personal_use_denied: $t("flags.personal_use_denied"),
-		renamed: "Renamed",
-		personal_use_pending: "Pending Personal Use Review",
+		renamed: $t("flags.renamed"),
+		deleted: $t("flags.deleted"),
+		personal_use_pending: $t("flags.personal_use_pending"),
 
 		// Emote set flags
 		default: $t("flags.default"),
 		personal: $t("flags.personal"),
-		special: "Special",
+		special: $t("dialogs.emote_set.special"),
 
 		// Editor Permissions
-		super_admin: "Super Admin",
+		super_admin: $t("common.super_admin"),
 		profile: $t("common.profile"),
 		editors: $t("common.editors"),
 		emote_sets: $t("common.emote_sets", { values: { count: 2 } }),
 		emotes: $t("common.emotes", { values: { count: 2 } }),
+
+		// Editor states
+		pending: $t("flags.editor_flags.pending"),
+		accepted: $t("flags.editor_flags.accepted"),
+		you_accepted: $t("flags.editor_flags.accepted"),
+		rejected: $t("flags.editor_flags.rejected"),
+		you_rejected: $t("flags.editor_flags.rejected"),
 	};
 
 	// Used for emote flags, emote set flags and permissions
@@ -284,7 +296,10 @@
 				<!-- svelte-ignore svelte_component_deprecated -->
 				<!-- Disable warning until phosphor-svelte has full Svelte 5 support -->
 				<svelte:component this={icons[flag]} size={1 * 16} />
-				<span class:hide-on-mobile={icons[flag]}>{names[flag] || flag.replace(/_/g, " ")}</span>
+
+				<span class:hide-on-mobile={icons[flag]}>
+					{names[flag] || flag.replace(/_/g, " ")}
+				</span>
 			</span>
 		{/if}
 	{/each}

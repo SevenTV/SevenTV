@@ -16,7 +16,7 @@
 	let query: string = $state("");
 
 	let timeout: NodeJS.Timeout | number | undefined;
-
+	let noActiveEmoteSet = $state<Boolean | null>(null);
 	async function load(page: number, _perPage: number): Promise<EmoteSetEmoteSearchResult> {
 		const search = query || undefined;
 
@@ -27,6 +27,7 @@
 			isDefaultSetSet: !!$defaultEmoteSet,
 			defaultSetId: $defaultEmoteSet ?? "",
 		};
+
 
 		const gql_query = gql`
 			query SearchEmotesInActiveSet(
@@ -154,6 +155,7 @@
 				}
 			}
 		`;
+		
 
 		return new Promise((resolve, reject) => {
 			if (timeout) {
@@ -167,7 +169,9 @@
 					if (res.error || !res.data) {
 						reject(res.error ?? new Error("No data returned"));
 					}
-
+					if (!res.data.users.user?.style.activeEmoteSet) {
+						noActiveEmoteSet = true;
+					}
 					resolve(res.data.users.user?.style.activeEmoteSet?.emotes);
 				} catch (error) {
 					console.error("Failed to load emotes:", error);
@@ -176,6 +180,12 @@
 			}, 200);
 		});
 	}
+
+	$effect(() => {
+    if (data.id) {
+        noActiveEmoteSet = false;
+    }
+});
 </script>
 
 <div class="buttons">
@@ -189,9 +199,16 @@
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
-{#key data.id + query}
-	<EmoteLoader {load} />
-{/key}
+{#if noActiveEmoteSet == true}
+	<div class="info-message">No active emote set selected.</div>
+	<div class="active-emote-set-button">
+		<ActiveEmoteSetButton bind:userData={data.streamed.userRequest.value} text={"Set Active Set"} />
+	</div>
+{:else}
+	{#key data.id + query}
+		<EmoteLoader {load} />
+	{/key}
+{/if}
 
 <style lang="scss">
 	.buttons {
@@ -201,6 +218,21 @@
 		justify-content: space-between;
 	}
 
+	.info-message {
+		padding: 1rem;
+		border-radius: 0.375rem;
+		font-size: 1.5rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text-align: center;
+	}
+	.active-emote-set-button {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+	}
 	.layout-buttons {
 		display: flex;
 		gap: 0.5rem;

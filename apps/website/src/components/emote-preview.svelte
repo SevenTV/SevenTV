@@ -16,26 +16,36 @@
 
 	type Props = {
 		data: Emote;
+		emoteInSet?: EmoteSetEmote;
 		emoteSetEmote?: EmoteSetEmote;
-		setKind?: EmoteSetKind;
 		index?: number;
 		bg?: "medium" | "light";
+		setKind?: EmoteSetKind;
 		emoteOnly?: boolean;
 		selectionMode?: boolean;
 		selected?: boolean;
 		ignoredFlagsForHighlight?: string[];
+		emoteSetName?: string;
+		emoteSetId?: string;
+		resetComponent?: () => void;
+		onSelectionChange?: (selected: boolean) => void;
 	} & HTMLAttributes<HTMLAnchorElement>;
 
 	let {
 		data,
+		emoteInSet,
 		emoteSetEmote,
-		setKind,
 		index = 0,
 		bg = "medium",
 		emoteOnly = false,
+		setKind,
 		selectionMode = false,
 		selected = $bindable(false),
 		ignoredFlagsForHighlight = [],
+		emoteSetName,
+		emoteSetId,
+		resetComponent,
+		onSelectionChange,
 		...restProps
 	}: Props = $props();
 
@@ -67,21 +77,41 @@
 
 	let menuPosition: { x: number; y: number } | undefined = $state();
 
+	let contextMenuOpened = false;
 	function onContextMenu(e: MouseEvent) {
-		e.preventDefault();
-		menuPosition = { x: e.clientX, y: e.clientY };
+		if (!contextMenuOpened) {
+			e.preventDefault();
+			menuPosition = { x: e.clientX, y: e.clientY };
+			contextMenuOpened = true;
+		} else {
+			contextMenuOpened = false;
+			setTimeout(() => {
+				contextMenuOpened = false;
+			}, 100);
+		}
 	}
+
+	$effect(() => {
+		onSelectionChange?.(selected);
+	});
 </script>
 
-<EmoteContextMenu {data} bind:position={menuPosition} />
+<EmoteContextMenu
+	{data}
+	bind:position={menuPosition}
+	{emoteInSet}
+	{emoteSetName}
+	{emoteSetId}
+	{resetComponent}
+/>
 <a
 	href="/emotes/{data.id}"
 	data-sveltekit-preload-data="tap"
 	class="emote"
 	class:emote-only={emoteOnly}
 	class:selected={selectionMode && selected}
-	draggable={!selected}
 	class:grayedOut={!data.flags.approvedPersonal && setKind == EmoteSetKind.Personal}
+	draggable={!selected}
 	style={highlight
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
 		: "--highlight: transparent; --highlight-active: var(--border-active);"}
@@ -158,15 +188,15 @@
 			max-height: 50%;
 		}
 
+		&.grayedOut > :global(picture > img) {
+			filter: grayscale(100%) opacity(50%);
+		}
+
 		& > :global(picture > img) {
 			object-fit: contain;
 
 			width: 100%;
 			height: 100%;
-		}
-		
-		&.grayedOut > :global(picture > img) {
-			filter: grayscale(100%) opacity(50%);
 		}
 
 		&.emote-only > :global(picture) {

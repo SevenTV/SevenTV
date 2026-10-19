@@ -9,13 +9,14 @@
 		big?: boolean;
 		size?: number;
 		href?: string;
+		tabIndex?: number;
 		onclick?: (e: MouseEvent) => void;
 	}
 
-	let { user, big = false, size = 2, href, onclick }: Props = $props();
+	let { user, big = false, size = 2, href, onclick, tabIndex = 0 }: Props = $props();
 </script>
 
-<Button href={href ?? `/users/${user.id}`} {big} {onclick}>
+<Button href={href ?? `/users/${user.id}`} {big} {onclick} tabindex={tabIndex}>
 	{#snippet icon()}
 		<UserProfilePicture {user} size={size * 16} />
 	{/snippet}

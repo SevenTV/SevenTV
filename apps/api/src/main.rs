@@ -24,7 +24,7 @@ scuffle_bootstrap::main! {
 		http::run,
 		image_processor::run,
 		cron::run,
-		cdn_purge::run,
+		//cdn_purge::run,
 		SignalSvc,
 		TelemetrySvc,
 	}

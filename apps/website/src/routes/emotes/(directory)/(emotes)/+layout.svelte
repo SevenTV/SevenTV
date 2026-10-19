@@ -8,7 +8,9 @@
 	import Select from "$/components/input/select.svelte";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
-	import { emotesLayout } from "$/lib/layout";
+	import { emotesLayout, selectionModeInEmotes } from "$/lib/layout";
+	import Toggle from "$/components/input/toggle.svelte";
+	import Button from "$/components/input/button.svelte";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -28,50 +30,60 @@
 </script>
 
 <div class="nav-bar">
-	<nav class="tabs">
-		<TabLink href="/emotes" title={$t("common.top")} responsive>
-			<Trophy />
-			{#snippet active()}
-				<Trophy weight="fill" />
+	<div class="nav-left-group">
+		<nav class="tabs">
+			<TabLink href="/emotes" title={$t("common.top")} responsive>
+				<Trophy />
+				{#snippet active()}
+					<Trophy weight="fill" />
+				{/snippet}
+			</TabLink>
+
+			<TabLink
+				href={"/emotes/trending" + (trendingMetric ? `/${trendingMetric}` : "")}
+				title={$t("common.trending")}
+				matcher={(page, href) => (href ? page.url.pathname.startsWith(href) : false)}
+				responsive
+			>
+				<Fire />
+				{#snippet active()}
+					<Fire weight="fill" />
+				{/snippet}
+			</TabLink>
+
+			<TabLink href="/emotes/new" title={$t("common.new")} responsive>
+				<Plant />
+				{#snippet active()}
+					<Plant weight="fill" />
+				{/snippet}
+			</TabLink>
+
+			{#if $page.url.pathname.startsWith("/emotes/trending")}
+				<Select
+					bind:selected={trendingMetric}
+					options={[
+						{ label: $t("common.Today"), value: "daily" },
+						{ label: $t("common.Weekly"), value: "" },
+						{ label: $t("common.Monthly"), value: "monthly" },
+					]}
+				/>
+			{/if}
+		</nav>
+
+		<Button secondary onclick={() => selectionModeInEmotes.update((value) => !value)}>
+			{$t("labels.select")}
+			{#snippet iconRight()}
+				<Toggle bind:value={$selectionModeInEmotes} />
 			{/snippet}
-		</TabLink>
-		<TabLink
-			href="/emotes/trending"
-			title={$t("common.trending")}
-			matcher={(page, href) => (href ? page.url.pathname.startsWith(href) : false)}
-			responsive
-		>
-			<Fire />
-			{#snippet active()}
-				<Fire weight="fill" />
-			{/snippet}
-		</TabLink>
-		<!-- <TabLink href="/emotes/global" title={$t("common.emotes", { values: { count: 2 } })} responsive>
-			<GlobeHemisphereWest />
-			<GlobeHemisphereWest weight="fill" />
-		</TabLink> -->
-		<TabLink href="/emotes/new" title={$t("common.new")} responsive>
-			<Plant />
-			{#snippet active()}
-				<Plant weight="fill" />
-			{/snippet}
-		</TabLink>
-		{#if $page.url.pathname.startsWith("/emotes/trending")}
-			<Select
-				bind:selected={trendingMetric}
-				options={[
-					{ label: "Today", value: "daily" },
-					{ label: "Weekly", value: "" },
-					{ label: "Monthly", value: "monthly" },
-				]}
-			/>
-		{/if}
-	</nav>
+		</Button>
+	</div>
+
 	<div class="buttons">
 		<DefaultEmoteSetButton />
 		<LayoutButtons bind:value={$emotesLayout} />
 	</div>
 </div>
+
 {@render children()}
 
 <style lang="scss">
@@ -81,6 +93,13 @@
 		justify-content: space-between;
 		flex-wrap: wrap;
 		gap: 1rem;
+	}
+
+	/* Added this to keep the tabs and the button aligned together */
+	.nav-left-group {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem; /* Space between the tab pill and the select button */
 	}
 
 	.tabs {

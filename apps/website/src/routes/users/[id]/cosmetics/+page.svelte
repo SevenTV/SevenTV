@@ -7,15 +7,16 @@
 	import BadgeComponent from "$/components/badge.svelte";
 	import Spinner from "$/components/spinner.svelte";
 	import type { Badge, Paint } from "$/gql/graphql";
+	import { UserEditorState } from "$/gql/graphql";
 	import type { PageData } from "./$types";
 	import Select, { type Option } from "$/components/input/select.svelte";
+	import SegmentedControl from "$/components/input/segmented-control.svelte";
 	import TextInput from "$/components/input/text-input.svelte";
 	import { Empty, MagnifyingGlass } from "phosphor-svelte";
 	import LayoutButtons from "$/components/emotes/layout-buttons.svelte";
 	import HideOn from "$/components/hide-on.svelte";
 	import type { Layout } from "$/lib/layout";
 	import Radio from "$/components/input/radio.svelte";
-	import SegmentedControl from "$/components/input/segmented-control.svelte";
 	import { setActiveBadge, setActivePaint } from "$/lib/userMutations";
 
 	let { data }: { data: PageData } = $props();
@@ -27,8 +28,9 @@
 					query UserInventory($id: Id!) {
 						users {
 							user(id: $id) {
-								inventory {
+								inventory(includeInaccessible: true) {
 									badges {
+										accessible
 										to {
 											badge {
 												id
@@ -47,6 +49,7 @@
 										}
 									}
 									paints {
+										accessible
 										from {
 											__typename
 											... on EntitlementNodeRole {
@@ -151,22 +154,35 @@
 			.filter((b) => b.to.badge)
 			.reduce(
 				(map, b) => {
-					map[b.to.badge!.id] = b.to.badge as Badge;
+					map[b.to.badge!.id] = {
+						...(b.to.badge as Badge),
+						accessible: b.accessible,
+					};
 					return map;
 				},
-				{} as { [key: string]: Badge },
+				{} as { [key: string]: Badge & { accessible?: boolean } },
 			);
 
-		const paints: { [key: string]: { paint: Paint; sourceKey?: string; sourceName?: string } } = {};
+		const paints: {
+			[key: string]: {
+				paint: Paint;
+				accessible?: boolean;
+				sourceKey?: string;
+				sourceName?: string;
+			};
+		} = {};
 		const paintFilters: Option[] = [];
 
 		for (const entitlement of inventory.paints.filter((p) => p.to.paint)) {
+			const accessible = entitlement.accessible;
+
 			if (entitlement.from.__typename === "EntitlementNodeRole" && entitlement.from.role) {
 				const roleId = entitlement.from.role.id;
 				const roleName = entitlement.from.role.name;
 
 				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
+					accessible,
 					sourceKey: roleId,
 					sourceName: roleName,
 				};
@@ -186,6 +202,7 @@
 
 				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
+					accessible,
 					sourceKey: benefitId,
 					sourceName: benefitName,
 				};
@@ -205,6 +222,7 @@
 
 				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
+					accessible,
 					sourceKey: eventId,
 					sourceName: eventName,
 				};
@@ -218,6 +236,7 @@
 			} else {
 				paints[entitlement.to.paint!.id] = {
 					paint: entitlement.to.paint as Paint,
+					accessible,
 				};
 			}
 		}
@@ -232,13 +251,39 @@
 	}
 
 	let inventory = $derived(queryInventory(data.id));
+	let userData = $derived(data.streamed.userRequest.value);
+	let hasPermission = $state(false);
 
-	let editingEnabled = $derived($user?.id === data.id || $user?.permissions.user.manageAny);
+	$effect(() => {
+		if (!userData || !$user) {
+			hasPermission = false;
+			return;
+		}
+
+		userData.then((resolvedUser) => {
+			if (!resolvedUser) return;
+
+			const isOwner = $user.id === resolvedUser.id;
+
+			const isSuperAdmin = !!$user.permissions.user.manageAny;
+
+			const isAuthorizedEditor =
+				resolvedUser.editors?.some(
+					(e) =>
+						e.editorId === $user.id &&
+						e.state === UserEditorState.Accepted &&
+						e.permissions.user.manageProfile === true,
+				) ?? false;
+
+			hasPermission = isOwner || isSuperAdmin || isAuthorizedEditor;
+		});
+	});
+
+	let editingEnabled = $derived(hasPermission);
 
 	let paintQuery = $state("");
 	let paintFilter = $state<string>("");
 	let paintsLayout = $state<Layout>("big-grid");
-	let showUsername = $state(false);
 
 	let badgeQuery = $state("");
 	let badgesLayout = $state<Layout>("big-grid");
@@ -247,12 +292,20 @@
 	let originalPaintId: string | null | undefined;
 	let activeBadge = $state<string>();
 	let activePaint = $state<string>();
+	let isUserAdmin = $state(false);
+	let showUsername = $state(false);
 
 	$effect(() => {
 		data.streamed.userRequest.value.then((data) => {
 			if (!data) {
 				return;
 			}
+			isUserAdmin =
+				data.roles?.some((r) =>
+					["Admin", "Staff", "Moderator", "Helper", "Painter", "Event Coordinator"].includes(
+						r.name,
+					),
+				) ?? false;
 
 			originalBadgeId = data.style.activeBadgeId;
 			originalPaintId = data.style.activePaintId;
@@ -341,14 +394,14 @@
 			<section>
 				<div class="header">
 					<h1>
-						Badges
+						{$t("dialogs.badge.title")}
 						{#if badgeLoading}
 							<Spinner />
 						{/if}
 					</h1>
 					<div class="buttons">
 						<HideOn mobile>
-							<TextInput placeholder="Search" bind:value={badgeQuery}>
+							<TextInput placeholder={$t("labels.search")} bind:value={badgeQuery}>
 								{#snippet icon()}
 									<MagnifyingGlass />
 								{/snippet}
@@ -371,7 +424,7 @@
 						style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
 					>
 						<Empty />
-						None
+						{$t("labels.none")}
 					</Radio>
 					{#each badgeIds as badgeId}
 						{@const badge = inventory.badges[badgeId]}
@@ -380,8 +433,13 @@
 							name="badge"
 							value={badge.id}
 							bind:group={activeBadge}
-							disabled={!editingEnabled || badgeLoading}
-							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+							disabled={!editingEnabled ||
+								badgeLoading ||
+								(badge.accessible === false && !isUserAdmin)}
+							style="padding-block: 0.75rem; justify-content: start; overflow: hidden; opacity: {badge.accessible ===
+								false && !isUserAdmin
+								? 0.5
+								: 1};"
 						>
 							<BadgeComponent {badge} size={2 * 16} enableDialog={activeBadge === badge.id} />
 							<span class="name">{badge.name}</span>
@@ -395,7 +453,7 @@
 			<section>
 				<div class="header">
 					<h1>
-						Paints
+						{$t("dialogs.paint.title")}
 						{#if paintLoading}
 							<Spinner />
 						{/if}
@@ -411,11 +469,11 @@
 						{#if inventory.paintFilters.length > 0}
 							<Select
 								bind:selected={paintFilter}
-								options={[{ label: "None", value: "" }, ...inventory.paintFilters]}
+								options={[{ label: $t("labels.none"), value: "" }, ...inventory.paintFilters]}
 							/>
 						{/if}
 						<HideOn mobile>
-							<TextInput placeholder="Search" bind:value={paintQuery}>
+							<TextInput placeholder={$t("labels.search")} bind:value={paintQuery}>
 								{#snippet icon()}
 									<MagnifyingGlass />
 								{/snippet}
@@ -438,7 +496,7 @@
 						style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
 					>
 						<Empty />
-						None
+						{$t("labels.none")}
 					</Radio>
 					{#each paintIds as paintId}
 						{@const paint = inventory.paints[paintId]}
@@ -448,8 +506,13 @@
 							name="paint"
 							value={paint.paint.id}
 							bind:group={activePaint}
-							disabled={!editingEnabled || paintLoading}
-							style="padding-block: 0.75rem; justify-content: start; overflow: hidden;"
+							disabled={!editingEnabled ||
+								paintLoading ||
+								(paint.accessible === false && !isUserAdmin)}
+							style="padding-block: 0.75rem; justify-content: start; overflow: hidden; opacity: {paint.accessible ===
+								false && !isUserAdmin
+								? 0.5
+								: 1};"
 							onmouseover={() => (paintMouseOver = paint.paint.id)}
 							onmouseleave={() => (paintMouseOver = undefined)}
 						>

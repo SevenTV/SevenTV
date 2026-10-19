@@ -92,9 +92,6 @@ importers:
       svelte-check:
         specifier: ^4.1.1
         version: 4.1.1(svelte@5.11.2)(typescript@5.7.2)
-      svelte-eslint-parser:
-        specifier: ^0.43.0
-        version: 0.43.0(svelte@5.11.2)
       svelte-fa:
         specifier: ^4.0.3
         version: 4.0.3(svelte@5.11.2)

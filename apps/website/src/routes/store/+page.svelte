@@ -21,7 +21,7 @@
 	import { user } from "$/lib/auth";
 	import { PUBLIC_SUBSCRIPTION_PRODUCT_ID } from "$env/static/public";
 	import type { PageData } from "./$types";
-	import { isXmasEvent } from "$/lib/xmas";
+	import { isXmasEvent } from "$/lib/events";
 
 	let { data }: { data: PageData } = $props();
 
@@ -300,7 +300,7 @@
 	{#if data.success}
 		<div class="bar">
 			<Info />
-			{$t("pages.store.redeem.purchase.success")}
+			{$t("pages.store.purchase.success")}
 		</div>
 	{/if}
 	{#if data.redeemSuccess}
@@ -312,7 +312,7 @@
 	{#if isXmasEvent()}
 		<div class="bar">
 			<Gift />
-			{$t("pages.store.events.xmas")}
+			X-MAS 2025 EVENT: GIFT 4 SUBS TO GET A SPECIAL BADGE
 		</div>
 	{/if}
 

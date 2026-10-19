@@ -11,6 +11,7 @@ use axum::{Extension, Json, Router};
 use hyper::{HeaderMap, StatusCode};
 use shared::database::queries::{filter, update};
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
+use shared::database::role::RoleId;
 use shared::database::stored_event::StoredEventUserSessionData;
 use shared::database::user::connection::{Platform, UserConnection};
 use shared::database::user::session::UserSession;
@@ -22,16 +23,16 @@ use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::middleware::cookies::{new_cookie, Cookies};
 use crate::http::middleware::session::{parse_session, Session, AUTH_COOKIE};
+use crate::http::root_origin_match;
 use crate::jwt::{AuthJwtPayload, JwtState};
 use crate::ratelimit::RateLimitRequest;
 use crate::transactions::{transaction, TransactionError};
 const VERIFIER_COOKIE: &str = "seventv-verifier";
-
 const TWITCH_AUTH_URL: &str = "https://id.twitch.tv/oauth2/authorize?";
-const TWITCH_AUTH_SCOPE: &str = "";
+const TWITCH_AUTH_SCOPE: &str = "user:read:email";
 
 const DISCORD_AUTH_URL: &str = "https://discord.com/oauth2/authorize?";
-const DISCORD_AUTH_SCOPE: &str = "identify";
+const DISCORD_AUTH_SCOPE: &str = "identify email";
 
 const GOOGLE_AUTH_URL: &str =
 	"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&include_granted_scopes=true&";
@@ -79,24 +80,23 @@ impl Display for LoginPlatform {
 	}
 }
 
-fn login_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
-	global
-		.config
-		.api
-		.website_origin
-		.join(&format!("/login/callback?platform={}", platform))
-		.map_err(|e| {
-			tracing::error!(err = %e, "failed to generate redirect_uri");
-			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
-		})
+enum LoginType {
+	Login,
+	Link,
 }
 
-fn link_redirect_uri(global: &Arc<Global>, platform: LoginPlatform) -> Result<url::Url, ApiError> {
-	global
-		.config
-		.api
-		.website_origin
-		.join(&format!("/link/callback?platform={}", platform))
+impl Display for LoginType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			LoginType::Login => write!(f, "login"),
+			LoginType::Link => write!(f, "link"),
+		}
+	}
+}
+
+fn create_redirect_uri(origin: url::Url, login_type: LoginType, platform: LoginPlatform) -> Result<url::Url, ApiError> {
+	origin
+		.join(&format!("/{}/callback?platform={}", login_type, platform))
 		.map_err(|e| {
 			tracing::error!(err = %e, "failed to generate redirect_uri");
 			ApiError::internal_server_error(ApiErrorCode::Unknown, "failed to generate redirect_uri")
@@ -115,7 +115,7 @@ async fn login_inner(
 	session: &Session,
 	query: LoginRequest,
 	headers: HeaderMap,
-	redirect_uri: url::Url,
+	login_type: LoginType,
 	cookies: &Cookies,
 ) -> Result<Response, ApiError> {
 	let allowed = [
@@ -124,22 +124,29 @@ async fn login_inner(
 		&global.config.api.website_origin,
 	];
 
+	let redirect_origin = headers
+		.get(hyper::header::REFERER)
+		.and_then(|r| r.to_str().ok().and_then(|s| url::Url::from_str(s).ok()))
+		.unwrap_or_else(|| global.config.api.website_origin.clone());
+
+	let redirect_uri = create_redirect_uri(redirect_origin, login_type, query.platform)?;
+
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
 		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !referer.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
 		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !origin.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}
 
 	if let Some(return_to) = query.return_to.as_ref().and_then(|u| url::Url::from_str(u).ok()) {
-		if !allowed.iter().any(|a| return_to.origin() == a.origin()) {
+		if !allowed.iter().any(|a| root_origin_match(a, &return_to)) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "return_to origin mismatch"));
 		}
 	}
@@ -203,8 +210,7 @@ async fn login(
 	Query(query): Query<LoginRequest>,
 	headers: HeaderMap,
 ) -> Result<Response, ApiError> {
-	let redirect_uri = login_redirect_uri(&global, query.platform)?;
-	login_inner(&global, &session, query, headers, redirect_uri, &cookies).await
+	login_inner(&global, &session, query, headers, LoginType::Login, &cookies).await
 }
 
 #[tracing::instrument(skip_all)]
@@ -215,8 +221,7 @@ async fn link(
 	Query(query): Query<LoginRequest>,
 	headers: HeaderMap,
 ) -> Result<Response, ApiError> {
-	let redirect_uri = link_redirect_uri(&global, query.platform)?;
-	login_inner(&global, &session, query, headers, redirect_uri, &cookies).await
+	login_inner(&global, &session, query, headers, LoginType::Link, &cookies).await
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -243,16 +248,23 @@ async fn login_finish(
 		&global.config.api.website_origin,
 	];
 
+	let redirect_origin = headers
+		.get(hyper::header::REFERER)
+		.and_then(|r| r.to_str().ok().and_then(|s| url::Url::from_str(s).ok()))
+		.unwrap_or_else(|| global.config.api.website_origin.clone());
+
+	let redirect_uri = create_redirect_uri(redirect_origin, LoginType::Login, payload.platform)?;
+
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
 		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !referer.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
 		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !origin.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}
@@ -262,14 +274,7 @@ async fn login_finish(
 	let verifier = cookies.get(VERIFIER_COOKIE).map(|c| c.value().to_string());
 	cookies.remove(&global, VERIFIER_COOKIE);
 	// exchange code for access token
-	let token = connections::exchange_code(
-		&global,
-		platform,
-		&payload.code,
-		login_redirect_uri(&global, payload.platform)?.to_string(),
-		verifier,
-	)
-	.await?;
+	let token = connections::exchange_code(&global, platform, &payload.code, redirect_uri.to_string(), verifier).await?;
 
 	// query user data from platform
 	let user_data = connections::get_user_data(&global, platform, &token.access_token).await?;
@@ -302,6 +307,7 @@ async fn login_finish(
 					updated_at: chrono::Utc::now(),
 					linked_at: chrono::Utc::now(),
 				}],
+				email: user_data.email.clone(),
 				..Default::default()
 			};
 
@@ -352,6 +358,7 @@ async fn login_finish(
 							platform_avatar_url: &user_data.avatar,
 							updated_at: chrono::Utc::now(),
 						},
+						email: &user_data.email,
 						updated_at: chrono::Utc::now(),
 						search_updated_at: &None,
 					}
@@ -446,6 +453,15 @@ async fn login_finish(
 		return Err(ApiError::forbidden(ApiErrorCode::LackingPrivileges, "not allowed to login"));
 	}
 
+	let no_perms_role_id: RoleId = "01GHVA0W78000DYB7VMB9MMHQV".parse().expect("Invalid Role ID format");
+
+	if full_user.computed.roles.contains(&no_perms_role_id) {
+		return Err(ApiError::forbidden(
+			ApiErrorCode::LackingPrivileges,
+			"you are banned from using this service",
+		));
+	}
+
 	let res = transaction(&Arc::clone(&global), |mut tx| async move {
 		let user_session = UserSession {
 			id: Default::default(),
@@ -511,16 +527,23 @@ async fn link_finish(
 		&global.config.api.website_origin,
 	];
 
+	let redirect_origin = headers
+		.get(hyper::header::REFERER)
+		.and_then(|r| r.to_str().ok().and_then(|s| url::Url::from_str(s).ok()))
+		.unwrap_or_else(|| global.config.api.website_origin.clone());
+
+	let redirect_uri = create_redirect_uri(redirect_origin, LoginType::Link, payload.platform)?;
+
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
 		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !referer.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only login from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
 		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !origin.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}
@@ -534,14 +557,7 @@ async fn link_finish(
 	let verifier = cookies.get(VERIFIER_COOKIE).map(|c| c.value().to_string());
 	cookies.remove(&global, VERIFIER_COOKIE);
 	// exchange code for access token
-	let token = connections::exchange_code(
-		&global,
-		platform,
-		&payload.code,
-		link_redirect_uri(&global, payload.platform)?.to_string(),
-		verifier,
-	)
-	.await?;
+	let token = connections::exchange_code(&global, platform, &payload.code, redirect_uri.to_string(), verifier).await?;
 
 	// query user data from platform
 	let user_data = connections::get_user_data(&global, platform, &token.access_token).await?;
@@ -659,14 +675,14 @@ async fn logout(
 
 	if let Some(referer) = headers.get(hyper::header::REFERER) {
 		let referer = referer.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !referer.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !referer.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "can only logout from website"));
 		}
 	}
 
 	if let Some(origin) = headers.get(hyper::header::ORIGIN) {
 		let origin = origin.to_str().ok().and_then(|s| url::Url::from_str(s).ok());
-		if !origin.is_some_and(|u| allowed.iter().any(|a| u.origin() == a.origin())) {
+		if !origin.is_some_and(|u| allowed.iter().any(|a| root_origin_match(a, &u))) {
 			return Err(ApiError::forbidden(ApiErrorCode::BadRequest, "origin mismatch"));
 		}
 	}

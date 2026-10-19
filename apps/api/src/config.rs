@@ -51,6 +51,10 @@ pub struct Api {
 
 	/// Chatterino config
 	pub chatterino: ChatterinoConfig,
+
+	/// reCAPTCHA secret key
+	#[default("".into())]
+	pub recaptcha_secret_key: String,
 }
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
@@ -94,6 +98,7 @@ pub struct ConnectionConfig {
 
 #[derive(Debug, Clone, smart_default::SmartDefault, serde::Deserialize, serde::Serialize)]
 #[serde(default)]
+#[allow(dead_code)]
 pub struct ChangeStreamConfig {
 	/// Change Stream Prefix
 	#[default("seventv".into())]

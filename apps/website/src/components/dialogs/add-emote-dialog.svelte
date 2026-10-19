@@ -23,7 +23,7 @@
 		const state: { [key: string]: string | undefined } = {};
 
 		for (const set of $editableEmoteSets) {
-			state[set.id] = set.emotes.items.find((e) => e.id === data.id)?.alias;
+			state[set.id] = set.emotes.items.find((e) => e.emote?.id === data?.id)?.alias;
 		}
 
 		return state;
@@ -63,13 +63,24 @@
 		}
 
 		for (const setId of toRemove) {
-			await removeEmoteFromSet(setId, data.id);
+			let currentEditingSet = $editableEmoteSets.find((set) => set.id === setId);
+			let emoteInSet = currentEditingSet?.emotes.items.find((e) => e.emote.id === data.id);
+			if (emoteInSet) {
+				await removeEmoteFromSet(
+					setId,
+					currentEditingSet?.emotes.items.find((e) => e.emote.id === data.id)?.id || data.id,
+				);
+			}
 		}
 
 		for (const setId of toRename) {
 			await renameEmoteInSet(setId, data.id, alias);
 		}
 
+		mode = "hidden";
+	}
+
+	function hide() {
 		mode = "hidden";
 	}
 </script>
@@ -107,6 +118,7 @@
 	title={$t("dialogs.add_emote.title", { values: { emote: data.defaultName } })}
 	bind:mode
 	{buttons}
+	width={50}
 	{data}
 >
 	{#snippet preview()}
@@ -126,6 +138,7 @@
 		{toRemove}
 		{toRename}
 		emote={data}
+		hideEmoteDialogMode={hide}
 		{alias}
 	/>
 </EmoteDialog>

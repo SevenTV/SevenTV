@@ -1,15 +1,33 @@
 <script lang="ts">
 	import TabLink from "$/components/tab-link.svelte";
-	import { CalendarBlank, Gift, Graph, Users } from "phosphor-svelte";
+	import {
+		CalendarBlank,
+		CaretDown,
+		CaretUp,
+		Flag,
+		Gift,
+		Graph,
+		PaintBrush,
+		Smiley,
+		Table,
+		Ticket,
+		Users,
+	} from "phosphor-svelte";
 	import { t } from "svelte-i18n";
 	import modge from "$assets/modge.webp?url";
 	import { user } from "$/lib/auth";
 	import { signInDialogMode } from "$/lib/layout";
 	import { type Page } from "@sveltejs/kit";
-
+	import { numberFormat } from "$/lib/utils";
+	import { page } from "$app/stores";
+	import { totalPublicRequests, totalReportRequests } from "$/lib/tickets";
 	let { children } = $props();
 
-	// let ticketsSelected = $derived($page.url.pathname.startsWith("/admin/tickets"));
+	let ticketsSelected = $state(false);
+
+	if ($page.url.pathname.startsWith("/admin/tickets")) {
+		ticketsSelected = true;
+	}
 
 	function customMatcher(page: Page, href: string | undefined) {
 		return !!href && page.url.pathname.startsWith(href);
@@ -24,102 +42,114 @@
 
 <div class="side-bar-layout">
 	<aside class="side-bar">
-		<h1>{$t("pages.admin.title")}</h1>
-		<nav class="link-list">
-			<!-- <TabLink title={$t("pages.admin.overview")} href="/admin" big>
-				<Table />
-				{#snippet active()}
-					<Ticket weight="fill" />
-				{/snippet}
-			</TabLink>
-			<TabLink
-				title={$t("pages.admin.tickets.title")}
-				href="/admin/tickets"
-				matcher={customMatcher}
-				big
-			>
-				<Ticket />
-				{#snippet active()}
-					<Ticket weight="fill" />
-				{/snippet}
-				{#snippet iconRight()}
-					{#if ticketsSelected}
-						<CaretUp />
-					{:else}
-						<CaretDown />
-					{/if}
-				{/snippet}
-			</TabLink>
-			{#if ticketsSelected}
-				<div class="indent link-list">
-					<TabLink
-						title="{$t('common.emotes', { values: { count: 2 } })} ({numberFormat().format(1920)})"
-						href="/admin/tickets/emotes"
-						matcher={customMatcher}
-					>
-						<Smiley />
+		{#if $user?.permissions.user.manageAny}
+			<h1>{$t("pages.admin.title")}</h1>
+			<nav class="link-list">
+				<TabLink title={$t("pages.admin.overview")} href="/admin" big>
+					<Table />
+					{#snippet active()}
+						<Ticket weight="fill" />
+					{/snippet}
+				</TabLink>
+				<TabLink
+					title={$t("pages.admin.tickets.title")}
+					matcher={customMatcher}
+					responsive
+					big
+					onclick={() => (ticketsSelected = !ticketsSelected)}
+				>
+					<Ticket />
+					{#snippet active()}
+						<Ticket weight="fill" />
+					{/snippet}
+					{#snippet iconRight()}
+						{#if ticketsSelected}
+							<div style="display: flex; align-items: center; gap: 8px; margin-left: 80px;">
+								<CaretUp />
+							</div>
+						{:else}
+							<div style="display: flex; align-items: center; gap: 8px; margin-left: 80px;">
+								<CaretDown />
+							</div>
+						{/if}
+					{/snippet}
+				</TabLink>
+				{#if ticketsSelected}
+					<div class="indent link-list">
+						<TabLink
+							title="{$t('common.emotes', { values: { count: 2 } })} ({numberFormat().format(
+								$totalPublicRequests,
+							)})"
+							href="/admin/tickets/emotes"
+							matcher={customMatcher}
+						>
+							<Smiley />
+							{#snippet active()}
+								<Smiley weight="fill" />
+							{/snippet}
+						</TabLink>
+						<TabLink
+							title="{$t('pages.admin.tickets.reports')} ({numberFormat().format(
+								$totalReportRequests,
+							)})"
+							href="/admin/tickets/reports"
+						>
+							<Flag />
+							{#snippet active()}
+								<Flag weight="fill" />
+							{/snippet}
+						</TabLink>
+					</div>
+				{/if}
+				<TabLink title={$t("common.cosmetics")} href="/admin/cosmetics" big>
+					<PaintBrush />
+					{#snippet active()}
+						<PaintBrush weight="fill" />
+					{/snippet}
+				</TabLink>
+				{#if $user?.permissions.user.manageAny}
+					<TabLink title="Users" href="/admin/users" matcher={customMatcher} big>
+						<Users />
 						{#snippet active()}
-							<Smiley weight="fill" />
+							<Users weight="fill" />
 						{/snippet}
 					</TabLink>
-					<TabLink
-						title="{$t('pages.admin.tickets.reports')} ({numberFormat().format(2)})"
-						href="/admin/tickets/reports"
-					>
-						<Flag />
+					<TabLink title="Entitlement Graph" href="/admin/graph" big>
+						<Graph />
 						{#snippet active()}
-							<Smiley weight="fill" />
-							<Flag weight="fill" />
+							<Graph weight="fill" />
 						{/snippet}
 					</TabLink>
-				</div>
-			{/if}
-			<TabLink title={$t("common.cosmetics")} href="/admin/cosmetics" big>
-				<PaintBrush />
-				{#snippet active()}
-					<PaintBrush weight="fill" />
-				{/snippet}
-			</TabLink> -->
-			{#if $user?.permissions.user.manageAny}
-				<TabLink title="Users" href="/admin/users" matcher={customMatcher} big>
-					<Users />
-					{#snippet active()}
-						<Users weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title="Entitlement Graph" href="/admin/graph" big>
-					<Graph />
-					{#snippet active()}
-						<Graph weight="fill" />
-					{/snippet}
-				</TabLink>
-			{/if}
-			{#if $user?.permissions.admin.manageRedeemCodes}
-				<TabLink title="Redeem Codes" href="/admin/redeem-codes" big>
-					<Gift />
-					{#snippet active()}
-						<Gift weight="fill" />
-					{/snippet}
-				</TabLink>
-				<TabLink title="Special Events" href="/admin/special-events" big>
-					<CalendarBlank />
-					{#snippet active()}
-						<CalendarBlank weight="fill" />
-					{/snippet}
-				</TabLink>
-			{/if}
-		</nav>
+				{/if}
+				{#if $user?.permissions.admin.manageRedeemCodes}
+					<TabLink title="Redeem Codes" href="/admin/redeem-codes" big>
+						<Gift />
+						{#snippet active()}
+							<Gift weight="fill" />
+						{/snippet}
+					</TabLink>
+					<TabLink title="Special Events" href="/admin/special-events" big>
+						<CalendarBlank />
+						{#snippet active()}
+							<CalendarBlank weight="fill" />
+						{/snippet}
+					</TabLink>
+				{/if}
+			</nav>
+		{/if}
 		<img src={modge} width="64" height="64" alt="Modge" class="modge hide-on-mobile" />
 	</aside>
-	<div class="content">
-		{@render children()}
-	</div>
+	{#if $user?.permissions.user.manageAny}
+		<div class="content">
+			{@render children()}
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
-	// .indent {
-	// 	margin-left: 1rem;
-	// }
+	.indent {
+		margin-left: 1rem;
+	}
 
 	.modge {
 		margin-left: auto;

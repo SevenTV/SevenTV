@@ -57,6 +57,7 @@ impl Guard for PermissionGuard {
 	}
 }
 
+#[allow(dead_code)]
 pub struct UserGuard(pub UserId);
 
 impl Guard for UserGuard {

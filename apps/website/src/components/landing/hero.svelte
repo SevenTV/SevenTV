@@ -7,10 +7,14 @@
 	import moment from "moment";
 	import { user } from "$/lib/auth";
 	import { ArrowSquareOut, Ticket } from "phosphor-svelte";
-	import { t } from "svelte-i18n";
+	import { t, locale } from "svelte-i18n";
 	// import pickemsBanner from "$assets/pickems-banner.png?url";
 
 	let hasPass = $derived(($user?.inventory.products.length ?? 0) > 0);
+	let isLanguageNotEnglish = $state(true);
+	locale.subscribe((e: any) => {
+		isLanguageNotEnglish = !(e && e.startsWith("en"));
+	});
 </script>
 
 <div>
@@ -27,7 +31,7 @@
 		</section>
 	{/if} -->
 
-	{#if moment("2024-12-20T16:00:00Z").isAfter()}
+	{#if moment("2025-12-12T16:00:00Z").isAfter()}
 		<section class="hero nnys dark-theme">
 			<div class="hero-content">
 				<Logo size={8.5 * 16} />
@@ -95,9 +99,10 @@
 			<div class="hero-content">
 				<Logo size={8.5 * 16} />
 				<div class="content">
-					<h1>
+					<h1 class={isLanguageNotEnglish ? "" : "header"}>
 						{$t("pages.landing.hero.platform")}
-						<span class="for-all">{$t("pages.landing.hero.all")}</span>
+						<span class={isLanguageNotEnglish ? "" : "for-all"}>{$t("pages.landing.hero.all")}</span
+						>
 					</h1>
 					<p>
 						{$t("pages.landing.hero.manage")}
@@ -107,7 +112,7 @@
 					<Button primary style="font-size: 1em;" href="#download"
 						>{$t("pages.landing.hero.download")}</Button
 					>
-					<Button style="font-size: 1em;">{$t("pages.landing.hero.more")}</Button>
+					<Button style="font-size: 1em;" href="#features">{$t("pages.landing.hero.more")}</Button>
 				</div>
 			</div>
 			<img class="hero-image hide-on-mobile" src={landingPagePlaceholder} alt="7TV" />
@@ -253,7 +258,7 @@
 		padding: 2rem;
 
 		.content {
-			h1 {
+			.header {
 				text-transform: uppercase;
 
 				font-size: 2rem;

@@ -144,8 +144,8 @@
 			<div class="filters">
 				<Checkbox bind:value={animated}>{$t("pages.directory.filters.animated")}</Checkbox>
 				<Checkbox bind:value={staticFilter}>{$t("pages.directory.filters.static")}</Checkbox>
-				<Checkbox bind:value={overlaying}>{$t("flags.overlaying")}</Checkbox>
-				<Checkbox bind:value={personalUse}>Personal Use</Checkbox>
+				<Checkbox bind:value={overlaying}>{$t("pages.directory.filters.overlaying")}</Checkbox>
+				<Checkbox bind:value={personalUse}>{$t("pages.directory.filters.personal_use")}</Checkbox>
 				<Checkbox bind:value={exactMatch}>{$t("pages.directory.filters.exact_match")}</Checkbox>
 			</div>
 		</Expandable>

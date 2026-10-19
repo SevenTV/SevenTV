@@ -81,6 +81,11 @@ pub async fn emote_add(
 				ApiErrorCode::BadRequest,
 				"emote is not allowed in personal emote sets",
 			)));
+		} else if !emote.flags.contains(EmoteFlags::PublicListed) {
+			return Err(TransactionError::Custom(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"emote must be approved for public listing first to be added to a personal emote set",
+			)));
 		} else if !emote.flags.contains(EmoteFlags::ApprovedPersonal) {
 			let id = EmoteModerationRequestId::new();
 			let country_code = global

@@ -14,7 +14,7 @@
 
 	const DEFAULT_PERMS = {
 		superAdmin: false,
-		emote: { admin: false, manage: true, create: false, transfer: false },
+		emote: { admin: false, manage: false, create: false, transfer: false },
 		emoteSet: { admin: false, manage: true, create: false },
 		user: {
 			admin: false,
@@ -53,13 +53,13 @@
 					<Checkbox bind:value={permissions.emoteSet.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.emoteSet.admin}
-					<Checkbox value={true} disabled>Manage</Checkbox>
-					<Checkbox value={true} disabled>Create</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.manage")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.create")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.emoteSet.manage}>Manage</Checkbox>
-					<Checkbox bind:value={permissions.emoteSet.create}>Create</Checkbox>
+					<Checkbox bind:value={permissions.emoteSet.manage}>{$t("dialogs.editor.permissions_details.manage")}</Checkbox>
+					<Checkbox bind:value={permissions.emoteSet.create}>{$t("dialogs.editor.permissions_details.create")}</Checkbox>
 				{/if}
-			</div>
+			</div>	
 		</div>
 		<div>
 			<span class="label">{$t("dialogs.editor.emotes")}</span>
@@ -70,13 +70,13 @@
 					<Checkbox bind:value={permissions.emote.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.emote.admin}
-					<Checkbox value={true} disabled>Manage</Checkbox>
-					<Checkbox value={true} disabled>Create</Checkbox>
-					<Checkbox value={true} disabled>Transfer</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.manage")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.create")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.transfer")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.emote.manage}>Manage</Checkbox>
-					<Checkbox bind:value={permissions.emote.create}>Create</Checkbox>
-					<Checkbox bind:value={permissions.emote.transfer}>Transfer</Checkbox>
+					<Checkbox bind:value={permissions.emote.manage}>{$t("dialogs.editor.permissions_details.manage")}</Checkbox>
+					<Checkbox bind:value={permissions.emote.create}>{$t("dialogs.editor.permissions_details.create")}</Checkbox>
+					<Checkbox bind:value={permissions.emote.transfer}>{$t("dialogs.editor.permissions_details.transfer")}</Checkbox>
 				{/if}
 			</div>
 		</div>
@@ -89,14 +89,14 @@
 					<Checkbox bind:value={permissions.user.admin}>{$t("dialogs.editor.admin")}</Checkbox>
 				{/if}
 				{#if permissions.superAdmin || permissions.user.admin}
-					<Checkbox value={true} disabled>Manage Billing</Checkbox>
-					<Checkbox value={true} disabled>Manage Profile</Checkbox>
-					<Checkbox value={true} disabled>Manage Editors</Checkbox>
-					<Checkbox value={true} disabled>Manage Personal Emote Set</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.manage_billing")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.manage_profile")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.permissions_details.manage_editors")}</Checkbox>
+					<Checkbox value={true} disabled>{$t("dialogs.editor.manage_personal_emotes")}</Checkbox>
 				{:else}
-					<Checkbox bind:value={permissions.user.manageBilling}>Manage Billing</Checkbox>
-					<Checkbox bind:value={permissions.user.manageProfile}>Manage Profile</Checkbox>
-					<Checkbox bind:value={permissions.user.manageEditors}>Manage Editors</Checkbox>
+					<Checkbox bind:value={permissions.user.manageBilling}>{$t("dialogs.editor.permissions_details.manage_billing")}</Checkbox>
+					<Checkbox bind:value={permissions.user.manageProfile}>{$t("dialogs.editor.permissions_details.manage_profile")}</Checkbox>
+					<Checkbox bind:value={permissions.user.manageEditors}>{$t("dialogs.editor.permissions_details.manage_editors")}</Checkbox>
 					<Checkbox bind:value={permissions.user.managePersonalEmoteSet}>
 						{$t("dialogs.editor.manage_personal_emotes")}
 					</Checkbox>

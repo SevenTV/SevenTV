@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "7TV Administratorius",
+    "trending_emotes": "Populiarūs Jaustukai",
+    "top_emotes": "Labiausiai Naudojami Jaustukai",
+    "global_emotes": "Jaustukai",
+    "new_emotes": "Nauji Jaustukai",
+    "bookmarked_emotes": "Pažymėti Jaustukai",
+    "bookmarked_emote_sets": "Pažymėtų Jaustukų Aplankai",
+    "bookmarked_users": "Pažymėti Vartotojai",
+    "account_settings": "Paskyros Nustatymai",
+    "editor_settings": "Redagavimo Nustatymai",
+    "notification_settings": "Pranešimų Nustatymai",
+    "blocked_settings": "Užblokuoti Nustatymai",
+    "billing_settings": "Mokėjimų Nustatymai",
+    "admin_emote_public_listing": "Jaustukų Užklausos",
+    "admin_emote_personal_use": "Jaustukų asmeninio naudojimo užklausos",
+    "admin_emote_resolved": "Išspręsti Jaustukų Bilietai"
+  },
+  "page_errors": {
+    "not_found": "Puslapis, kurio ieškojote, nerastas.",
+    "forbidden": "Jūs neturite leidimo peržiūrėti šio puslapio.",
+    "unauthorized": "Jūs neturite teisės peržiūrėti šio puslapio.",
+    "unexpected": "Galite pabandyti perkrauti puslapį. Jei problema išlieka, susisiekite su mumis.",
+    "generic": "Įvyko klaida.",
+    "emote_set_load": "Nepavyko įkelti jaustukų aplanko",
+    "emote_set_not_found": "Nerastas jaustukų aplankas",
+    "user": "Nepavyko įkelti vartotojo"
+  },
+  "words": {
+    "from": "iš",
+    "to": "į",
+    "with": "su",
+    "by": "-"
+  },
+  "common": {
+    "sign_in": "Prisijungti",
+    "sign_out": "Atsijungti",
+    "go_back": "Grįžti",
+    "super_admin": "Super Administratorius",
+    "skip_to_content": "Praleisti",
+    "emotes": "{count, plural,one {Jaustukas}other {Jaustukai}}",
+    "emote_sets": "{count, plural,one {Jaustukų Aplankas} other {Jaustukų Aplankai}}",
+    "users": "{count, plural, one {Vartotojas} other {Vartotojai}}",
+    "channels": "{count, plural, one {Kanalas} other {Kanalai}}",
+    "followers": "{count, plural,one {Sekėjas} other {Sekėjai}}",
+    "items": "{count, plural, one {Elementas} few {Elementai} other {Elementų}}",
+    "subscriptions": "{count, plural,one {Prenumerata} other {Prenumeratos}}",
+    "payment_methods": "{count, plural, one {Atsiskaitymo būdas} other {Atsiskaitymo būdai}}",
+    "date": "Data",
+    "help": "Pagalba",
+    "for": "nes",
+    "error": "Klaida",
+    "loading": "Kraunama...",
+    "paint_bundles": "Spalvų Rinkinys",
+    "notifications": "Pranešimai",
+    "connections": "Sąsajos",
+    "direct_messages": "Tiesioginės Žinutės",
+    "mod_comments": "Moderatoriaus Komentarai",
+    "profile_picture": "Profilio Nuotrauka",
+    "suggested_emotes": "Siūlomi Jaustukai",
+    "personal_emotes": "Asmeniniai Jaustukai",
+    "no_more_emotes": "Daugiau jokių Jaustukų",
+    "no_emotes": "Nėra Jaustukų",
+    "your_subscription": "Jūsų Prenumerata",
+    "theme": "Tema",
+    "language": "Kalba",
+    "developer_portal": "Kūrėjų Portalas",
+    "faq": "Dažniausiai Užduodami Klausimai",
+    "faq_short": "DUK",
+    "privacy": "Privatumo Politika",
+    "tos": "Paslaugų Teikimo Sąlygos",
+    "trending": "Populiaru",
+    "top": "Labiausiai Naudojami",
+    "global": "Vieši",
+    "new": "Nauji",
+    "Weekly": "Šią Savaitę",
+    "Monthly": "Šį Mėnesį",
+    "Today": "Šiandien",
+    "news": "Naujienos",
+    "Default_set": "Įprastinis Aplankas",
+    "following": "Sekama",
+    "activity": "Veikla",
+    "analytics": "Analizės",
+    "statistics": "Statistika",
+    "contact": "Kontaktai",
+    "cosmetics": "Kosmetika",
+    "editors": "Redaguotojai",
+    "active": "Aktyvus",
+    "profile": "Profilis",
+    "pinned": "Prisegtas",
+    "settings": "Nustatymai",
+    "delete_account": "Ištrinti Paskyrą"
+  },
+  "labels": {
+    "enter_text": "Įrašyti Tekstą",
+    "redeem": "Įvesti Kodą",
+    "search": "Paieška",
+    "refetch": "Atgauti",
+    "manage_connections": "Tvarkyti Sąsajas",
+    "manage_editors": "Tvarkyti Redaguotojus",
+    "none": "Nėra",
+    "search_user": "Ieškoti Vartotojo",
+    "search_country": "Ieškoti šalies",
+    "search_emote_set": "Ieškoti Jaustukų Aplanko",
+    "search_users": "{count, plural, one {Ieškoti vartotojo} other {Ieškoti vartotojų}}",
+    "tags": "Žymės",
+    "close": "Uždaryti",
+    "contribute": "Prisidėti",
+    "enter_tags": "Priskirti Žymę",
+    "tag_limit_reached": "Pasiektas {limit} grotažymių limitas",
+    "filters": "Filtrai",
+    "no_filters": "Be Filtrų",
+    "emote_name": "Jaustuko Pavadinimas",
+    "copy_link": "Kopijuoti Nuorodą",
+    "create_emote_set": "Sukurti Jaustukų Ruošinį",
+    "emote_set_name": "Jaustukų Aplanko Pavadinimas",
+    "emote_attribution": "Jaustuko Priskyrimas",
+    "select": "Pasirinkite",
+    "selection_mode": "Pasirinkimo Rėžimas",
+    "edit": "Redaguoti",
+    "capacity": "Talpa",
+    "enable": "Leisti",
+    "disable": "Neleisti",
+    "disabled": "Neaktyvus",
+    "more": "Daugiau",
+    "actions": "Veiksmai",
+    "download": "Parsisiųsti",
+    "report": "Pranešti",
+    "delete": "Ištrinti",
+    "time_select": {
+      "week": "Šią Savaitę",
+      "month": "Šį Mėnesį",
+      "year": "Šiais Metais"
+    },
+    "gift": "Dovanoti",
+    "follow": "Sekti",
+    "connect": "Prisijungti",
+    "disconnect": "Atsijungti",
+    "email": "E-paštas",
+    "password": "Slaptažodis",
+    "all": "Visi",
+    "other": "Kiti",
+    "cancel": "Atšaukti",
+    "confirm": "Patvirtinti",
+    "proceed": "Tęsti",
+    "save": "Išsaugoti",
+    "remove": "Pašalinti",
+    "accept": "Patvirtinti",
+    "deny": "Atmesti",
+    "enter": "Įvesti"
+  },
+  "themes": {
+    "system": "Sistema",
+    "dark": "Tamsi",
+    "light": "Šviesi"
+  },
+  "flags": {
+    "global": "Vieša",
+    "trending": "Populiaru",
+    "overlaying": "Persidengia",
+    "default": "Numatytasis",
+    "personal": "Asmeniniai",
+    "listed": "Viešas",
+    "unlisted": "Neviešas",
+    "personal_use": "Asmeniniam Naudojimui",
+    "deleted": "Ištrinta",
+    "private": "Privatu",
+    "personal_use_approved": "Patvirtinta asmeniniam naudojimui",
+    "personal_use_denied": "Atmesta asmeniniam naudojimui",
+    "personal_use_pending": "Laukiamas Patvirtinimas Asmeniniam Naudojimui",
+    "renamed": "Pervadintas",
+    "nsfw": "Netinkamas turinys",
+    "editor_flags": {
+      "pending": "Laukiama",
+      "accepted": "Priimta",
+      "rejected": "Atmesta",
+      "you_accepted": "Jūs Priėmėt",
+      "you_rejected": "Jūs Atmetėte"
+    }
+  },
+  "notifications": {
+    "system": "Sistema",
+    "approved_for_public": "Jūsų jaustukas {emote} buvo patvirtintas viešam naudojimui."
+  },
+  "sub_info": {
+    "plan": "Planas",
+    "free": "Nemokama",
+    "gifted_by": "Jums Padovanojo",
+    "ends": "Prenumerata Baigiasi",
+    "total": "Iš Viso",
+    "credits": "Prenumeratos kreditai"
+  },
+  "file_limits": {
+    "max_size": "{size} didžiausias failo dydis",
+    "max_resolution": "{width}x{height} didžiausia rezoliucija",
+    "max_frames": "{count} daugiausiai kadrų",
+    "resolution_error": "Rezoliucija negali viršyti {width}x{height}",
+    "duration_error": "Trukmė privalo būti {duration} sekundžių arba trumpiau"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "Prisijungti į 7TV",
+      "subtitle": "Prisijunkite arba sukurkite paskyrą, kad galėtumėte tęsti",
+      "continue_with": "Tęsti su {platform}",
+      "trouble": "Turi problemų prisijungiant?",
+      "legal_yapping": "Prisiregistruodami, jūs sutinkate su mūsų",
+      "and": "ir",
+      "linking_new": "Jau turite 7TV paskyrą ir planuojate prijungti naują paskyrą? Prisijunkite su esama paskyra ir naująją susiekite",
+      "settings": "nustatymai"
+    },
+    "search": {
+      "emotes": "Jaustukai",
+      "users": "Vartotojai"
+    },
+    "upload": {
+      "title": "Įkelti Jaustuką",
+      "untitled": "Neviešas",
+      "chat": "Siųsti žinutę",
+      "drag_drop": "Vilkite ir paleiskite norėdami įkelti, arba",
+      "browse_files": "Ieškoti Failų",
+      "accept_rules": "Aš sutinku su taisyklėmis ir jų gairėmis",
+      "discard": "Atmesti",
+      "upload_guidelines": "Jaustuko Įkėlimo Gairės",
+      "upload": "Įkelti"
+    },
+    "emote_set": {
+      "title": "Aktyvūs Jaustukai",
+      "create": "Sukurti Jaustukų Ruošinį",
+      "name": "Jaustukų Ruošinio Pavadinimas",
+      "label": "Vardas",
+      "confirm": "Sukurti",
+      "copy_set": "Kopijuoti Ruošinį",
+      "special": "Specialus",
+      "favourite_sets": {
+        "title": "Mėgstamiausi Jaustukų Ruošiniai",
+        "add": "Pridėti ir Pervadinti visiems",
+        "remove": "Pašalinti iš visur"
+      },
+      "mass_select_feature": {
+        "add": "Pridėti į Jaustukų-Ruošinį",
+        "remove": "Pašalinti iš Jaustukų-Ruošinio",
+        "amount_selected_label": "/20 Pasirinkta"
+      },
+      "default_emote_set": {
+        "remove": "Pašalinti Jaustuką iš {set}",
+        "add": "Pridėti Jaustuką į {set}",
+        "conflicting_name": "Pavadinimo konfliktas"
+      }
+    },
+    "manage_aliases": {
+      "title": "Tvarkyti Jaustukų Pseudonimus",
+      "add_placeholder": "Pridėti naują pseudonimą.."
+    },
+    "rename_emote": {
+      "title": "Pervadinti jaustuką rinkinyje „{set}“",
+      "input_placeholder": "Naujas jaustuko pavadinimas",
+      "confirmation_message": "Ar tikrai norite pervadinti šį jaustuką aplanke {set}?",
+      "confirm": "Pervadinti"
+    },
+    "remove_emote_from_set": {
+      "title": "Pašalinti Jaustuką iš {set}",
+      "warning_message": "Ar tikrai norite pašalinti {emote} iš {set}?",
+      "confirm": "Pašalinti"
+    },
+    "add_emote": {
+      "title": "Pridėti {emote} į",
+      "change_name": "Pakeisti jaustuko pavadinimą",
+      "confirm": "Patvirtinti",
+      "confirm_changes": "{count, plural, one {Sutikti su 1 pakitimu} few {Sutikti su {count} pakitimais} other {Sutikti su {count} pakitimų}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "Jaustukų eilė",
+      "activity": "Veikla",
+      "comments": "Komentarai"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "Pridėti/Pašalinti Jaustuką",
+      "edit_emote_alias": "Redaguoti Jaustuko Pseudonimą",
+      "remove_emote": "Pašalinti Jaustuką Iš Ruošinio",
+      "open_in_new_tab": "Atidaryti Naujame Skirtuke",
+      "copy_emote_link": "Kopijuoti Jaustuko Nuorodą"
+    },
+    "cart": {
+      "title": "Jūsų krepšelis",
+      "duration": "Laikotarpis",
+      "price": "Kaina",
+      "preview": "Apžvalga",
+      "purchase_as_gift": "Nupirkti kaip dovaną",
+      "total": "Viso"
+    },
+    "editor": {
+      "permissions": "Nustatyti Redaktoriaus Leidimus",
+      "super_admin": "Super Administratorius",
+      "emote_sets": "Jaustukų Aplankai",
+      "admin": "Administratorius",
+      "emotes": "Jaustukai",
+      "user": "Vartotojas",
+      "manage_personal_emotes": "Tvarkyti Asmeninių Jaustukų Ruošinį",
+      "confirm": "Patvirtinti",
+      "no_editors": "Nėra redaguotojų",
+      "permissions_details": {
+        "manage": "Valdyti",
+        "create": "Sukurti",
+        "transfer": "Perkelti",
+        "manage_profile": "Tvarkyti Profilį",
+        "manage_emotes": "Tvarkyti Jaustukus",
+        "manage_billing": "Tvarkyti Mokėjimus",
+        "manage_editors": "Tvarkyti Redaguotojus",
+        "view_billing": "Peržiūrėti Mokėjimų Informaciją"
+      }
+    },
+    "emote_info": {
+      "processing": "Šis jaustukas vis dar apdorojamas",
+      "refresh": "Atnaujinti",
+      "download": "Parsisiųsti"
+    },
+    "copy_emotes": {
+      "title": "Kopijuoti pasirinktus jaustukus į"
+    },
+    "default_set": {
+      "title": "Įprastinis Jaustukų Aplankas"
+    },
+    "delete_account": {
+      "warning": "Įspėjimas",
+      "warning_message": "Šis veiksmas pašalins jūsų paskyrą negrįžtamai. Negalėsite atšaukti šito veiksmo.",
+      "choose_reasons": "Pasirinkite priežastis, dėl kurių pašalinate paskyrą",
+      "reasons": {
+        "no_longer_use": "Aš nebesinaudoju 7TV",
+        "privacy_concerns": "Pažeidžia privatumą",
+        "not_useful": "Nenaudinga",
+        "other": "Kita"
+      },
+      "confirm_username": "Įveskite savo Slapyvardį patvirtinimui"
+    },
+    "delete_emote_or_set": {
+      "title": "Pašalinti {name}",
+      "warning_message_emote": "Ištrinsite jaustuką negrįžtamai. Negalėsite atšaukti šito veiksmo.",
+      "warning_message_set": "Ištrinsite jaustuku aplanką negrįžtamai. Negalėsite atšaukti šito veiksmo.",
+      "reason": "Priežastis",
+      "reason_for_deletion": "Ištrynimo priežastis"
+    },
+    "edit_emote": {
+      "title": "Redaguoti {emote}"
+    },
+    "edit_emote_set": {
+      "title": "Redaguoti Jaustukų Aplanką",
+      "show_on_profile": "Rodyti ant Profilio",
+      "publicly_listed": "Viešai Prieinama"
+    },
+    "remove_emote": {
+      "title": "Pašalinti pasirinktus jaustukus iš aplanko {set}"
+    },
+    "report_emote": {
+      "title": "Pranešti apie jaustuką",
+      "choose_reasons": "Pasirinkite priežastis",
+      "reasons": {
+        "my_work": "Aš padariau šį jaustuką, o jį įkėlė kažkas kitas",
+        "duplicate": "Šis jaustukas dubliuojasi su kitu",
+        "sexual": "Jame yra pornografinis turinys ar daug seksualių vaizdų",
+        "violance": "Šiame jaustuke yra daug smurto arba nepriimtinų vaizdų",
+        "its_me": "Šis jaustukas mane atspindi ir man tai nepatinka",
+        "offensive": "Manau, kad šis jaustukas yra įžeidžiantis",
+        "other": "Kita"
+      },
+      "additional_info": "Papildoma Informacija",
+      "disclaimer": "Piktnaudžiaujant skundimo/pranešimo funkcijomis, galite jas prarast."
+    },
+    "transfer_emote": {
+      "title": "Perkelti {emote}",
+      "details": "Tai perkels {emote}.",
+      "receipient": "Jaustuko Gavėjas",
+      "transfer": "Perkelti"
+    },
+    "badge": {
+      "title": "Ženkliukas"
+    },
+    "subscription": {
+      "gifted_by": "Tau prenumertą padovanojo",
+      "cancel_notice": "Nutraukęs prenumeratą dabar, iš karto prarasi visus jos privalumus. Ar tikrai nori ją nutraukti?",
+      "cancel_confirmation": "Ar tikrai nori atšaukti savo prenumeratą? Prenumeratos privalumus prarasi pasibaigus dabartiniam atsiskaitymo laikotarpiui.",
+      "confirm": "Patvirtinti"
+    },
+    "error": {
+      "title": "Klaida"
+    },
+    "pickems": {
+      "gift": {
+        "title": "Padovanoti Pick'ems pasą",
+        "gift_to": "Padovanoti Pick'ems pasą",
+        "recipient": "Pasirinkti gavėją",
+        "back": "Grįžti",
+        "continue": "Tęsti"
+      }
+    },
+    "gift": {
+      "title": "Dovanoti 1",
+      "gift_to": "Padovanoti 1 {variantUnit(variant)} vartotojui",
+      "recipient": "Pasirinkti gavėją"
+    },
+    "paint": {
+      "title": "Spalva"
+    },
+    "buttons": {
+      "back": "Grįžti",
+      "continue": "Tęsti"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "Įkelta"
+      },
+      "process": {
+        "start": "Pradėtas naujas apdorojimo darbas",
+        "success": "Sėkmingai užbaigtas apdorojimas",
+        "fail": "Neįvykdytas apdorojimas",
+        "cancel": "Atšaukta apdorojimo užduotis"
+      },
+      "change_name": {
+        "action": "Pervadintas"
+      },
+      "merge": {
+        "action": "Sujungta"
+      },
+      "change_owner": {
+        "action": "Perduota nuosavybė"
+      },
+      "change_tags": {
+        "action": "Nustatyti žymes"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "Patvirtinta viešam naudojimui"
+        },
+        "removed_public": {
+          "action": "Pašalintas viešam naudojimui"
+        },
+        "approved_personal": {
+          "action": "Patvirtinta asmeniniam naudojimui"
+        },
+        "rejected_personal": {
+          "action": "Atmesta asmeniniam naudojimui"
+        },
+        "added_overlaying": {
+          "action": "Pridėta persidengimo žyma"
+        },
+        "removed_overlaying": {
+          "action": "Pašalinta persidengimo žyma"
+        },
+        "added_private": {
+          "action": "Pažymėta kaip privatus"
+        },
+        "removed_private": {
+          "action": "Pašalinta privati žymė"
+        }
+      },
+      "delete": {
+        "action": "Ištrinta"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "Veikla",
+      "emote": {
+        "deleted_emote": "Ištrintas Jaustukas",
+        "deleted_set": "Ištrintas Ruošinys",
+        "by": "-",
+        "created": "Sukūrė",
+        "changed_tags": "Pakeistos žymės jaustukui",
+        "changed_capacity": "Pakeista talpa",
+        "added": "Pridėtas",
+        "removed": "Pašalintas jaustukas",
+        "renamed": "Pervadintas jaustukas",
+        "in": "į",
+        "from": "nuo",
+        "to": "į",
+        "deleted": "Ištrintas"
+      },
+      "user": {
+        "changed_paint": "Pakeista aktyvi spalvą iš",
+        "changed_badge": "Pakeistas aktyvus ženkliukas iš",
+        "removed": "Pašalintas",
+        "connection": "Prisijungimas",
+        "changed_set": "Pakeistas aktyvus jaustukų aplankas iš",
+        "added": "Pridėtas",
+        "no_badge": "Be ženklelio",
+        "no_paint": "Be Spalvos",
+        "deleted": "Ištrintas"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "Prisijungiama...",
+        "logged": "Prisijungta",
+        "failed": "Nepavyko Prisijungti"
+      },
+      "state": {
+        "logging": "Prisijungiama...",
+        "logged": "Prisijungta",
+        "failed": {
+          "title": "Prisijungimas Nepavyko",
+          "message": "Įsitikinkite, kad šį langą atidarote per plėtinį"
+        }
+      }
+    },
+    "home": {
+      "title": "Namai",
+      "features": {
+        "emote_slots": "1000 Vietos Jaustukams",
+        "emote_slots_info": "Kiekvienas gauna 1000 pritaikomų vietų jaustukams, visiškai nemokamai. Laikykite visus savo jaustukus vienoje vietoje.",
+        "emote_slots_button": "Ieškoti Jaustukų",
+        "emote_sets": "Jaustukų Aplankai",
+        "emote_sets_info": "Grupuokite jaustukus į modifikuojamus aplankus, kuriais galima dalytis su kitais vartotojais arba greitai juos perkelti į savo kanalą.",
+        "emote_sets_button": "Sukurti Jaustukų Aplanką",
+        "custom_emotes": "Pasirinktiniai Jaustukų Pavadinimai",
+        "custom_emotes_info": "Nepatinka jaustuko autoriaus suteiktas pavadinimas? Nieko baisaus, galite jį pakeisti tik savo kanalui.",
+        "custom_emotes_button": "Ieškoti Jaustukų",
+        "real-time": "Atnaujinimai realiuoju laiku",
+        "real-time_info": "Jaustukų keitimas jūsų kanale vyksta akimirksniu visiems žiūrovams. Nereikia spausti F5, nereikia laukti.",
+        "real-time_button": "Atsisiųskite Plėtinį",
+        "large_community": "Didelė Bendruomenė",
+        "large_community_info": "7TV kasdien aptarnauja daugiau nei 2,000,000+ unikalių vartotojų ir turi daugiau nei 1,000,000 viešų Jaustukų.",
+        "large_community_button": "Prisijunkite prie mūsų Discord Serverio",
+        "next_gen": "Naujos kartos Formatai",
+        "next_gen_info": "Mes naudojame naujesnius, labiau optimizuotus vaizdo formatus, pvz., WebP ir AVIF, kad sumažintume pralaidumą.",
+        "next_gen_button": "Atsisiųskite Plėtinį"
+      }
+    },
+    "help": {
+      "title": "Pagalba"
+    },
+    "directory": {
+      "title": "Katalogas",
+      "bookmarked": "Pažymėti",
+      "sorting": {
+        "title": "Skirstyti",
+        "alphabetical": "Abėcėlės tvarka",
+        "upload_date": "Įkėlimo Data"
+      },
+      "filters": {
+        "animated": "Animuoti",
+        "static": "Statiniai",
+        "overlaying": "Persidengiantys",
+        "personal_use": "Asmeniniam Naudojimui",
+        "exact_match": "Tikslus Atitikmuo"
+      },
+      "size": {
+        "title": "Dydis",
+        "any": "Bet koks Dydis"
+      }
+    },
+    "landing": {
+      "start": "Pradėk savo kelionę su šimtais jaustukų ir funkcijų, kurie pagerins tavo pokalbių patirtį. Atsisiųsk oficialų 7TV plėtinį arba kitus trečiųjų šalių įrankius.",
+      "developers": {
+        "header": "Šaltinis–Prieinamas",
+        "info": "Visa mūsų kodo bazė pasiekiama „GitHub“ svetainėje su atvirojo kodo licencija. Kiekvienas gali peržiūrėti ir prisidėti."
+      },
+      "download": {
+        "start": "Pradėk savo kelionę su šimtais jaustukų ir funkcijų, kurie pagerins tavo pokalbių patirtį. Atsisiųsk oficialų 7TV plėtinį arba kitus trečiųjų šalių įrankius.",
+        "extension": "Naršyklės Plėtinys",
+        "stable": "Stabili Versija",
+        "nightly": "Nightly Versija",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "Mobiliosios Programėlės"
+        },
+        "bots": {
+          "header": "Pokalbių Botai"
+        }
+      },
+      "features": {
+        "header": "Kodėl 7TV?",
+        "info": "Mūsų platforma siūlo įvairias naudingas funkcijas, kurios pagerins tavo pokalbių patirtį."
+      },
+      "footer": {
+        "affiliated": "7TV nėra susijęs su Twitch, Kick, YouTube ar Discord",
+        "privacy_policy": "Privatumo Politika",
+        "tos": "Paslaugų Teikimo Sąlygos"
+      },
+      "hero": {
+        "platform": "Jaustukų Platforma",
+        "all": "Visiems",
+        "download": "Parsisiųsti",
+        "manage": "Lengvai valdykite šimtus jaustukų savo Twitch, Kick ar YouTube kanalams. Praturtinkite savo pokalbių patirtį.",
+        "more": "Sužinoti daugiau",
+        "xmas": {
+          "header": "Kalėdinis Prenumeratorių Renginys",
+          "info": "Padovanokite 1 prenumeratą per šias Kalėdas ir gaukite ypatinga ženkliuką!",
+          "gift": "Dovanoti prenumeratą"
+        },
+        "nnys": {
+          "info": "Balsuok NNYS 2025 ir gauk išskirtinę spalvą, ženkliuką ir jaustukų rinkinį.",
+          "vote": "Balsuok NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 Streameriai",
+          "tournament": "7TV Organizuojamas Turnyras",
+          "event": "3 Dienų renginys",
+          "header": "Sudėliok Pick'ems Spėjimus. Laimėkite prizus.",
+          "info": "7TV Organizuoja CS2 Turnyrą",
+          "date": "Vas. 29 - Kov. 2",
+          "pickems": "Pasirink savo pick'ems",
+          "pass": "Įsigyk leidimą!",
+          "badges_paints": "Laimėk Ženkliukus ir Spalvas.",
+          "description1": "xQc, OhnePixel, JasonTheWeen ir kiti 32 streameriai eis vienas prieš kitą",
+          "description2": "3 dienų „Single Elimination“ CS2 turnyre, kurį organizuoja 7TV."
+        }
+      }
+    },
+    "discover": {
+      "title": "Atrasti",
+      "uploads": "Įkėlimai",
+      "followed": "Sekamos Paskyros"
+    },
+    "store": {
+      "title": "Pirkti",
+      "redeem": {
+        "title": "Atsiimti",
+        "header": "Panaudoti Dovanų Kodą",
+        "subtitle": "Panaudokite dovanų kodą, kad atrakintumėte išskirtines išvaizdos priemones ir privilegijas.",
+        "state": {
+          "idle": "Nenaudojamas",
+          "loading": "Kraunama",
+          "success": "Sėkmingai"
+        },
+        "code": "kodas",
+        "shown": "matomi",
+        "trial": "Jūs sėkmingai aktyvavote bandomąją prenumeratą"
+      },
+      "purchase": {
+        "success": "Jūsų pirkimas sėkmingai įvykdytas"
+      },
+      "subscription": {
+        "banner_title_subbed": "Ačiū už jūsų Paramą",
+        "banner_title_unsubbed": "Atrakinti Specialias Privilegijas",
+        "banner_subtitle_subbed": "Mėgaukitės savo ypatingomis prenumeratoriaus privilegijomis!",
+        "banner_subtitle_unsubbed": "Pagerink Susirašinėjimo Patirtį - Prenumeruok.",
+        "badge_progress": {
+          "title": "Ženklelio Progresas",
+          "left": "{duration} Liko"
+        },
+        "benefits": {
+          "title": "Prenumeratos Nauda",
+          "animated_avatar": "Animuota Profilio Nuotrauka",
+          "personal_emotes": "Asmeniniai Jaustukai",
+          "paints": "Spalvotas Slapyvardis",
+          "sub_badge": "Prenumeratoriaus Ženkliukas",
+          "raffle_tickets": "Loterijos Bilietai"
+        },
+        "raffle": "Viešų Jaustukų Loterija",
+        "monthly_paints": "Mėnesio Spalvos",
+        "your_cosmetics": "Jūsų Kosmetika",
+        "your_paints": "Jūsų Spalvos",
+        "beomce_a_subscriber": "Tapti prenumeratoriu",
+        "your_badges": "Tavo Ženkliukai",
+        "top_gifters": "Daugiausiai Padovanoję",
+        "subscribe": "Prenumeruoti",
+        "subscribed": "Prenumeruojama",
+        "cancel": "Atsisakyti Prenumeratos",
+        "reactivate": "Atnaujinti Prenumeratą",
+        "one_monhth": "1 Mėnesis",
+        "one_year": "1 Metai"
+      },
+      "paint_bundles": {
+        "coming_soon": "Greitai Pasirodys",
+        "banner_title": "Padaryk Save Šviečiančiu",
+        "banner_subtitle": "Slapyvardžio Spalvos Leis Jums Išreikšti Save Visais Atspalviais."
+      },
+      "events": {
+        "no_events": "Artėjančių renginių nėra",
+        "xmas": "Kalėdinis 2024 Renginys: Padovanok 1 Prenumeratą, kad gautum ypatingą ženkliuką",
+        "cs2": {
+          "tournament": "7TV Organizuotas CS2 Turnyras",
+          "cosmetics": "Norite užsidirbti kosmetikos už rezultatų spėjimą? Spauskite žemiau!",
+          "twitch": "ŽIŪRĖTI TWITCH",
+          "bundle": "Pirkti Rinkinį",
+          "already_subscribed": "Prenumeruojama",
+          "subscribe": "{price} šiandien, vėliau {recurring}",
+          "billing_cycle": "Apmokestinta kaip vienkartinis pirkinys",
+          "pickems": {
+            "place": "Statyti Pick'ems",
+            "predict": "Nuspėti Laimėtojus",
+            "purchase_pass": "Įsigyti leidimą"
+          },
+          "pass": {
+            "title": "Pick'ems pasas",
+            "get": "Įsigyti pasą",
+            "bundle": "Pasas + {variantName(variant)} Prenumeratos Rinkinys"
+          },
+          "schedule": {
+            "header": "Turnyro Tvarkaraštis",
+            "stage": "Scena",
+            "best_of": "Geriausias iš",
+            "start_time": "Pradžios Laikas"
+          },
+          "streamers": {
+            "header": "Susipažinkite su Streameriais",
+            "info": "Žymūs Twitch streameriai suburia komandas iš savo bendruomenių, kurios varžosi CS stiliaus „Single Elimination“ principo turnyre.",
+            "watch": "Žiūrėk pagrindinį renginį čia",
+            "twitch_channel": "7TV Twitch kanalas",
+            "streamer_pov": "arba per mėgstamo transliuotojo perspektyvą."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "Administratorius",
+      "overview": "Peržiūrėjimas",
+      "welcome": "Sveiki sugrįžę",
+      "enjoy": "Smagaus modifikavimo!",
+      "tickets": {
+        "title": "Bilietai",
+        "emotes": {
+          "public_listing": "Viešas Naudojimas",
+          "personal_use": "Asmeninis Naudojimas",
+          "resolved": "Išspręsta",
+          "not_implemented": "Neįgyvendinta"
+        },
+        "emote_table": {
+          "emote_name": "Jaustuko Pavadinimas",
+          "uploader": "Jaustuko Savininkas",
+          "country": "Šalis",
+          "tags_flags": "Žymės ir Vėliavos",
+          "reviewed_by": "Peržiūrėta"
+        },
+        "reports": "Pranešimai",
+        "reports_options": {
+          "all": "Visi",
+          "assigned": "Priskirtas",
+          "closed": "Uždarytas"
+        },
+        "reports_table": {
+          "reported_by": "Pranešė",
+          "target": "Priežastis",
+          "description": "Aprašymas",
+          "assigned_to": "Priskirta",
+          "status": "Būsena",
+          "date": "Data",
+          "ticket_id": "Bilieto ID",
+          "subject": "Tema",
+          "details": "Išsami informacija"
+        },
+        "reports_actions": {
+          "close": "Pažymėti kaip Uždarytą",
+          "assign_self": "Priskirti Sau",
+          "add_comment": "Pridėti komentarą"
+        }
+      },
+      "codes": {
+        "redeem": "Panaudoti Kodus",
+        "add": "Pridėti Kodą(-us)",
+        "filters": {
+          "header": "Filtrai:",
+          "remaining_uses": "Likę Naudojimai"
+        },
+        "search": {
+          "results": "Rasta {results.totalCount} rezultatų ({results.pageCount} puslapių)"
+        },
+        "attributes": {
+          "name": {
+            "name": "Vardas",
+            "description": "Aprašymas",
+            "tags": "Žymės",
+            "code": "Kodas",
+            "remaining_uses": "Likę Naudojimai",
+            "active_period": "Aktyvus Laikotarpis",
+            "effect": "Efektas",
+            "subscription_effect": "Prenumeratos Efektas",
+            "created_by": "Sukurta Vartotojo",
+            "created_at": "Sukurta",
+            "actions": "Veiksmai"
+          }
+        },
+        "period": {
+          "unlimited": "Nesibaigiantys"
+        },
+        "trial": {
+          "days": "dienų bandomasis laikotarpis",
+          "no_trial": "Nėra bandomojo laikotarpio",
+          "none": "Nėra"
+        },
+        "system": "Sistema"
+      },
+      "special_events": {
+        "header": "Ypatingi Renginiai",
+        "create": "Sukurti Ypatingą Renginį",
+        "add": "Pridėti Ypatingą Renginį",
+        "results": "Rasta {results.length} rezultatų",
+        "attributes": {
+          "name": "Vardas",
+          "description": "Aprašymas",
+          "tags": "Žymės",
+          "created_by": "Sukūrė",
+          "created_at": "Sukurta",
+          "actions": "Veiksmai",
+          "create": "Sukurti",
+          "cancel": "Atšaukti"
+        },
+        "system": "Sistema",
+        "no_events": "Nėra Ypatingų Renginių"
+      },
+      "users": {
+        "id": {
+          "back": "Grįžti",
+          "last_updated": "Paskutinį Kartą Atnaujinta",
+          "search_last_update": "Ieškoti Kada Paskutinį Kartą Atnaujinta",
+          "queued": "Laukiama atnaujinimo eilėje",
+          "stripe": {
+            "customer": "Stripe Klientas",
+            "view": "Peržiūrėti",
+            "no_customer": "Nėra stripe kliento susiejimo",
+            "roles": "Rolės"
+          },
+          "actions": {
+            "header": "Veiksmai",
+            "sessions": {
+              "header": "Sesijos",
+              "create_session": "Sukurti Naują Sesiją",
+              "delete_all": "Pašalinti Visas Sesijas",
+              "expiration": "Nustos Galioti",
+              "token": "Tokenas",
+              "copy_token": "Kopijuoti Tokeną",
+              "create": "Sukurti",
+              "close": "Uždaryti"
+            },
+            "connections": {
+              "header": "Sąsajos",
+              "kick": "Savarankiškai Susieti Kick",
+              "username": "Kick Slapyvardis"
+            },
+            "entitlements": {
+              "header": "Privilegijos",
+              "create": "Sukurti Privilegijas",
+              "assign": "Rankiniu būdu priskirti Privilegijas",
+              "assign_to": "Priskirti Privilegijas",
+              "remove_all": "Pašalinti visas Privilegijas",
+              "view": "Peržiūrėti Privilegijas",
+              "showing": "Rodomos priskirtos privilegijos"
+            }
+          },
+          "subscription": {
+            "header": "Prenumerata",
+            "period": {
+              "header": "Prenumeratos Laikotarpiai",
+              "key": "Raktas",
+              "value": "Vertė",
+              "id": "ID"
+            },
+            "copy": {
+              "ulid": "Kopijuoti ULID",
+              "uuid": "Kopijuoti UUID"
+            },
+            "provider": {
+              "id": "Tiekėjo ID",
+              "view": "Peržiūrėti"
+            },
+            "product": {
+              "id": "Produkto ID",
+              "view": "Peržiūrėti",
+              "start": "Pradžia",
+              "end": "Pabaiga",
+              "is_trial": "Ar tai bandomoji versija?",
+              "auto_renew": "Automatiškai Atnaujinti?",
+              "gifted": {
+                "header": "Padovanota?",
+                "yes": "Taip - Nuo",
+                "no": "Ne"
+              },
+              "created_by": "Sukurta",
+              "redeem": "Pritaikyti Kodą",
+              "invoice": "Sąskaita",
+              "system": "Sistema",
+              "variant": "Produkto Variantas"
+            }
+          },
+          "not_found": "Vartotojas nerastas"
+        },
+        "layout": {
+          "users": "Vartotojai"
+        },
+        "page": {
+          "manage": {
+            "header": "Valdyti",
+            "single_user": "Valdyti pavienį vartotoją"
+          },
+          "actions": {
+            "header": "Veiksmai",
+            "sub_benefits_job": {
+              "header": "Prenumeratos Nauda",
+              "manually": "Rankiniu būdu paleisti prenumeratos užduotį, kad būtų perskaičiuotos visų vartotojų privilegijos ir prenumeratos privalumai.",
+              "rerun": "Paleisti iš naujo"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "Naudoti Jaustuką",
+      "add_to": "Pridėti prie...",
+      "transfer": "Perkelti",
+      "merge": "Sujungti",
+      "size": "Dydis",
+      "copy_link": "Kopijuoti Nuorodą"
+    },
+    "user": {
+      "about": "Apie",
+      "active_emotes": "Aktyvūs Jaustukai",
+      "uploaded": "Įkelta",
+      "uploaded_emotes": "Įkelti Jaustukai"
+    },
+    "settings": {
+      "account": {
+        "title": "Paskyra",
+        "profile": {
+          "details": "Tvarkykite nuostatas ir detales, kad atitiktų jūsų individualius poreikius",
+          "display_name": "Jūsų Slapyvardis",
+          "display_name_description": "Pasirinkite prijungtą paskyra kuri rodys jūsų slapyvardį ir profilio nuotrauką",
+          "profile_picture_description": "Pasirinkite profilio nuotrauką, kuri bus rodoma visose platformose",
+          "update_profile_picture": "Atnaujinti Profilio Nuotrauką"
+        },
+        "connections": {
+          "details": "Tvarkykite ir susiekite išorines paskyras, kad supaprastintumėte prieigą ir pagerintumėte platformos sąveiką"
+        },
+        "security": {
+          "title": "Paskyros Saugumas",
+          "details": "Tvarkyti ir pritaikyti savo paskyros saugumą",
+          "2fa": "Dviejų etapų identifikavimas",
+          "2fa_details": "Padidinkite paskyros saugumą naudodami dviejų etapų identifikavimą (2FA)",
+          "email_details": "Gaukite patvirtinimo kodą el. paštu",
+          "authenticator_app": "Identifikavimo programa",
+          "authenticator_app_details": "Įdiekite programą, kad sugeneruotumėte patvirtinimo kodą",
+          "sign_out_everywhere": "Atsijungti",
+          "sign_out_everywhere_details": "Užtikrinkite saugumą ir atsijunkite nuo visų įrenginių vienu paspaudimu",
+          "delete_account_details": "Visam laikui pašalinkite visą asmeninę informaciją ir susijusius duomenis iš platformos, nutraukdami paskyrą"
+        }
+      },
+      "appearance": {
+        "title": "Išvaizda",
+        "details": "Pakeisti išvaizdą ir stilių",
+        "theme": {
+          "header": "Tema",
+          "options": {
+            "system": "Sistema",
+            "dark": "Tamsi",
+            "light": "Šviesi"
+          }
+        },
+        "motion": {
+          "header": "Sumažintas Judesys",
+          "options": {
+            "system": "Sistema",
+            "enabled": "Įjungtas",
+            "disbaled": "Išjungtas"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "Svetainės Išdėstymo Kryptis",
+          "options": {
+            "ltr": "Iš Kairės į Dešinę",
+            "rtl": "Iš Dešinės į Kairę"
+          }
+        }
+      },
+      "editors": {
+        "details": "Tvarkyti ir pritaikyti savo redaguotojus, prieigas arba kanalus, kuriuos redaguojate",
+        "editing_for": "Jūsų Redaguojami",
+        "add_editor": "Pridėti Redaguotoją",
+        "not_allowed": "Jums neleidžiama valdyti šio vartotojo redaguotojų"
+      },
+      "notifications": {
+        "details": "Realaus laiko atnaujinimai ir įspėjimai, informuojant vartotojus apie svarbius įvykius, pranešimus ir veiklą svetainėje ar programoje"
+      },
+      "blocked": {
+        "title": "Užblokuota",
+        "details": "Tvarkykite apribotą ar draudžiamą turinį, vartotojus ar veiklą",
+        "add_user": "Pridėti Užblokuotą Vartotoją"
+      },
+      "billing": {
+        "title": "Mokėjimai",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "Panaudoti Prenumeratos Kreditus",
+          "use_credits_details": "Už jūsų kitą apmokėjimą bus panaudoti prenumeratos kreditai",
+          "cancelled": "Prenumerata Atšaukta",
+          "cancelled_details": "Jūsų prenumerata buvo atšaukta, o privilegijos nustos galioti {date}"
+        },
+        "history": {
+          "title": "Mokėjimų Istorija",
+          "details": "Peržiūrėkite visą su paskyra susietą mokėjimo veiklą, ankstesnes atsiskaitymo ataskaitas ir operacijas"
+        },
+        "payment_methods": {
+          "details": "Patikrinkite ir atnaujinkite pageidaujamus mokėjimo būdus",
+          "add_new": "Pridėti naują",
+          "card": {
+            "title": "Kortelės informacija",
+            "ends_in": "Baigsis {digits}",
+            "expires": "Nustos galioti {month}/{year}",
+            "address": "Adresas",
+            "name": "Vardas"
+          }
+        },
+        "table": {
+          "status": "Būsena",
+          "amount": "Kiekis",
+          "invoice": "Sąskaita"
+        }
+      },
+      "user_table": {
+        "name": "Vardas",
+        "last_modified": "Paskutinį Kartą Redaguota",
+        "permissions": "Privilegijos"
+      }
+    },
+    "link": {
+      "linking": "Siejama Jūsų Paskyra...",
+      "linking_successful": "Paskyra Sėkmingai Susieta",
+      "linking_failed": "Susiejimas Nesėkmingas"
+    },
+    "extension": {
+      "login": "Prisijungiama...",
+      "login_successful": "Prisijungta",
+      "login_failed": "Nepavyko Prisijungti",
+      "window": "Įsitikinkite, kad šį langą atidarote per plėtinį"
+    }
+  }
+}

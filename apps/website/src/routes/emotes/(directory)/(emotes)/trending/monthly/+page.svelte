@@ -4,6 +4,7 @@
 	import type { PageData } from "./$types";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import { queryEmotes } from "$/lib/emoteQuery";
+	import { selectionModeInEmotes } from "$/lib/layout";
 	import { untrack } from "svelte";
 
 	let { data }: { data: PageData } = $props();
@@ -25,6 +26,7 @@
 
 <EmoteLoader
 	bind:this={loader}
+	bind:selectionMode={$selectionModeInEmotes}
 	load={(page, perPage) =>
 		queryEmotes(data.query, data.tags, SortBy.TrendingMonthly, data.filters, page, perPage)}
 />

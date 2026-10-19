@@ -11,7 +11,7 @@
 	import { t } from "svelte-i18n";
 </script>
 
-<section class="features">
+<section class="features" id="features">
 	<h2>{$t("pages.landing.features.header")}</h2>
 	<p>
 		{$t("pages.landing.features.info")}
@@ -19,44 +19,44 @@
 	<div class="feature-grid">
 		<Feature
 			image={weirdSmiley}
-			title="1000 Emote Slots"
-			description="Everyone gets 1000 customizable channel emote slots, all for free. Keep all your emotes in one place."
-			link="Browse Emotes"
+			title="{$t("pages.home.features.emote_slots")}"
+			description="{$t("pages.home.features.emote_slots_info")}"
+			link="{$t("pages.home.features.emote_slots_button")}"
 			href="/emotes"
 		/>
 		<Feature
 			image={cube}
-			title="Emote Sets"
-			description="Group emotes in customizable sets that can be shared with other users or quickly swapped onto your channel."
-			link="Create an Emote Set"
+			title="{$t("pages.home.features.emote_sets")}"
+			description="{$t("pages.home.features.emote_sets_info")}"
+			link="{$t("pages.home.features.emote_sets_button")}"
 			href={$user ? `/users/${$user.id}/emote-sets` : "/login"}
 		/>
 		<Feature
 			image={hand}
-			title="Custom Emote Names"
-			description="Don't like the name given to an emote by its author? That's fine, you can change it for your channel only."
-			link="Browse Emotes"
+			title="{$t("pages.home.features.custom_emotes")}"
+			description="{$t("pages.home.features.custom_emotes_info")}"
+			link="{$t("pages.home.features.custom_emotes_button")}"
 			href="/emotes"
 		/>
 		<Feature
 			image={hourglass}
-			title="Real-Time Updates"
-			description="Changing emotes in your channel happens instantly, for all viewers. No F5 required, no more waiting."
-			link="Download the Extension"
+			title="{$t("pages.home.features.real-time")}"
+			description="{$t("pages.home.features.real-time_info")}"
+			link="{$t("pages.home.features.real-time_button")}"
 			href="#download"
 		/>
 		<Feature
 			image={megaphone}
-			title="Large Community"
-			description="7TV serves 2,000,000+ daily unique users and has a library of over 1,000,000 public emotes."
-			link="Join our Discord"
+			title="{$t("pages.home.features.large_community")}"
+			description="{$t("pages.home.features.large_community_info")}"
+			link="{$t("pages.home.features.large_community_button")}"
 			href={PUBLIC_DISCORD_LINK}
 		/>
 		<Feature
 			image={battery}
-			title="Next-gen Formats"
-			description="We use newer, more optimized image formats like WebP and AVIF, to reduce bandwidth usage."
-			link="Download the Extension"
+			title="{$t("pages.home.features.next_gen")}"
+			description="{$t("pages.home.features.next_gen_info")}"
+			link="{$t("pages.home.features.next_gen_button")}"
 			href="#download"
 		/>
 	</div>

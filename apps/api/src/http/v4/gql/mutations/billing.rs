@@ -2,6 +2,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use async_graphql::Context;
+use shared::database::product::special_event::SpecialEventId;
 use shared::database::product::subscription::{
 	ProviderSubscriptionId, Subscription, SubscriptionId, SubscriptionPeriod, SubscriptionState,
 };
@@ -552,10 +553,40 @@ impl BillingMutation {
 		&self,
 		ctx: &Context<'_>,
 		#[graphql(validator(min_length = 1, max_length = 24))] code: String,
+		captcha_token: String,
 	) -> Result<RedeemResponse, ApiError> {
 		let global: &Arc<Global> = ctx
 			.data()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing global data"))?;
+
+		// // reCAPTCHA verification
+		// let secret_key = &global.config.api.recaptcha_secret_key;
+		//     let client = reqwest::Client::new();
+
+		// let verify_res: serde_json::Value = client
+		//     .post("https://www.google.com/recaptcha/api/siteverify")
+		//     .form(&[
+		//         ("secret", secret_key),
+		//         ("response", &captcha_token),
+		//     ])
+		//     .send()
+		//     .await
+		//     .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha check failed"))?
+		//     .json()
+		//     .await
+		//     .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha parse failed"))?;
+
+		// let score = verify_res["score"].as_f64().unwrap_or(0.0);
+		// let success = verify_res["success"].as_bool().unwrap_or(false);
+
+		// // Block if it's a bot (aka score < 0.5)
+		// if !success || score < 0.5 {
+		//     return Err(ApiError::bad_request(
+		//         ApiErrorCode::BadRequest,
+		//         "bot activity detected",
+		//     ));
+		// }
+
 		let session = ctx
 			.data::<Session>()
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::MissingContext, "missing session data"))?;
@@ -563,6 +594,7 @@ impl BillingMutation {
 		let user_id = session
 			.user_id()
 			.ok_or_else(|| ApiError::unauthorized(ApiErrorCode::LoginRequired, "you are not logged in"))?;
+
 		if self.user_id != user_id {
 			return Err(ApiError::bad_request(
 				ApiErrorCode::BadRequest,
@@ -579,7 +611,7 @@ impl BillingMutation {
 			.to_string();
 		let cancel_url = global.config.api.website_origin.join("/store").unwrap().to_string();
 
-		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url).await?;
+		let checkout_url = redeem_code_inner(global, session, code, success_url, cancel_url, captcha_token).await?;
 
 		Ok(RedeemResponse { checkout_url })
 	}

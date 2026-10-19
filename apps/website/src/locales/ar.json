@@ -1,0 +1,1027 @@
+{
+  "page_titles": {
+    "suffix": "7TV",
+    "admin_suffix": "إدارة 7TV",
+    "trending_emotes": "رموز تعبيرية رائجة",
+    "top_emotes": "أفضل الرموز التعبيرية",
+    "global_emotes": "رموز تعبيرية عالمية",
+    "new_emotes": "رموز تعبيرية جديدة",
+    "bookmarked_emotes": "الرموز التعبيرية المحفوظة",
+    "bookmarked_emote_sets": "مجموعات الرموز التعبيرية المحفوظة",
+    "bookmarked_users": "المستخدمين المحفوظين",
+    "account_settings": "إعدادات الحساب",
+    "editor_settings": "إعدادات المحرر",
+    "notification_settings": "إعدادات الإشعارات",
+    "blocked_settings": "إعدادات الحظر",
+    "billing_settings": "إعدادات الفواتير",
+    "admin_emote_public_listing": "طلبات تسجيل الرموز التعبيرية للقائمة العامة",
+    "admin_emote_personal_use": "طلبات الاستخدام الشخصي للرموز التعبيرية",
+    "admin_emote_resolved": "تذاكر الرموز التعبيرية المحلولة"
+  },
+  "page_errors": {
+    "not_found": "لم يتم العثور على الصفحة المطلوبة.",
+    "forbidden": "ليس لديك الإذن لعرض هذه الصفحة.",
+    "unauthorized": "ليس لديك الإذن لعرض هذه الصفحة.",
+    "unexpected": "حاول تحديث الصفحة. إذا استمرت المشكلة، يرجى التواصل معنا.",
+    "generic": "حدث خطأ.",
+    "emote_set_load": "فشل عرض مجموعة الرموز التعبيرية",
+    "emote_set_not_found": "لم يتم العثور على مجموعة الرموز التعبيرية",
+    "user": "فشل عرض المستخدم"
+  },
+  "words": {
+    "from": "من",
+    "to": "إلى",
+    "with": "مع",
+    "by": "بواسطة"
+  },
+  "common": {
+    "sign_in": "تسجيل الدخول",
+    "sign_out": "تسجيل الخروج",
+    "go_back": "ارجع",
+    "super_admin": "مسؤول أعلى",
+    "skip_to_content": "تخطي إلى المحتوى",
+    "emotes": "{count, plural, one {الرمز التعبيري} other {الرموز التعبيرية}}",
+    "emote_sets": "{count, plural, one {مجموعة الرموز التعبيرية} other {مجموعات الرموز التعبيرية}}",
+    "users": "{count, plural, one {المستخدم} other {المستخدمين}}",
+    "channels": "{count, plural, one {القناة} other {القنوات}}",
+    "followers": "{count, plural, one {المتابع} other {المتابعين}}",
+    "items": "{count, plural, one {الغرض} other {الأغراض}}",
+    "subscriptions": "{count, plural, one {الاشتراك} other {الاشتراكات}}",
+    "payment_methods": "{count, plural, one {طريقة الدفع} other {طرق الدفع}}",
+    "date": "التاريخ",
+    "help": "مساعدة",
+    "for": "لـ",
+    "error": "خطأ",
+    "loading": "جاري التحميل...",
+    "paint_bundles": "باقات الطلاء",
+    "notifications": "الإشعارات",
+    "connections": "الاتصالات",
+    "direct_messages": "الرسائل الخاصة",
+    "mod_comments": "تعليقات المشرفين",
+    "profile_picture": "الصورة الشخصية",
+    "suggested_emotes": "الرموز التعبيرية المقترحة",
+    "personal_emotes": "الرموز التعبيرية الشخصية",
+    "no_more_emotes": "لا مزيد من الرموز التعبيرية",
+    "no_emotes": "لا توجد رموز تعبيرية",
+    "your_subscription": "اشتراكك",
+    "theme": "النسق",
+    "language": "اللغة",
+    "developer_portal": "بوابة المطورين",
+    "faq": "الأسئلة المتكررة",
+    "faq_short": "التعليمات",
+    "privacy": "سياسة الخصوصية",
+    "tos": "شروط الخدمة",
+    "trending": "رائج",
+    "top": "أفضل",
+    "global": "عالمي",
+    "new": "جديد",
+    "Weekly": "أسبوعي",
+    "Monthly": "شهري",
+    "Today": "اليوم",
+    "news": "الأخبار",
+    "Default_set": "المجموعة الافتراضية",
+    "following": "المتابَعون",
+    "activity": "نشاط",
+    "analytics": "التحليلات",
+    "statistics": "الإحصائيات",
+    "contact": "تواصل",
+    "cosmetics": "المظاهر",
+    "editors": "المحررين",
+    "active": "فعال",
+    "profile": "الملف الشخصي",
+    "pinned": "مثبَّت",
+    "settings": "إعدادات",
+    "delete_account": "حذف الحساب"
+  },
+  "labels": {
+    "enter_text": "إدخال نص",
+    "redeem": "إدخال رمز",
+    "search": "بحث",
+    "refetch": "تحديث",
+    "manage_connections": "إدارة الاتصالات",
+    "manage_editors": "إدارة المحررين",
+    "none": "لا شيء",
+    "search_user": "بحث الأسم",
+    "search_country": "بحث عن دولة",
+    "search_emote_set": "بحث عن مجموعة رموز تعبيرية",
+    "search_users": "{count, plural, one {بحث عن مستخدم} other {بحث المستخدمين}}",
+    "tags": "علامات",
+    "close": "أغلاق",
+    "contribute": "مساهمة",
+    "enter_tags": "إدخال علامات",
+    "tag_limit_reached": "تم الوصول إلى حد العلامات {limit}",
+    "filters": "عوامل التصفية",
+    "no_filters": "لا توجد عوامل تصفية",
+    "emote_name": "اسم الرمز التعبيري",
+    "copy_link": "نسخ الرابط",
+    "create_emote_set": "إنشاء مجموعة جديدة",
+    "emote_set_name": "اسم مجموعة الرموز التعبيرية",
+    "emote_attribution": "إسناد الرموز التعبيرية",
+    "select": "اختيار",
+    "selection_mode": "وضع الاختيار",
+    "edit": "تحرير",
+    "capacity": "السَعَة",
+    "enable": "تفعيل",
+    "disable": "تعطيل",
+    "disabled": "معطل",
+    "more": "المزيد",
+    "actions": "الإجراءات",
+    "download": "تحميل",
+    "report": "إبلاغ",
+    "delete": "حذف",
+    "time_select": {
+      "week": "هذا الأسبوع",
+      "month": "هذا الشهر",
+      "year": "هذه السنة"
+    },
+    "gift": "إهداء",
+    "follow": "متابعة",
+    "connect": "اتصل",
+    "disconnect": "اقطع الاتصال",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "all": "الجميع",
+    "other": "غير ذلك",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "proceed": "مواصلة",
+    "save": "حفظ",
+    "remove": "إزالة",
+    "accept": "قبول",
+    "deny": "رفض",
+    "enter": "إدخال"
+  },
+  "themes": {
+    "system": "نظام",
+    "dark": "داكن",
+    "light": "فاتح"
+  },
+  "flags": {
+    "global": "عالمي",
+    "trending": "رائج",
+    "overlaying": "تراكب",
+    "default": "افتراضي",
+    "personal": "شخصي",
+    "listed": "مُسجّل",
+    "unlisted": "غير مُسجّل",
+    "personal_use": "استخدام شخصي",
+    "deleted": "محذوف",
+    "private": "خاص",
+    "personal_use_approved": "موافق للاستخدام الشخصي",
+    "personal_use_denied": "مرفوض للاستخدام الشخصي",
+    "personal_use_pending": "أستخدام شخصي قيد المراجعة",
+    "renamed": "تم تغيير الاسم",
+    "nsfw": "غير مناسب للعمل",
+    "editor_flags": {
+      "pending": "قيد الانتظار",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "you_accepted": "أنت قبلت",
+      "you_rejected": "أنت رفضت"
+    }
+  },
+  "notifications": {
+    "system": "نظام",
+    "approved_for_public": "تمت الموافقة على تسجيل الرمز التعبيري الخاص بك {emote} للقائمة العامة."
+  },
+  "sub_info": {
+    "plan": "الخطة",
+    "free": "مجاناً",
+    "gifted_by": "إهداء بواسطة",
+    "ends": "نهاية الاشتراك",
+    "total": "الإجمالي",
+    "credits": "رصيد الاشتراك"
+  },
+  "file_limits": {
+    "max_size": "الحد الأقصى لحجم الملف {size}",
+    "max_resolution": "الحد الأقصى للدقة {height}×{width}",
+    "max_frames": "الحد الأقصى للإطارات {count}",
+    "resolution_error": "يجب ألا تتجاوز الدقة {height}×{width}",
+    "duration_error": "يجب أن تكون المدة {duration} ثواني أو أقل"
+  },
+  "dialogs": {
+    "sign_in": {
+      "title": "تسجيل الدخول إلى 7TV",
+      "subtitle": "يرجى تسجيل الدخول أو إنشاء حساب للاستمرار",
+      "continue_with": "الاستمرار مع {platform}",
+      "trouble": "مشكلة في تسجيل الدخول؟",
+      "legal_yapping": "بتسجيل الدخول، أنت توافق على",
+      "and": "و",
+      "linking_new": "هل لديك حساب 7TV وتخطط لربط اتصال جديد؟ سجل الدخول باستخدام اتصالك الحالي واربط الاتصال الجديد في",
+      "settings": "إعدادات"
+    },
+    "search": {
+      "emotes": "رموز تعبيرية",
+      "users": "مستخدمين"
+    },
+    "upload": {
+      "title": "رفع الرمز التعبيري",
+      "untitled": "بلا عنوان",
+      "chat": "أرسل رسالة",
+      "drag_drop": "اسحب وأفلت للرفع، أو",
+      "browse_files": "تصفح الملفات",
+      "accept_rules": "أوافق على القواعد والإرشادات",
+      "discard": "إلغاء",
+      "upload_guidelines": "قوانين تحميل الرموز التعبيرية",
+      "upload": "رفع"
+    },
+    "emote_set": {
+      "title": "مجموعة الرموز التعبيرية الفعالة",
+      "create": "إنشاء مجموعة رموز تعبيرية",
+      "name": "اسم مجموعة الرموز التعبيرية",
+      "label": "أسم",
+      "confirm": "إنشاء",
+      "copy_set": "نسخ المجموعة",
+      "special": "خاص",
+      "favourite_sets": {
+        "title": "مجموعات الرموز التعبيرية المفضلة",
+        "add": "أضافه وتعديل الأسم للكل",
+        "remove": "الحذف من الكل"
+      },
+      "mass_select_feature": {
+        "add": "أضف للمجموعة الرموز التعبيرية",
+        "remove": "حذف من مجموعة الرموز التعبيرية",
+        "amount_selected_label": "مختار /20"
+      },
+      "default_emote_set": {
+        "remove": "حذف الرمز التعبيري من {set}",
+        "add": "أضافه الرمز التعبيري إلى {set}",
+        "conflicting_name": "اسم متعارض"
+      }
+    },
+    "manage_aliases": {
+      "title": "إدارة أسماء الرموز التعبيرية المستعارة",
+      "add_placeholder": "أضف اسمًا مستعارًا جديدًا..."
+    },
+    "rename_emote": {
+      "title": "تعديل أسم الرمز التعبيري في {set}",
+      "input_placeholder": "أسم رمز تعبيري جديد",
+      "confirmation_message": "هل أنت متأكد من تعديل أسم هذا الرمز التعبيري في {set}؟",
+      "confirm": "تعديل"
+    },
+    "remove_emote_from_set": {
+      "title": "حذف الرمز التعبيري من {set}",
+      "warning_message": "هل أنت متأكد من حذف {emote} من {set}؟",
+      "confirm": "حذف"
+    },
+    "add_emote": {
+      "title": "إضافة {emote} إلى",
+      "change_name": "تغيير اسم الرمز التعبيري",
+      "confirm": "تأكيد",
+      "confirm_changes": "{count, plural, one {تأكيد تغيير واحد} other {تأكيد {count} تغييرات}}"
+    },
+    "emote_ticket": {
+      "emote_queue": "قائمة انتظار الرمز التعبيري",
+      "activity": "نشاط",
+      "comments": "تعليقات"
+    },
+    "emote_context_menu": {
+      "add_remove_emote": "أضافة/حذف الرمز التعبيري",
+      "edit_emote_alias": "تعديل اسم المستعار للرمز التعبيري",
+      "remove_emote": "حذف الرمز التعبيري من المجموعة",
+      "open_in_new_tab": "افتح في علامة تبويب جديدة",
+      "copy_emote_link": "نسخ رابط الرمز التعبيري"
+    },
+    "cart": {
+      "title": "سلة التسوق",
+      "duration": "المدة",
+      "price": "السعر",
+      "preview": "معاينة",
+      "purchase_as_gift": "شراء كهدية",
+      "total": "الإجمالي"
+    },
+    "editor": {
+      "permissions": "تعيين أذون المحرر",
+      "super_admin": "مسؤول أعلى",
+      "emote_sets": "مجموعات رموز تعبيرية",
+      "admin": "إدارة",
+      "emotes": "رموز تعبيرية",
+      "user": "المستخدم",
+      "manage_personal_emotes": "إدارة مجموعة الرموز التعبيرية الشخصية",
+      "confirm": "تأكيد",
+      "no_editors": "لا يوجد محررين لعرضهم",
+      "permissions_details": {
+        "manage": "إدارة",
+        "create": "إنشاء",
+        "transfer": "نقل",
+        "manage_profile": "إدارة الملف الشخصي",
+        "manage_emotes": "إدارة الرموز التعبيرية",
+        "manage_billing": "إدارة الفواتير",
+        "manage_editors": "إدارة المحررين",
+        "view_billing": "عرض معلومات الفواتير"
+      }
+    },
+    "emote_info": {
+      "processing": "لا يزال هذا الرمز التعبيري قيد التنفيذ",
+      "refresh": "تحديث",
+      "download": "تحميل"
+    },
+    "copy_emotes": {
+      "title": "نسخ الرموز التعبيرية المحددة إلى"
+    },
+    "default_set": {
+      "title": "مجموعة الرموز التعبيرية الافتراضية"
+    },
+    "delete_account": {
+      "warning": "تحذير",
+      "warning_message": "سيؤدي هذا الإجراء إلى حذف حسابك بشكل دائم. لا يمكنك التراجع عن هذا الإجراء.",
+      "choose_reasons": "اختر أسباب حذف الحساب",
+      "reasons": {
+        "no_longer_use": "لم أعد أستخدم 7TV",
+        "privacy_concerns": "مخاوف الخصوصية",
+        "not_useful": "غير مفيد",
+        "other": "غير ذلك"
+      },
+      "confirm_username": "أدخل اسم المستخدم الخاص بك للتأكيد"
+    },
+    "delete_emote_or_set": {
+      "title": "حذف {name}",
+      "warning_message_emote": "سيؤدي هذا إلى حذف الرمز التعبيري بشكل دائم. لا يمكنك التراجع عن هذا الإجراء.",
+      "warning_message_set": "سيؤدي هذا إلى حذف مجموعة الرموز التعبيرية بشكل دائم. لا يمكنك التراجع عن هذا الإجراء.",
+      "reason": "السبب",
+      "reason_for_deletion": "سبب الحذف"
+    },
+    "edit_emote": {
+      "title": "تحرير {emote}"
+    },
+    "edit_emote_set": {
+      "title": "تحرير مجموعة الرموز التعبيرية",
+      "show_on_profile": "عرض على الملف الشخصي",
+      "publicly_listed": "مُسجّل في القائمة العامة"
+    },
+    "remove_emote": {
+      "title": "إزالة الرموز التعبيرية المحددة من {set}"
+    },
+    "report_emote": {
+      "title": "الإبلاغ عن الرمز التعبيري",
+      "choose_reasons": "اختر الأسباب",
+      "reasons": {
+        "my_work": "أنشأت هذا الرمز التعبيري ولكن تم رفعه بواسطة شخص آخر",
+        "duplicate": "هذا الرمز التعبيري مكرر",
+        "sexual": "يحتوي هذا الرمز التعبيري على صور إباحية أو صور جنسية مفرطة",
+        "violance": "يحتوي هذا الرمز التعبيري على عنف شديد أو مشاهد دموية",
+        "its_me": "هذا الرمز التعبيري يُظهرني وأنا لا أحب ذلك",
+        "offensive": "أجد هذا الرمز التعبيري مهين",
+        "other": "غير ذلك"
+      },
+      "additional_info": "معلومات إضافية",
+      "disclaimer": "إساءة استخدام ميزة الإبلاغ قد تؤدي إلى إلغاء وصولك."
+    },
+    "transfer_emote": {
+      "title": "نقل {emote}",
+      "details": "سيؤدي هذا إلى نقل {emote}.",
+      "receipient": "مستلم الرمز التعبيري",
+      "transfer": "نقل"
+    },
+    "badge": {
+      "title": "شارة"
+    },
+    "subscription": {
+      "gifted_by": "اشتراكك مهدى بواسطة",
+      "cancel_notice": "إنهاء اشتراكك الآن سيؤدي إلى فقدانك الوصول إلى مزايا اشتراكك فورًا. هل أنت متأكد من رغبتك في إنهاء اشتراكك؟",
+      "cancel_confirmation": "هل أنت متأكد من رغبتك في إلغاء اشتراكك؟ ستفقد إمكانية الاستفادة من مزايا اشتراكك عند انتهاء مدة الفاتورة الحالية.",
+      "confirm": "تأكيد"
+    },
+    "error": {
+      "title": "خطأ"
+    },
+    "pickems": {
+      "gift": {
+        "title": "إهداء بطاقة \"Pick'ems\"",
+        "gift_to": "إهداء بطاقة \"Pick'ems\" إلى",
+        "recipient": "اختر المستلم",
+        "back": "رجع",
+        "continue": "استمر"
+      }
+    },
+    "gift": {
+      "title": "إهداء 1",
+      "gift_to": "إهداء 1 {variantUnit(variant)} إلى",
+      "recipient": "اختر المستلم"
+    },
+    "paint": {
+      "title": "طلاء"
+    },
+    "buttons": {
+      "back": "رجع",
+      "continue": "استمر"
+    },
+    "emote-events": {
+      "upload": {
+        "action": "تم الرفع"
+      },
+      "process": {
+        "start": "بدأ تنفيذ جديد",
+        "success": "تم التنفيذ بنجاح",
+        "fail": "فشل التنفيذ",
+        "cancel": "تم إلغاء التنفيذ"
+      },
+      "change_name": {
+        "action": "تم تغيير الاسم"
+      },
+      "merge": {
+        "action": "تم الدمج"
+      },
+      "change_owner": {
+        "action": "تم نقل الملكية"
+      },
+      "change_tags": {
+        "action": "تعيين العلامات إلى"
+      },
+      "change_flags": {
+        "approved_public": {
+          "action": "تمت موافقة التسجيل للقائمة العامة"
+        },
+        "removed_public": {
+          "action": "تمت الإزالة من القائمة العامة"
+        },
+        "approved_personal": {
+          "action": "موافق للاستخدام الشخصي"
+        },
+        "rejected_personal": {
+          "action": "مرفوض للاستخدام الشخصي"
+        },
+        "added_overlaying": {
+          "action": "تمت إضافة تراكب العلم"
+        },
+        "removed_overlaying": {
+          "action": "تمت إزالة تراكب العلم"
+        },
+        "added_private": {
+          "action": "تمت إضافة العلم الخاص"
+        },
+        "removed_private": {
+          "action": "تمت إزالة العلم الخاص"
+        }
+      },
+      "delete": {
+        "action": "تم الحذف"
+      }
+    }
+  },
+  "pages": {
+    "activity": {
+      "title": "النشاط",
+      "emote": {
+        "deleted_emote": "حذف الرمز التعبيري",
+        "deleted_set": "حذف المجموعة",
+        "by": "من قبل",
+        "created": "أنشأ",
+        "changed_tags": "تم تغيير الوسوم لـ",
+        "changed_capacity": "تم تغيير سعة",
+        "added": "تمت الإضافة",
+        "removed": "تمت إزالة الرمز التعبيري",
+        "renamed": "تم تغيير اسم الرمز التعبيري",
+        "in": "في",
+        "from": "من",
+        "to": "إلى",
+        "deleted": "محذوف"
+      },
+      "user": {
+        "changed_paint": "تم تغيير الطلاء النشط من",
+        "changed_badge": "تم تغيير الشارة النشطة من",
+        "removed": "حذف",
+        "connection": "أتصال",
+        "changed_set": "تم تغيير مجموعة الرموز التعبيرية النشطة من",
+        "added": "تمت الإضافة",
+        "no_badge": "بدون شارة",
+        "no_paint": "دون طلاء",
+        "deleted": "تم الحذف"
+      }
+    },
+    "auth": {
+      "title": {
+        "logging": "جارٍ تسجيل دخولك...",
+        "logged": "تم تسجيل الدخول",
+        "failed": "فشل تسجيل الدخول"
+      },
+      "state": {
+        "logging": "جارٍ تسجيل دخولك...",
+        "logged": "تم تسجيل الدخول",
+        "failed": {
+          "title": "فشل تسجيل الدخول",
+          "message": "تأكد من فتح هذه النافذة بواسطة الإضافة"
+        }
+      }
+    },
+    "home": {
+      "title": "رئيسي",
+      "features": {
+        "emote_slots": "1000 رمز تعبيري",
+        "emote_slots_info": "سيحصل الجميع على 1000 رمز تعبيري قابل للتخصيص للقنوات مجانًا. احتفظ بجميع رموزك التعبيرية في مكان واحد.",
+        "emote_slots_button": "تصفح الرموز التعبيرية",
+        "emote_sets": "مجموعات رموز تعبيرية",
+        "emote_sets_info": "مجموعات رموز تعبيرية قابلة للتخصيص يمكن مشاركتها مع مستخدمين آخرين أو تبديلها بسهولة على قناتك.",
+        "emote_sets_button": "إنشاء مجموعة رموز تعبيرية",
+        "custom_emotes": "أسماء رموز تعبيرية مخصصة",
+        "custom_emotes_info": "لا يعجبك اسم الرمز التعبيري الذي اختاره المؤلف؟ يمكنك تغييره لقناتك فقط.",
+        "custom_emotes_button": "تصفح الرموز التعبيرية",
+        "real-time": "تحديثات فورية",
+        "real-time_info": "تغيير الرموز التعبيرية في قناتك يحدث فوراً لجميع المشاهدين. لا حاجة لتحديث الصفحة أو الانتظار.",
+        "real-time_button": "تحميل الامتداد",
+        "large_community": "مجتمع كبير",
+        "large_community_info": "يخدم 7TV أكثر من 2,000,000 مستخدم فريد يوميًا ويحتوي على مكتبة تضم أكثر من 1,000,000 رمز رقمي عام.",
+        "large_community_button": "انضم إلى Discord الخاص بنا",
+        "next_gen": "صيغ الجيل القادم",
+        "next_gen_info": "نستخدم صور أحدث وأكثر تحسينًا مثل WebP و AVIF لتقليل استخدام النطاق الترددي.",
+        "next_gen_button": "تحميل الامتداد"
+      }
+    },
+    "help": {
+      "title": "مساعدة"
+    },
+    "directory": {
+      "title": "مرشد",
+      "bookmarked": "محفوظ",
+      "sorting": {
+        "title": "فرز",
+        "alphabetical": "أبجدي",
+        "upload_date": "تاريخ الرفع"
+      },
+      "filters": {
+        "animated": "متحرك",
+        "static": "ثابت",
+        "overlaying": "تراكب",
+        "personal_use": "استخدام شخصي",
+        "exact_match": "مطابقة تامة"
+      },
+      "size": {
+        "title": "حجم",
+        "any": "أي حجم"
+      }
+    },
+    "landing": {
+      "start": "ابدأ رحلتك مع مئات الرموز التعبيرية والميزات التي تحسن تجربة الدردشة لديك. حمل امتداد 7TV الرسمي أو أي أدوات خارجية أخرى.",
+      "developers": {
+        "header": "المصدر المتاح",
+        "info": "قاعدة تعليماتنا البرمجية كاملة متاحة على GitHub بترخيص المصدر. يمكن لأي شخص الاطلاع عليها والمساهمة فيها."
+      },
+      "download": {
+        "start": "ابدأ رحلتك مع مئات الرموز التعبيرية والميزات التي تحسن تجربة الدردشة لديك. حمل امتداد 7TV الرسمي أو أي أدوات خارجية أخرى.",
+        "extension": "امتداد الموقع",
+        "stable": "إصدار مستقر",
+        "nightly": "إصدار ليلي",
+        "chatterino": "Chatterino",
+        "mobile": {
+          "apps": "تطبيقات الجوال"
+        },
+        "bots": {
+          "header": "روبوتات الدردشة"
+        }
+      },
+      "features": {
+        "header": "لماذا 7TV؟",
+        "info": "توفر منصتنا مجموعة متنوعة من الميزات المفيدة التي تحسن تجربة الدردشة الخاصة لديك."
+      },
+      "footer": {
+        "affiliated": "7TV لا ينتمي إلى Twitch أو Kick أو Youtube أو Discord",
+        "privacy_policy": "سياسة الخصوصية",
+        "tos": "شروط الخدمة"
+      },
+      "hero": {
+        "platform": "منصة الرموز التعبيرية",
+        "all": "للجميع",
+        "download": "تحميل",
+        "manage": "أدر مئات الرموز التعبيرية لقنواتك في Twitch أو Kick أو Youtube بسهولة. حسن تجربة الدردشة لديك.",
+        "more": "لمزيد من المعلومات",
+        "xmas": {
+          "header": "حدث اشتراك عيد الميلاد",
+          "info": "اهدي 1 اشتراك لأي شخص في عيد الميلاد هذا واحصل على شارة خاصة!",
+          "gift": "اهدي اشتراك"
+        },
+        "nnys": {
+          "info": "صوت في NNYS 2025 للحصول على طلاء وشارة ومجموعة رموز تعبيرية حصرية.",
+          "vote": "صوت في NNYS 2025"
+        },
+        "cs2": {
+          "streamers": "35 مذيعين",
+          "tournament": "بطولة تستضيفها 7TV",
+          "event": "حدث لمدة 3 أيام",
+          "header": "ضع \"Pick'ems\" الخاصة بك. اربح جوائز.",
+          "info": "استضافة 7TV لبطولة CS2",
+          "date": "29 فبراير - 2 مارس",
+          "pickems": "ضع \"Pick'ems\" الخاصة بك",
+          "pass": "احصل على البطاقة!",
+          "badges_paints": "اربح شارات وطلاءات.",
+          "description1": "xQc و OhnePixel و JasonTheWeen و 32 مذيعين آخرين يتنافسون وجهًا لوجه",
+          "description2": "في بطولة CS2 التي تستضيفها 7TV لمدة 3 أيام بنظام خروج المغلوب من مرة واحدة."
+        }
+      }
+    },
+    "discover": {
+      "title": "اكتشف",
+      "uploads": "المرفوعات",
+      "followed": "الحسابات المتابَعة"
+    },
+    "store": {
+      "title": "محل",
+      "redeem": {
+        "title": "استخدام",
+        "header": "استخدم رمز هدية",
+        "subtitle": "استخدم رمز هدية للحصول على مظاهر ومزايا حصرية.",
+        "state": {
+          "idle": "خامل",
+          "loading": "جاري التحميل",
+          "success": "نجاح"
+        },
+        "code": "رمز",
+        "shown": "معروض",
+        "trial": "لقد استخدمت اشتراكك التجريبي بنجاح"
+      },
+      "purchase": {
+        "success": "تم إكمال عملية الشراء بنجاح"
+      },
+      "subscription": {
+        "banner_title_subbed": "شكرًا على الدعم",
+        "banner_title_unsubbed": "احصل على مزايا خاصة",
+        "banner_subtitle_subbed": "استمتع بمزاياك الخاصة للمشتركين!",
+        "banner_subtitle_unsubbed": "إشترك لتحسين تجربة الدردشة لديك.",
+        "badge_progress": {
+          "title": "تطور الشارة",
+          "left": "متبقي {duration}"
+        },
+        "benefits": {
+          "title": "مزايا الاشتراك",
+          "animated_avatar": "صورة شخصية متحركة",
+          "personal_emotes": "الرموز التعبيرية الشخصية",
+          "paints": "طلاءات الاسم",
+          "sub_badge": "شارة المشترك",
+          "raffle_tickets": "تذاكر اليانصيب"
+        },
+        "raffle": "سحب يانصيب الرموز التعبيرية العالمية",
+        "monthly_paints": "طلاءات شهرية",
+        "your_cosmetics": "المظاهر الخاصة بك",
+        "your_paints": "الطلاءات الخاصة بك",
+        "beomce_a_subscriber": "اشترك الآن",
+        "your_badges": "شاراتك",
+        "top_gifters": "أفضل مقدمي الهدايا",
+        "subscribe": "اشترك",
+        "subscribed": "مشترك",
+        "cancel": "إلغاء الاشتراك",
+        "reactivate": "إعادة تفعيل الاشتراك",
+        "one_monhth": "1 شهر",
+        "one_year": "1 سنة"
+      },
+      "paint_bundles": {
+        "coming_soon": "قريباً",
+        "banner_title": "اجعل نفسك متوهج",
+        "banner_subtitle": "طلاءات الاسم ستتيح لك التعبير عن نفسك بكل لون."
+      },
+      "events": {
+        "no_events": "لا توجد فعاليات قادمة",
+        "xmas": "حدث عيد الميلاد 2024: اهدي 1 اشتراك للحصول على شارة خاصة",
+        "cs2": {
+          "tournament": "استضافة 7TV لبطولة CS2",
+          "cosmetics": "هل ترغب في ربح مظاهر مقابل توقع النتيجة؟ انقر أدناه!",
+          "twitch": "عرض Twitch",
+          "bundle": "شراء الباقة",
+          "already_subscribed": "مشترك بالفعل",
+          "subscribe": "{price} اليوم، ثم {recurring}",
+          "billing_cycle": "مدفوع كشراء لمرة واحدة",
+          "pickems": {
+            "place": "ضع \"Pick'ems\"",
+            "predict": "توقع الفائزين",
+            "purchase_pass": "شراء البطاقة"
+          },
+          "pass": {
+            "title": "بطاقة \"Pick'ems\"",
+            "get": "احصل على البطاقة",
+            "bundle": "بطاقة + {variantName(variant)} باقة الاشتراك"
+          },
+          "schedule": {
+            "header": "جدول البطولة",
+            "stage": "منصة",
+            "best_of": "الأفضل من",
+            "start_time": "وقت البداية"
+          },
+          "streamers": {
+            "header": "تعرف على المذيعين",
+            "info": "تشكيلة مميزة من مذيعين في Twitch يبنون فريق من مجتمعاتهم للتنافس وجهًا لوجه في بطولة نمط CS بنظام خروج المغلوب من مرة واحدة.",
+            "watch": "شاهد الحدث الرئيسي على",
+            "twitch_channel": "قناة 7TV على Twitch",
+            "streamer_pov": "أو من وجهة نظر المذيع المفضل بك."
+          }
+        }
+      }
+    },
+    "admin": {
+      "title": "إدارة",
+      "overview": "نظرة عامة",
+      "welcome": "مرحبًا بعودتك",
+      "enjoy": "استمتع بالتعديل!",
+      "tickets": {
+        "title": "التذاكر",
+        "emotes": {
+          "public_listing": "القائمة العامة",
+          "personal_use": "استخدام شخصي",
+          "resolved": "تم الحل",
+          "not_implemented": "غير مطبق"
+        },
+        "emote_table": {
+          "emote_name": "اسم الرمز التعبيري",
+          "uploader": "الرافع",
+          "country": "الدولة",
+          "tags_flags": "العلامات والأعلام",
+          "reviewed_by": "تمت المراجعة بواسطة"
+        },
+        "reports": "البلاغات",
+        "reports_options": {
+          "all": "الجميع",
+          "assigned": "معيّن",
+          "closed": "مغلق"
+        },
+        "reports_table": {
+          "reported_by": "تم الإبلاغ بواسطة",
+          "target": "مستهدف",
+          "description": "وصف",
+          "assigned_to": "معيّن لـ",
+          "status": "حالة",
+          "date": "التاريخ",
+          "ticket_id": "رقم التذكرة",
+          "subject": "موضوع",
+          "details": "تفاصيل"
+        },
+        "reports_actions": {
+          "close": "اختتام",
+          "assign_self": "تعيين شخصي",
+          "add_comment": "إضافة تعليق"
+        }
+      },
+      "codes": {
+        "redeem": "استخدام رموز",
+        "add": "إضافة رمز(رموز)",
+        "filters": {
+          "header": "عوامل التصفية:",
+          "remaining_uses": "الاستخدامات المتبقية"
+        },
+        "search": {
+          "results": "تم العثور على {results.totalCount} نتائج ({results.pageCount} صفحات)"
+        },
+        "attributes": {
+          "name": {
+            "name": "اسم",
+            "description": "وصف",
+            "tags": "علامات",
+            "code": "رمز",
+            "remaining_uses": "الاستخدامات المتبقية",
+            "active_period": "المدة الفعالة",
+            "effect": "تأثير",
+            "subscription_effect": "تأثير الاشتراك",
+            "created_by": "تم الإنشاء بواسطة",
+            "created_at": "تاريخ الإنشاء",
+            "actions": "إجراءات"
+          }
+        },
+        "period": {
+          "unlimited": "غير محدود"
+        },
+        "trial": {
+          "days": "أيام تجريبية",
+          "no_trial": "لا توجد تجربة",
+          "none": "لا شيء"
+        },
+        "system": "نظام"
+      },
+      "special_events": {
+        "header": "الأحداث الخاصة",
+        "create": "إنشاء حدث خاص",
+        "add": "إضافة حدث خاص",
+        "results": "تم العثور على {results.length} نتائج",
+        "attributes": {
+          "name": "اسم",
+          "description": "وصف",
+          "tags": "علامات",
+          "created_by": "تم الإنشاء بواسطة",
+          "created_at": "تاريخ الإنشاء",
+          "actions": "إجراءات",
+          "create": "إنشاء",
+          "cancel": "إلغاء"
+        },
+        "system": "نظام",
+        "no_events": "لا توجد أحداث خاصة"
+      },
+      "users": {
+        "id": {
+          "back": "رجع",
+          "last_updated": "آخر تحديث في",
+          "search_last_update": "آخر تحديث البحث في",
+          "queued": "في قائمة الانتظار للتحديث",
+          "stripe": {
+            "customer": "عميل Stripe",
+            "view": "عرض",
+            "no_customer": "لا يوجد عميل Stripe مرتبط",
+            "roles": "أدوار"
+          },
+          "actions": {
+            "header": "إجراءات",
+            "sessions": {
+              "header": "جلسات",
+              "create_session": "إنشاء جلسة جديدة",
+              "delete_all": "حذف جميع الجلسات",
+              "expiration": "تاريخ الانتهاء في",
+              "token": "رمز",
+              "copy_token": "نسخ الرمز",
+              "create": "إنشاء",
+              "close": "إغلاق"
+            },
+            "connections": {
+              "header": "الاتصالات",
+              "kick": "ربط Kick يدويًا",
+              "username": "اسم مستخدم Kick"
+            },
+            "entitlements": {
+              "header": "الاستحقاقات",
+              "create": "إنشاء استحقاقات",
+              "assign": "تعيين استحقاقات يدويًا",
+              "assign_to": "تعيين استحقاقات إلى",
+              "remove_all": "إزالة جميع الاستحقاقات",
+              "view": "عرض الاستحقاقات",
+              "showing": "عرض الاستحقاقات المعينة إلى"
+            }
+          },
+          "subscription": {
+            "header": "اشتراك",
+            "period": {
+              "header": "فترات الاشتراك",
+              "key": "مفتاح",
+              "value": "قيمة",
+              "id": "معرف"
+            },
+            "copy": {
+              "ulid": "نسخ ULID",
+              "uuid": "نسخ UUID"
+            },
+            "provider": {
+              "id": "رقم المزود",
+              "view": "عرض"
+            },
+            "product": {
+              "id": "رقم المنتج",
+              "view": "عرض",
+              "start": "بداية",
+              "end": "انتهاء",
+              "is_trial": "هو تجريبي؟",
+              "auto_renew": "تجديد تلقائي؟",
+              "gifted": {
+                "header": "مهدى؟",
+                "yes": "نعم - بواسطة",
+                "no": "لا"
+              },
+              "created_by": "تم الإنشاء بواسطة",
+              "redeem": "استخدام رمز",
+              "invoice": "فاتورة",
+              "system": "نظام",
+              "variant": "تنوع المنتج"
+            }
+          },
+          "not_found": "لم يتم العثور على المستخدم"
+        },
+        "layout": {
+          "users": "المستخدمين"
+        },
+        "page": {
+          "manage": {
+            "header": "إدارة",
+            "single_user": "إدارة مستخدم واحد"
+          },
+          "actions": {
+            "header": "إجراءات",
+            "sub_benefits_job": {
+              "header": "مزايا الاشتراك",
+              "manually": "تشغيل الاشتراك يدويًا لإعادة حساب الاستحقاقات ومزايا الاشتراك لجميع المستخدمين.",
+              "rerun": "إعادة التشغيل"
+            }
+          }
+        }
+      }
+    },
+    "emote": {
+      "use_emote": "استخدم الرمز التعبيري",
+      "add_to": "إضافة إلى...",
+      "transfer": "نقل",
+      "merge": "دمج",
+      "size": "حجم",
+      "copy_link": "نسخ الرابط"
+    },
+    "user": {
+      "about": "نبذة عن",
+      "active_emotes": "الرموز التعبيرية الفعالة",
+      "uploaded": "تم الرفع",
+      "uploaded_emotes": "الرموز التعبيرية المرفوعة"
+    },
+    "settings": {
+      "account": {
+        "title": "حساب",
+        "profile": {
+          "details": "تخصيص التفضيلات وإدارة التفاصيل لتناسب احتياجاتك الفردية",
+          "display_name": "اسم العرض",
+          "display_name_description": "اختر اتصال رئيس يتم استخدامه لاسم العرض وصورة شخصية الثابتة",
+          "profile_picture_description": "اختر صورة شخصية يتم عرضها على جميع المنصات",
+          "update_profile_picture": "تحديث الصورة الشخصية"
+        },
+        "connections": {
+          "details": "إدارة الحسابات الخارجية وربطها لتسهيل الوصول وتعزيز قابلية التشغيل البيني داخل المنصة"
+        },
+        "security": {
+          "title": "أمان",
+          "details": "إدارة وتخصيص أمان حسابك",
+          "2fa": "المصادقة الثنائية",
+          "2fa_details": "قم بتعزيز أمان حسابك باستخدام المصادقة الثنائية (2FA)",
+          "email_details": "استلام رمز التحقق عبر البريد الإلكتروني",
+          "authenticator_app": "تطبيق المصادقة",
+          "authenticator_app_details": "تثبيت تطبيق لإنتاج رمز التحقق الخاص بك",
+          "sign_out_everywhere": "تسجيل الخروج من جميع الأجهزة",
+          "sign_out_everywhere_details": "ضمان الأمان وتسجيل الخروج من جميع الأجهزة بنقرة واحدة",
+          "delete_account_details": "إزالة جميع المعلومات الشخصية والبيانات المرتبطة بها من المنصة بشكل دائم، وإنهاء حسابك"
+        }
+      },
+      "appearance": {
+        "title": "مظهر",
+        "details": "غير المظهر",
+        "theme": {
+          "header": "نسق",
+          "options": {
+            "system": "نظام",
+            "dark": "داكن",
+            "light": "فاتح"
+          }
+        },
+        "motion": {
+          "header": "حركة أقل",
+          "options": {
+            "system": "نظام",
+            "enabled": "فعال",
+            "disbaled": "معطل"
+          }
+        },
+        "right-to-left-layout": {
+          "header": "تصميم اتجاه الموقع الإلكتروني",
+          "options": {
+            "ltr": "من اليسار إلى اليمين",
+            "rtl": "من اليمين إلى اليسار"
+          }
+        }
+      },
+      "editors": {
+        "details": "إدارة وتخصيص محرريك أو القنوات التي تحررها",
+        "editing_for": "تحرير من أجل",
+        "add_editor": "إضافة محرر",
+        "not_allowed": "لا يُسمح لك بإدارة المحررين لهذا المستخدم"
+      },
+      "notifications": {
+        "details": "تحديثات وتنبيهات فورية تبقي المستخدمين على الاطلاع بالأحداث والرسائل والأنشطة المهمة داخل الموقع أو التطبيق"
+      },
+      "blocked": {
+        "title": "محظور",
+        "details": "إدارة المحتوى أو المستخدمين أو الأنشطة المقيدة أو المحظورة الخاصة بك",
+        "add_user": "إضافة مستخدم محظور"
+      },
+      "billing": {
+        "title": "فواتير",
+        "subscription": {
+          "details": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni incidunt numquam itaque, amet ad, pariatur possimus illo atque sunt asperiores molestias autem ex nobis consequuntur culpa. Corporis possimus aspernatur soluta.",
+          "use_credits": "استخدم رصيد الاشتراك",
+          "use_credits_details": "سيتم استخدام رصيد اشتراكك أولاً في فاتورتك القادمة",
+          "cancelled": "تم إلغاء الاشتراك",
+          "cancelled_details": "تم إلغاء اشتراكك وستنتهي مزاياك في {date}"
+        },
+        "history": {
+          "title": "تاريخ الفواتير",
+          "details": "عرض جميع الأنشطة المالية المرتبطة بحسابك، مثل فواتير الدفع والمعاملات السابقة"
+        },
+        "payment_methods": {
+          "details": "التحقق من طرق الدفع المفضلة لك وتحديثها",
+          "add_new": "إضافة جديد",
+          "card": {
+            "title": "معلومات البطاقة",
+            "ends_in": "تنتهي بـ {digits}",
+            "expires": "تنتهي صلاحيتها {year}/{month}",
+            "address": "عنوان",
+            "name": "اسم"
+          }
+        },
+        "table": {
+          "status": "حالة",
+          "amount": "مبلغ",
+          "invoice": "فاتورة"
+        }
+      },
+      "user_table": {
+        "name": "اسم",
+        "last_modified": "آخر تعديل",
+        "permissions": "أذون"
+      }
+    },
+    "link": {
+      "linking": "ربط حسابك...",
+      "linking_successful": "تم ربط الحساب بنجاح",
+      "linking_failed": "فشل الربط"
+    },
+    "extension": {
+      "login": "جاري تسجيل دخولك...",
+      "login_successful": "تم تسجيل الدخول",
+      "login_failed": "فشل تسجيل الدخول",
+      "window": "تأكد من فتح هذه النافذة بواسطة الامتداد"
+    }
+  }
+}

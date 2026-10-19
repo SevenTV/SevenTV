@@ -113,6 +113,13 @@ impl UserEditorMutation {
 			.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load editors"))?
 			.unwrap_or_default();
 
+		if editors.len() >= 50 {
+			return Err(ApiError::bad_request(
+				ApiErrorCode::BadRequest,
+				"editor limit of 50 reached",
+			));
+		}
+
 		if editors.iter().any(|editor| editor.id.editor_id == editor_id) {
 			return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "editor already exists"));
 		}

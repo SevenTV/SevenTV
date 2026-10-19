@@ -23,7 +23,7 @@
 		<BadgeComponent inline {badge} enableDialog />
 		{badge.name}
 	{:else}
-		{$t("pages.store.events.user.no_badge")}
+		{$t("pages.activity.user.no_badge")}
 	{/if}
 {/snippet}
 
@@ -33,7 +33,7 @@
 			{paint.name.length > 0 ? paint.name : paint.id}
 		</PaintComponent>
 	{:else}
-		{$t("pages.store.events.user.no_paint")}
+		{$t("pages.activity.user.no_paint")}
 	{/if}
 {/snippet}
 
@@ -41,14 +41,14 @@
 	{#if emoteSet}
 		<a href="/emote-sets/{emoteSet.id}">{emoteSet.name}</a>
 	{:else}
-		<s>{$t("pages.store.events.emote.deleted_set")}</s>
+		<s>{$t("pages.activity.emote.deleted_set")}</s>
 	{/if}
 {/snippet}
 
 {#snippet userLink(actor?: User | null, by: boolean = true)}
 	{#if actor && actor.mainConnection}
 		{#if by}
-			{$t("pages.store.events.emote.by")}
+			{$t("pages.activity.emote.by")}
 		{/if}
 		<a href="/users/{actor.id}" class="user-link" style:color={actor.highestRoleColor?.hex}>
 			{actor.mainConnection.platformDisplayName}
@@ -70,43 +70,51 @@
 		{:else if event.data.__typename === "EventUserDataChangeActivePaint"}
 			<PaintBrush />
 			<span class="text">
-				{$t("pages.store.events.user.changed_paint")}
+				{$t("pages.activity.user.changed_paint")}
 				{@render paint(event.data.oldPaint)}
-				{$t("pages.store.events.emote.to")}
+				{$t("pages.activity.emote.to")}
 				{@render paint(event.data.newPaint)}
 				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveBadge"}
 			<PaintBrush />
 			<span class="text">
-				{$t("pages.store.events.user.changed_badge")}
+				{$t("pages.activity.user.changed_badge")}
 				{@render badge(event.data.oldBadge)}
-				{$t("pages.store.events.emote.to")}
+				{$t("pages.activity.emote.to")}
 				{@render badge(event.data.newBadge)}
 				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataChangeActiveEmoteSet"}
 			<FolderSimple />
 			<span class="text">
-				{$t("pages.store.events.user.changed_set")}
+				{$t("pages.activity.user.changed_set")}
 				{@render emoteSetLink(event.data.oldEmoteSet)}
-				{$t("pages.store.events.emote.to")}
+				{$t("pages.activity.emote.to")}
 				{@render emoteSetLink(event.data.newEmoteSet)}
 				{@render userLink(event.actor)}
 			</span>
 		{:else if event.data.__typename === "EventUserDataAddConnection"}
 			<PlugsConnected />
 			<span class="text"
-				>{$t("pages.store.events.user.added")} {event.data.addedPlatform} {$t("pages.store.events.user.connection")} {@render userLink(event.actor)}</span
+				>{$t("pages.activity.user.added")}
+				{event.data.addedPlatform}
+				{$t("pages.activity.user.connection")}
+				{@render userLink(event.actor)}</span
 			>
 		{:else if event.data.__typename === "EventUserDataRemoveConnection"}
 			<Plugs />
 			<span class="text"
-				>{$t("pages.store.events.user.removed")} {event.data.removedPlatform} {$t("pages.store.events.user.connection")} {@render userLink(event.actor)}</span
+				>{$t("pages.activity.user.removed")}
+				{event.data.removedPlatform}
+				{$t("pages.activity.user.connection")}
+				{@render userLink(event.actor)}</span
 			>
 		{:else if event.data.__typename === "EventUserDataDelete"}
 			<Trash />
-			<span class="text">{$t("pages.store.events.user.deleted")} {@render userLink(event.actor)}</span>
+			<span class="text"
+				>{$t("pages.activity.user.deleted")} {@render userLink(event.actor)}</span
+			>
 		{/if}
 		<span class="time">
 			<FromNow date={moment(event.createdAt)} />

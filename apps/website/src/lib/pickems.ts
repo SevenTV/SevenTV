@@ -36,12 +36,12 @@ export async function purchasePickems(
 	}
 
 	// FIX update this for live
-	const pickemsId = "01JK6K2GCE06A9F6FSBVZA2KQA";
+	const pickemsId = "";
 
 	const res = await gqlClient()
 		.mutation(
 			graphql(`
-				mutation PurchasePickems(
+				mutation PurchaseBundle(
 					$userId: Id!
 					$pickemsId: Id!
 					$subscriptionPriceId: StripeProductId

@@ -4,6 +4,7 @@
 	import { addEmoteToSet, removeEmoteFromSet } from "$/lib/setMutations";
 	import { Minus, Plus } from "phosphor-svelte";
 	import Button from "./input/button.svelte";
+	import { t } from "svelte-i18n";
 	import Spinner from "./spinner.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 
@@ -82,12 +83,12 @@
 					<Minus />
 				{/if}
 			{/snippet}
-			Remove Emote from {setName}
+			{$t("dialogs.emote_set.default_emote_set.remove", { values: { set: setName } })}
 		</Button>
 	{:else}
 		<Button
 			onclick={useEmote}
-			title={conflictingName ? "Conflicting Name" : undefined}
+			title={conflictingName ? $t("dialogs.emote_set.default_emote_set.conflicting_name") : undefined}
 			disabled={loading || conflictingName}
 			{big}
 			{primary}
@@ -99,7 +100,7 @@
 					<Plus />
 				{/if}
 			{/snippet}
-			Add Emote to {setName}
+			{$t("dialogs.emote_set.default_emote_set.add", { values: { set: setName } })}
 		</Button>
 	{/if}
 {/if}

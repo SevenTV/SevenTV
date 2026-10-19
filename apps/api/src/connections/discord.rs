@@ -10,6 +10,7 @@ pub struct DiscordUserData {
 	pub id: String,
 	pub username: String,
 	pub avatar: Option<String>,
+	pub email: Option<String>,
 }
 
 impl From<DiscordUserData> for PlatformUserData {
@@ -25,6 +26,7 @@ impl From<DiscordUserData> for PlatformUserData {
 			id: value.id,
 			username: value.username.clone(),
 			display_name: value.username.clone(),
+			email: value.email.clone(),
 		}
 	}
 }

@@ -79,8 +79,7 @@
 	<div>
 		<h2>{$t("common.connections")}</h2>
 		<span class="details">
-			Manage and link external accounts to streamline access and enhance interoperability within the
-			platform
+			{$t("pages.settings.account.connections.details")}
 		</span>
 	</div>
 	<ul class="content connections">

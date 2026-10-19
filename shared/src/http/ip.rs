@@ -59,24 +59,32 @@ impl<S> IpMiddlewareService<S> {
 				.unwrap());
 		}
 
-		let Some(header) = &self.config.ip_header else {
-			return Ok(());
+		// Used to be for only a single header in the cluster config
+		// let Some(header) = &self.config.ip_header else {
+		// 	return Ok(());
+		// };
+		
+
+		// a loop to find the first matching header from the cluster config
+		let detected_header = self.config.ip_headers
+			.iter()
+			.find(|&h| req.headers().contains_key(h));
+
+		let Some(header_name) = detected_header else {
+			return Err(axum::response::Response::builder()
+				.status(axum::http::StatusCode::FORBIDDEN)
+				.body("missing ip header".into())
+				.unwrap());
 		};
 
 		let ips = req
 			.headers()
-			.get(header)
+			.get(header_name) // Use the name we found above
+			.and_then(|v| v.to_str().ok())
 			.ok_or_else(|| {
 				axum::response::Response::builder()
-					.status(axum::http::StatusCode::FORBIDDEN)
-					.body("missing ip header".into())
-					.unwrap()
-			})?
-			.to_str()
-			.map_err(|_| {
-				axum::response::Response::builder()
 					.status(axum::http::StatusCode::BAD_REQUEST)
-					.body("ip header not valid".into())
+					.body("ip header not valid utf-8".into())
 					.unwrap()
 			})?
 			.split(',')
@@ -86,12 +94,12 @@ impl<S> IpMiddlewareService<S> {
 			.map_err(|_| {
 				axum::response::Response::builder()
 					.status(axum::http::StatusCode::BAD_REQUEST)
-					.body("invalid ip header".into())
+					.body("invalid ip format in header".into())
 					.unwrap()
 			})?;
 
 		for ip in ips.into_iter().rev() {
-			if trusted_proxies.iter().all(|net| !net.contains(&ip)) {
+			if self.config.trusted_proxies.iter().all(|net| !net.contains(&ip)) {
 				req.extensions_mut().insert(ip);
 				return Ok(());
 			}

@@ -15,12 +15,17 @@
 	import UserName from "../user-name.svelte";
 	import mouseTrap from "$/lib/mouseTrap";
 	import { afterNavigate } from "$app/navigation";
+	import { pageRightToLeft } from "$lib/layout";
 
 	let mobileSearchShown = $state(false);
 
 	let globalSearch: ReturnType<typeof GlobalSearch>;
 
+	type MenuAlignment = "left" | "right";
+	let menuAlignment = $state<MenuAlignment>("left");
+
 	$effect(() => {
+		menuAlignment = (($pageRightToLeft == "rtl") ? "left" : "right");
 		if (mobileSearchShown) {
 			globalSearch?.focus();
 		}
@@ -61,6 +66,12 @@
 		// 	arrow: true,
 		// });
 		tabs.push({ name: $t("pages.help.title"), pathname: "https://help.7tv.app/", highlight: "" });
+		// tabs.push({
+		// 	name: "2025 Recap",
+		// 	pathname: "/recap",
+		// 	highlight: "#a6ff96",
+		// });
+
 		return tabs;
 	});
 </script>
@@ -107,7 +118,7 @@
 
 		{#if $user !== undefined}
 			<HideOn mobile>
-				<DropDown hover={true}>
+				<DropDown align={menuAlignment} hover={true}>
 					{#if $user}
 						<Button class="profile">
 							<UserProfilePicture user={$user} size={32} />

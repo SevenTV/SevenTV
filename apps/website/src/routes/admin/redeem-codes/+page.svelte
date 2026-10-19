@@ -192,7 +192,7 @@
 </script>
 
 <svelte:head>
-	<title>{$t("pages.admin.redeem-codes.title")} - {$t("page_titles.admin_suffix")}</title>
+	<title>Redeem Codes - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 <div class="layout">
@@ -203,7 +203,7 @@
 				{#snippet icon()}
 					<Plus />
 				{/snippet}
-				{$t("pages.admin.redeem-codes.add")}
+				Add Code(s)
 			</Button>
 			<TextInput placeholder="Search" bind:value={query}>
 				{#snippet icon()}
@@ -211,19 +211,14 @@
 				{/snippet}
 			</TextInput>
 			<div>
-				{$t("pages.admin.redeem-codes.filters")}
-				<Checkbox bind:value={remainingUses}>{$t("pages.admin.redeem-codes.remaining")}</Checkbox>
+				Filters:
+				<Checkbox bind:value={remainingUses}>Remaining Uses</Checkbox>
 			</div>
 		</div>
 		<div class="buttons">
 			{#await results then results}
 				{#if results}
-					<p>
-						{$t("common.found")}
-						{results.totalCount}
-						{$t("common.results")} ({results.pageCount})
-						{$t("common.pages")}
-					</p>
+					<p>Found {results.totalCount} results ({results.pageCount} pages)</p>
 				{/if}
 			{/await}
 			<div class="buttons-horizontal">
@@ -252,17 +247,17 @@
 		<table>
 			<thead>
 				<tr>
-					<th>{$t("pages.admin.redeem-codes.table.name")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.description")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.tags")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.code")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.remaining_uses")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.active_period")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.effect")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.subscription_effect")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.created_by")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.created_at")}</th>
-					<th>{$t("pages.admin.redeem-codes.table.actions")}</th>
+					<th>Name</th>
+					<th>Description</th>
+					<th>Tags</th>
+					<th>Code</th>
+					<th>Remaining Uses</th>
+					<th>Active Period</th>
+					<th>Effect</th>
+					<th>Subscription Effect</th>
+					<th>Created By</th>
+					<th>Created At</th>
+					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -291,7 +286,7 @@
 										{moment(code.activePeriod.start).format()} -
 										{moment(code.activePeriod.end).format()}
 									{:else}
-										{$t("pages.admin.redeem-codes.unlimited")}
+										Unlimited
 									{/if}
 								</td>
 								<td>
@@ -307,20 +302,19 @@
 									{#if code.subscriptionEffect && code.subscriptionEffect.subscriptionProduct}
 										{code.subscriptionEffect.subscriptionProduct.name} -
 										{#if code.subscriptionEffect.trialDays}
-											{code.subscriptionEffect.trialDays}
-											{$t("pages.admin.redeem-codes.days_trail")}
+											{code.subscriptionEffect.trialDays} days trial
 										{:else}
-											{$t("pages.admin.redeem-codes.no_trail")}
+											No trial
 										{/if}
 									{:else}
-										{$t("common.none")}
+										None
 									{/if}
 								</td>
 								<td>
 									{#if code.createdBy}
 										<UserName user={code.createdBy as User} />
 									{:else}
-										{$t("common.system")}
+										System
 									{/if}
 								</td>
 								<td>
@@ -345,9 +339,7 @@
 						{/each}
 					{:else}
 						<tr>
-							<td colspan="11" style="text-align: center;"
-								>{$t("pages.admin.redeem-codes.no_codes")}</td
-							>
+							<td colspan="11" style="text-align: center;">No Codes</td>
 						</tr>
 					{/if}
 				{/await}

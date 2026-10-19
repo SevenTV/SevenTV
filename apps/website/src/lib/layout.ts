@@ -1,18 +1,25 @@
 import { writable } from "svelte/store";
 import { browser } from "$app/environment";
 import { type DialogMode } from "$/components/dialogs/dialog.svelte";
-import { isEasterEvent, isSummerGiftEvent } from "./events";
+import { isEasterEvent, isSummerGiftEvent, isXmasEvent, isValentinesEvent } from "./events";
 
 export const showMobileMenu = writable(false);
 
 export const showConstructionBar = loadBarShown("showConstructionBar");
 export const showEasterBar = loadBarShown("showEasterBar", !isEasterEvent());
 export const showSummerGift = loadBarShown("showSummerGift", !isSummerGiftEvent());
+export const showXmasBar = loadBarShown("showXmasBar", !isXmasEvent());
+export const showValentinesBar = loadBarShown("showValentinesBar2026", !isValentinesEvent());
 
 export const uploadDialogMode = writable<DialogMode>("hidden");
+export const selectionModeInEmotes = writable<boolean>(false);
 
 export const signInDialogMode = writable<DialogMode>("hidden");
 export const signInDialogPayload = writable<object | undefined>();
+
+export type PageRightLeftLayout = "ltr" | "rtl";
+let currentpageRightToLeft = browser ? (window.localStorage.getItem("pageRightToLeft") as PageRightLeftLayout) : "ltr";
+export const pageRightToLeft = writable<PageRightLeftLayout>(currentpageRightToLeft);
 
 export const defaultEmoteSetDialogMode = writable<DialogMode>("hidden");
 
@@ -91,6 +98,22 @@ reducedMotion.subscribe((value) => {
 
 	if (value) {
 		document.documentElement.classList.add(value);
+	}
+});
+
+
+pageRightToLeft.subscribe((isRtl) => {
+	if (browser && isRtl) {
+		if (!window.localStorage.getItem("pageRightToLeft")) {
+			window.localStorage.setItem("pageRightToLeft", "ltr");
+		}
+		if (isRtl == "rtl") {
+			document.documentElement.dir = "rtl";
+			window.localStorage.setItem("pageRightToLeft", "rtl");
+		} else {
+			document.documentElement.dir = "ltr";
+			window.localStorage.setItem("pageRightToLeft", "ltr");
+		}
 	}
 });
 

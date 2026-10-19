@@ -288,6 +288,7 @@
 		});
 
 		const graph = new MultiGraph();
+		console.log(graph);
 		graph.import({
 			nodes,
 			edges,
@@ -342,14 +343,14 @@
 </script>
 
 <svelte:head>
-	<title>{$t("pages.admin.graph.title")} - {$t("page_titles.admin_suffix")}</title>
+	<title>Entitlement Graph - {$t("page_titles.admin_suffix")}</title>
 </svelte:head>
 
 {#if $user?.permissions.user.manageAny}
 	<div class="inputs">
 		{#if userData}
 			{#await userData}
-				<p>{$t("pages.admin.graph.loading")}</p>
+				<p>{$t("common.loading")}</p>
 			{:then userData}
 				<span>{userData.name}</span>
 			{:catch e}
@@ -369,9 +370,9 @@
 				{/snippet}
 			</UserSearch>
 		{/if}
-		<Toggle bind:value={layoutStarted}>{$t("pages.admin.graph.layout")}</Toggle>
+		<Toggle bind:value={layoutStarted}>Layout</Toggle>
 		<label>
-			{$t("pages.admin.graph.node_size")}
+			Node Size
 			<input type="number" bind:value={size} min="1" max="15" step="1" />
 		</label>
 	</div>

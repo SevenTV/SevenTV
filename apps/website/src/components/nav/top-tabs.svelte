@@ -6,7 +6,7 @@
 		name: string;
 		pathname: string;
 		highlight?: string;
-		arrow?: boolean;
+		arrow?: Boolean;
 	};
 
 	let { tabs }: { tabs: Tab[] } = $props();
