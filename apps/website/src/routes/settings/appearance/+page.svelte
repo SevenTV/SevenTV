@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Select from "$/components/input/select.svelte";
 	import {
+		CalendarDots,
+		Clock,
 		Faders,
 		Moon,
 		PersonSimpleCircle,
@@ -10,9 +12,10 @@
 		ArrowLeft,
 	} from "phosphor-svelte";
 	import { t } from "svelte-i18n";
-	import { reducedMotion, theme, pageRightToLeft } from "$/lib/layout";
+	import { reducedMotion, theme, pageRightToLeft, dateFormat, timeFormat } from "$/lib/layout";
 	import { prefersReducedMotion } from "svelte/motion";
 	import { MediaQuery } from "svelte/reactivity";
+	import SegmentedControl from "$/components/input/segmented-control.svelte";
 
 	let systemTheme = $derived(
 		new MediaQuery("(prefers-color-scheme: light)").current
@@ -110,6 +113,32 @@
 		</div>
 		<hr />
 		<div class="setting">
+			<h3>Date Format</h3>
+			<div class="vertical">
+				{#snippet exact()}
+					<CalendarDots />
+				{/snippet}
+				{#snippet relative()}
+					<Clock />
+				{/snippet}
+				<Select
+					options={[
+						{ value: "date-format-relative", label: "Relative", icon: relative },
+						{ value: "date-format-exact", label: "Exact", icon: exact },
+					]}
+					bind:selected={$dateFormat}
+				/>
+				<SegmentedControl
+					options={[
+						{ value: "12h", label: "12h" },
+						{ value: "24h", label: "24h" },
+					]}
+					bind:value={$timeFormat}
+				/>
+			</div>
+		</div>
+		<hr />
+		<div class="setting">
 			<h3>{$t("pages.settings.appearance.right-to-left-layout.header")}</h3>
 			{#snippet enabled()}
 				<ArrowLeft />
@@ -149,5 +178,10 @@
 		flex-direction: column;
 		align-items: start;
 		gap: 0.5rem;
+
+		.vertical {
+			display: flex;
+			gap: 0.5rem;
+		}
 	}
 </style>
