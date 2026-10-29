@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Tags from "$/components/emotes/tags.svelte";
 	import Flags, { emoteSetToFlags } from "$/components/flags.svelte";
-	import { type DialogMode } from "$/components/dialogs/dialog.svelte";
 	import { t } from "svelte-i18n";
 	import { gqlClient } from "$/lib/gql";
 	import { graphql } from "$/gql";
+	import CloneEmoteSetDialog from "$/components/dialogs/clone-emote-set-dialog.svelte";
 	import EmoteLoader from "$/components/layout/emote-loader.svelte";
 	import {
 		EmoteSetKind,
@@ -19,6 +19,8 @@
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import {
 		CaretDown,
+		Copy,
+		Files,
 		Lightning,
 		LightningSlash,
 		MagnifyingGlass,
@@ -37,6 +39,12 @@
 	import Toggle from "$/components/input/toggle.svelte";
 
 	let { data }: { data: EmoteSet } = $props();
+
+	let cloneDialogMode = $state<"hidden" | "shown">("hidden");
+
+	function openCloneDialog() {
+		cloneDialogMode = "shown";
+	}
 
 	let selectionMode = $state(false);
 	let editDialogMode: DialogMode = $state("hidden");
@@ -258,6 +266,7 @@
 </svelte:head>
 
 <EditEmoteSetDialog bind:mode={editDialogMode} bind:data />
+<CloneEmoteSetDialog bind:mode={cloneDialogMode} sourceId={data.id} sourceName={data.name} />
 <!-- <CopyEmotesDialog bind:mode={copyEmotesDialogMode} />
 <RemoveEmotesDialog bind:mode={removeEmotesDialogMode} /> -->
 <div class="layout">
@@ -346,6 +355,20 @@
 				{/if}
 				<!-- </HideOn> -->
 			{/if}
+
+			<!-- Copy-Button: visible for all users -->
+			<Button secondary hideOnMobile onclick={openCloneDialog}>
+				{$t("pages.emote_set.copy_set")}
+				{#snippet iconRight()}
+					<Files />
+				{/snippet}
+			</Button>
+			<Button secondary hideOnDesktop onclick={openCloneDialog}>
+				{#snippet iconRight()}
+					<Files />
+				{/snippet}
+			</Button>
+
 			<!-- <Button secondary hideOnMobile>
 				{$t("pages.emote_set.copy_set")}
 				{#snippet iconRight()}
