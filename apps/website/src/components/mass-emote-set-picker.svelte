@@ -8,7 +8,8 @@
 	import { browser } from "$app/environment";
 	import { defaultEmoteSet } from "$/lib/defaultEmoteSet";
 	import DropDown from "../components/drop-down.svelte";
-	import { CaretDown, MagnifyingGlass, Minus, PencilSimple, Plus, Warning } from "phosphor-svelte";
+	import { Broom, CaretDown, MagnifyingGlass, Minus, PencilSimple, Plus, Warning } from "phosphor-svelte";
+	import { addableDeficit } from "$/lib/emoteSetCapacity";
 	import TextInput from "./input/text-input.svelte";
 	import { editableEmoteSets } from "$/lib/emoteSets";
 	import Button from "./input/button.svelte";
@@ -23,6 +24,8 @@
 	export let alias: string;
 	export let disabled: boolean = false;
 	export let hideEmoteDialogMode: () => void;
+	export let emotes: Emote[] = [];
+	export let onMakeRoom: (set: EmoteSet, requiredSlots: number) => void = () => {};
 
 	let searchQuery = "";
 	let favEmoteSets: string[] = [];
@@ -104,22 +107,55 @@
 		return value ? (JSON.parse(value) ?? undefined) : undefined;
 	}
 
-	function isDisabled(set: EmoteSet) {
-		if (disabled) {
-			return true;
-		}
+	function rowDeficit(set: EmoteSet): number {
+		return value[set.id] ? addableDeficit(set, emotes) : 0;
+	}
 
-		return title(set) !== undefined;
+	// Inline style for a set row: a selected full set gets the amber "needs room"
+	// accent (ring + checkmark); otherwise the usual add/remove border.
+	function rowAccentStyle(set: EmoteSet): string {
+		if (value[set.id] && rowDeficit(set) > 0) {
+			return "flex: 1; --check-accent: var(--admin-unlist);";
+		}
+		const border = toAdd.includes(set.id)
+			? "var(--approve)"
+			: toRemove.includes(set.id)
+				? "var(--danger)"
+				: undefined;
+		return border ? `flex: 1; border-color: ${border};` : "flex: 1;";
+	}
+
+	function isDisabled(set: EmoteSet) {
+		return disabled; // full sets stay selectable; Make Room handles capacity per row
 	}
 
 	function title(set: EmoteSet) {
 		if (!value[set.id] && set.capacity && set.emotes.totalCount >= set.capacity) {
 			return "Capacity Reached";
 		}
-
 		return undefined;
 	}
 </script>
+
+{#snippet capacityNote(set: EmoteSet)}
+	{@const deficit = rowDeficit(set)}
+	{#if deficit > 0}
+		<span
+			class="make-room-icon"
+			title={$t("dialogs.make_room.over_capacity", { values: { count: deficit } })}
+		>
+			<Broom
+				size={24}
+				style="cursor: pointer; fill: var(--primary); z-index: 5;"
+				onclick={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					onMakeRoom(set, deficit);
+				}}
+			/>
+		</span>
+	{/if}
+{/snippet}
 
 <div class="picker">
 	<TextInput placeholder={$t("labels.search_emote_set")} bind:value={searchQuery}>
@@ -200,21 +236,24 @@
 										...($defaultEmoteSet === set.id ? ["default"] : []),
 									]}
 								/>
+								{@render capacityNote(set)}
 							</div>
 						{/snippet}
 						{#if value && value[set.id] !== undefined}
-							<Checkbox
-								option
-								favSetId={set.id}
-								isFavAlready={favEmoteSets.includes(set.id)}
-								{handleEmoteSetIDInFavs}
-								leftLabel={pickerLeftLabel}
-								disabled={isDisabled(set)}
-								bind:value={value[set.id]}
-								style={`flex: 1;border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : undefined}`}
-								title={title(set)}
-								favIcon={true}
-							/>
+							<div class="set-row">
+								<Checkbox
+									option
+									favSetId={set.id}
+									isFavAlready={favEmoteSets.includes(set.id)}
+									{handleEmoteSetIDInFavs}
+									leftLabel={pickerLeftLabel}
+									disabled={isDisabled(set)}
+									bind:value={value[set.id]}
+									style={rowAccentStyle(set)}
+									title={title(set)}
+									favIcon={true}
+								/>
+							</div>
 						{:else}
 							<div class="placeholder">
 								<Spinner />
@@ -255,21 +294,24 @@
 								...($defaultEmoteSet === set.id ? ["default"] : []),
 							]}
 						/>
+						{@render capacityNote(set)}
 					</div>
 				{/snippet}
 				{#if value && value[set.id] !== undefined}
-					<Checkbox
-						option
-						favSetId={set.id}
-						isFavAlready={favEmoteSets.includes(set.id)}
-						{handleEmoteSetIDInFavs}
-						leftLabel={pickerLeftLabel}
-						disabled={isDisabled(set)}
-						bind:value={value[set.id]}
-						style={`flex: 1;border-color: ${toAdd.includes(set.id) ? "var(--approve)" : toRemove.includes(set.id) ? "var(--danger)" : undefined}`}
-						title={title(set)}
-						favIcon={true}
-					/>
+					<div class="set-row">
+						<Checkbox
+							option
+							favSetId={set.id}
+							isFavAlready={favEmoteSets.includes(set.id)}
+							{handleEmoteSetIDInFavs}
+							leftLabel={pickerLeftLabel}
+							disabled={isDisabled(set)}
+							bind:value={value[set.id]}
+							style={rowAccentStyle(set)}
+							title={title(set)}
+							favIcon={true}
+						/>
+					</div>
 				{:else}
 					<div class="placeholder">
 						<Spinner />
@@ -361,5 +403,13 @@
 		border-radius: 0.5rem;
 		background-color: var(--bg-medium);
 		border: 1px solid transparent;
+	}
+
+	.set-row {
+		display: contents;
+	}
+	.make-room-icon {
+		display: inline-flex;
+		align-items: center;
 	}
 </style>

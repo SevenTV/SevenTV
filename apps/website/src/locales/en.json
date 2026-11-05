@@ -246,6 +246,7 @@
       "default_emote_set": {
         "remove": "Remove Emote from {set}",
         "add": "Add Emote to {set}",
+        "make_room": "Make Room in {set}",
         "conflicting_name": "Conflicting Name"
       }
     },
@@ -269,6 +270,23 @@
       "change_name": "Change emote name",
       "confirm": "Confirm",
       "confirm_changes": "{count, plural, one {Confirm 1 change} other {Confirm {count} changes}}"
+    },
+    "make_room": {
+      "button": "Make Room",
+      "title": "Make Room in {set}",
+      "search_placeholder": "Search emotes",
+      "time_window_daily": "Daily",
+      "time_window_weekly": "Weekly",
+      "time_window_monthly": "Monthly",
+      "time_window_all_time": "All Time",
+      "no_activity": "No activity",
+      "rank": "#{rank}",
+      "remove_selected": "{count, plural, one {Remove 1 emote} other {Remove {count} emotes}}",
+      "confirm_remove": "{count, plural, one {Remove 1 emote?} other {Remove {count} emotes?}}",
+      "removing": "Removing...",
+      "remove_at_least": "Remove at least {count, plural, one {1 emote} other {{count} emotes}} to make room",
+      "over_capacity": "Needs {count, plural, one {1 more slot} other {{count} more slots}}",
+      "not_added": "Won't add to full sets until you make room"
     },
     "emote_ticket": {
       "emote_queue": "Emote queue",
