@@ -496,7 +496,26 @@ impl EmoteSetOperation {
 					)));
 				}
 
-				let alias = id.alias.unwrap_or_else(|| db_emote.default_name.clone());
+				if emote_set.emotes.iter().any(|e| e.id == id.emote_id) {
+					return Err(TransactionError::Custom(ApiError::conflict(
+						ApiErrorCode::BadRequest,
+						"emote is already in this set",
+					)));
+				}
+
+				let alias = match id.alias {
+					Some(a) => a,
+					None => {
+						let name = db_emote.default_name.clone();
+						if !crate::http::validators::check_emote_alias(&name) {
+							return Err(TransactionError::Custom(ApiError::bad_request(
+								ApiErrorCode::BadRequest,
+								"emote default name contains invalid characters",
+							)));
+						}
+						name
+					}
+				};
 
 				// This may be a problem if the emote has been deleted.
 				// We should likely load all the emotes here anyways.
