@@ -1033,6 +1033,13 @@ impl EmoteSetOperation {
 					TransactionError::Custom(ApiError::not_found(ApiErrorCode::BadRequest, "emote not found in set"))
 				})?;
 
+				let emote_owner = global.user_loader.load_fast(global, emote.owner_id).await.map_err(|_| {
+					TransactionError::Custom(ApiError::internal_server_error(
+						ApiErrorCode::LoadError,
+						"failed to load emote owner",
+					))
+				})?;
+
 				tx.register_event(InternalEvent {
 					actor: Some(authed_user.clone()),
 					session_id: session.user_session_id(),
@@ -1040,6 +1047,7 @@ impl EmoteSetOperation {
 						after: emote_set.clone(),
 						data: InternalEventEmoteSetData::RenameEmote {
 							emote: Box::new(emote.clone()),
+							emote_owner: emote_owner.map(Box::new),
 							emote_set_emote: emote_set_emote.clone(),
 							old_alias: old_emote_set_emote.alias.clone(),
 						},

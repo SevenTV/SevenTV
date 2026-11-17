@@ -12,7 +12,7 @@ use crate::http::middleware::session::Session;
 use crate::transactions::{TransactionError, TransactionResult, TransactionSession};
 
 pub async fn emote_update(
-	_: &Arc<Global>,
+	global: &Arc<Global>,
 	mut tx: TransactionSession<'_, ApiError>,
 	session: &Session,
 	emote_set: &EmoteSet,
@@ -47,6 +47,13 @@ pub async fn emote_update(
 		)));
 	}
 
+	let emote_owner = global.user_loader.load_fast(global, emote.owner_id).await.map_err(|_| {
+		TransactionError::Custom(ApiError::internal_server_error(
+			ApiErrorCode::LoadError,
+			"failed to load emote owner",
+			))
+		})?;
+	
 	let emote_set = tx
 		.find_one_and_update(
 			filter::filter! {
@@ -90,6 +97,7 @@ pub async fn emote_update(
 			after: emote_set.clone(),
 			data: InternalEventEmoteSetData::RenameEmote {
 				emote: Box::new(emote),
+				emote_owner: emote_owner.map(Box::new),
 				emote_set_emote: emote_set_emote.clone(),
 				old_alias: old_emote_set_emote.alias.clone(),
 			},
