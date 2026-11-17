@@ -6,6 +6,7 @@
 	import { t } from "svelte-i18n";
 	import DropDown from "../drop-down.svelte";
 	import {
+		SubscriptionProductKind,
 		SubscriptionState,
 		type SubscriptionInfo,
 		type SubscriptionProduct,
@@ -20,6 +21,7 @@
 	import CancelSubscriptionDialog from "../dialogs/cancel-subscription-dialog.svelte";
 	import { variantName, variantPrice, variantUnit } from "$/lib/utils";
 	import GiftSubscriptionDialog from "../dialogs/gift-subscription-dialog.svelte";
+	import SubscribeMonthsDialog from "../dialogs/subscribe-months-dialog.svelte";
 
 	interface Props {
 		subInfo: SubscriptionInfo;
@@ -179,13 +181,28 @@
 		giftSubVariant = variant;
 		giftSubDialog = "shown";
 	}
+
+	let subscribeMonthsDialog: DialogMode = $state("hidden");
+	let subscribeMonthsVariant = $state<SubscriptionProductVariant>();
+
+	function showSubscribeMonthsDialog(variant: SubscriptionProductVariant) {
+		subscribeMonthsVariant = variant;
+		subscribeMonthsDialog = "shown";
+	}
 </script>
 
 <CancelSubscriptionDialog bind:mode={cancelSubDialog} bind:subInfo />
 {#if giftSubVariant}
 	<GiftSubscriptionDialog bind:mode={giftSubDialog} variant={giftSubVariant} />
 {/if}
-<StoreSection title={subInfo.activePeriod ? $t("common.your_subscription") : $t("pages.store.subscription.beomce_a_subscriber")}>
+{#if subscribeMonthsVariant}
+	<SubscribeMonthsDialog bind:mode={subscribeMonthsDialog} variant={subscribeMonthsVariant} />
+{/if}
+<StoreSection
+	title={subInfo.activePeriod
+		? $t("common.your_subscription")
+		: $t("pages.store.subscription.beomce_a_subscriber")}
+>
 	{#snippet header()}
 		<div class="buttons">
 			{#if subInfo.activePeriod}
@@ -208,7 +225,10 @@
 						{#each product.variants as variant}
 							<Button
 								big
-								onclick={() => subscribe(variant.id)}
+								onclick={() =>
+									variant.kind === SubscriptionProductKind.Monthly
+										? showSubscribeMonthsDialog(variant)
+										: subscribe(variant.id)}
 								disabled={subscribeLoading !== undefined}
 								style="width: 100%"
 							>

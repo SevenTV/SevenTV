@@ -1,4 +1,10 @@
+use async_graphql::Context;
+use shared::database::product::StripeProductId;
+use shared::database::role::permissions::RateLimitResource;
 use shared::database::user::UserId;
+
+use crate::http::error::ApiError;
+use crate::http::guards::RateLimitGuard;
 
 mod billing;
 mod emote;
@@ -33,5 +39,16 @@ pub struct Mutation {
 impl Mutation {
 	async fn billing(&self, user_id: UserId) -> billing::BillingMutation {
 		billing::BillingMutation { user_id }
+	}
+
+	#[graphql(guard = "RateLimitGuard::new(RateLimitResource::EgVaultSubscribe, 1)")]
+	#[tracing::instrument(skip_all, name = "Mutation::gift_subscriptions")]
+	async fn gift_subscriptions(
+		&self,
+		ctx: &Context<'_>,
+		recipients: Vec<billing::GiftRecipientInput>,
+		variant_id: StripeProductId,
+	) -> Result<billing::SubscribeResponse, ApiError> {
+		billing::gift_subscriptions(ctx, recipients, variant_id).await
 	}
 }

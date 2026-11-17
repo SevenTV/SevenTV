@@ -4,19 +4,52 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{Extension, Json};
+use serde::Deserialize;
 use shared::database::product::{SubscriptionProduct, SubscriptionProductKind, SubscriptionProductVariant};
 use shared::database::queries::filter;
 use shared::database::role::permissions::{PermissionsExt, RateLimitResource, UserPermission};
 use shared::database::user::UserId;
 use shared::database::MongoCollection;
 
-use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata};
+use super::metadata::{CheckoutSessionMetadata, InvoiceMetadata, StripeMetadata, SubscriptionMetadata, MAX_GIFT_RECIPIENTS};
 use crate::global::Global;
 use crate::http::error::{ApiError, ApiErrorCode};
 use crate::http::extract::Query;
 use crate::http::middleware::session::Session;
 use crate::ratelimit::RateLimitRequest;
-use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, CheckoutProduct, Prefill};
+use crate::stripe_common::{create_checkout_session_params, find_or_create_customer, resolve_months, CheckoutProduct, Prefill};
+
+fn default_months() -> u32 {
+	1
+}
+
+fn deserialize_gift_for<'de, D>(deserializer: D) -> Result<Vec<(UserId, u32)>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	let raw = Option::<String>::deserialize(deserializer)?;
+	match raw {
+		None => Ok(vec![]),
+		Some(raw) if raw.is_empty() => Ok(vec![]),
+		Some(raw) => raw
+			.split(',')
+			.map(|entry| {
+				let entry = entry.trim();
+				match entry.split_once(':') {
+					Some((id, months)) => {
+						let id = id.parse::<UserId>().map_err(serde::de::Error::custom)?;
+						let months = months.parse::<u32>().map_err(serde::de::Error::custom)?;
+						Ok((id, months))
+					}
+					None => {
+						let id = entry.parse::<UserId>().map_err(serde::de::Error::custom)?;
+						Ok((id, default_months()))
+					}
+				}
+			})
+			.collect(),
+	}
+}
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SubscribeQuery {
@@ -26,7 +59,10 @@ pub struct SubscribeQuery {
 	/// always true
 	#[serde(rename = "next")]
 	_next: bool,
-	gift_for: Option<UserId>,
+	#[serde(default, deserialize_with = "deserialize_gift_for")]
+	gift_for: Vec<(UserId, u32)>,
+	#[serde(default = "default_months")]
+	months: u32,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -54,8 +90,8 @@ impl From<SubscriptionRenewInterval> for SubscriptionProductKind {
 pub struct SubscribeResponse {
 	/// Url that the website will open in a new tab
 	url: String,
-	/// The user id of the user that receives the subscription
-	user_id: UserId,
+	/// The user id(s) of the user(s) that receive(s) the subscription
+	user_ids: Vec<UserId>,
 }
 
 pub async fn subscribe(
@@ -80,7 +116,35 @@ pub async fn subscribe(
 		));
 	}
 
+	if query.gift_for.len() > MAX_GIFT_RECIPIENTS {
+		return Err(ApiError::bad_request(
+			ApiErrorCode::BadRequest,
+			format!("cannot gift to more than {MAX_GIFT_RECIPIENTS} recipients at once"),
+		));
+	}
+
+	let mut dedup_check = query.gift_for.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+	dedup_check.sort();
+	dedup_check.dedup();
+	if dedup_check.len() != query.gift_for.len() {
+		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "duplicate gift_for recipient"));
+	}
+
 	let kind = SubscriptionProductKind::from(query.renew_interval);
+	let is_gift = !query.gift_for.is_empty();
+
+	let recipients: Vec<(UserId, u32)> = if is_gift {
+		query
+			.gift_for
+			.iter()
+			.map(|(id, months)| Ok((*id, resolve_months(*months, &kind)?)))
+			.collect::<Result<Vec<_>, ApiError>>()?
+	} else {
+		vec![(authed_user.id, resolve_months(query.months, &kind)?)]
+	};
+
+	let is_one_time_purchase = is_gift || recipients.iter().any(|(_, months)| *months > 1);
+
 	let req = RateLimitRequest::new(RateLimitResource::EgVaultSubscribe, &session);
 
 	req.http(&global, async {
@@ -133,13 +197,16 @@ pub async fn subscribe(
 			.unwrap()
 			.to_string();
 
+		let quantities = recipients.iter().map(|(_, months)| *months as u64).collect::<Vec<_>>();
+
 		let mut params = create_checkout_session_params(
 			&global,
 			session.ip(),
 			customer_id,
-			match &query.gift_for {
-				Some(_) => CheckoutProduct::Gift(product.provider_id),
-				None => CheckoutProduct::Price(variant.id.0.clone()),
+			if is_one_time_purchase {
+				CheckoutProduct::Gift(product.provider_id, quantities)
+			} else {
+				CheckoutProduct::Price(variant.id.0.clone(), 1)
 			},
 			product.default_currency,
 			&variant.currency_prices,
@@ -148,25 +215,41 @@ pub async fn subscribe(
 		)
 		.await;
 
-		let receiving_user = if let Some(gift_for) = query.gift_for {
-			let receiving_user = global
-				.user_loader
-				.load_fast(&global, gift_for)
-				.await
-				.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
-				.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+		if is_one_time_purchase {
+			let mut loaded_recipients = Vec::with_capacity(recipients.len());
+			for (recipient_id, months) in &recipients {
+				let recipient = global
+					.user_loader
+					.load_fast(&global, *recipient_id)
+					.await
+					.map_err(|_| ApiError::internal_server_error(ApiErrorCode::LoadError, "failed to load user"))?
+					.ok_or_else(|| ApiError::not_found(ApiErrorCode::LoadError, "user not found"))?;
+				loaded_recipients.push((recipient, *months));
+			}
+
+			let description = if is_gift {
+				let names = loaded_recipients
+					.iter()
+					.map(|(r, months)| {
+						let name = r
+							.connections
+							.first()
+							.map(|c| format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id))
+							.unwrap_or_else(|| format!("7TV:{}", r.id));
+						format!("{name} ({months} month(s))")
+					})
+					.collect::<Vec<_>>()
+					.join(", ");
+
+				format!("Gift 7TV Subscriber to {names}")
+			} else {
+				let months = recipients.first().map(|(_, months)| *months).unwrap_or(1);
+				format!("{months} month(s) of 7TV Subscriber")
+			};
 
 			params.mode = Some(stripe::CheckoutSessionMode::Payment);
 			params.payment_intent_data = Some(stripe::CreateCheckoutSessionPaymentIntentData {
-				description: Some(format!(
-					"Gift subscription for {} (7TV:{})",
-					receiving_user
-						.connections
-						.first()
-						.map(|c| { format!("{} ({}:{})", c.platform_display_name, c.platform, c.platform_id) })
-						.unwrap_or_else(|| "Unknown User".to_owned()),
-					receiving_user.id
-				)),
+				description: Some(description),
 				..Default::default()
 			});
 
@@ -176,7 +259,7 @@ pub async fn subscribe(
 					metadata: Some(
 						InvoiceMetadata::Gift {
 							customer_id: authed_user.id,
-							user_id: receiving_user.id,
+							recipients: recipients.clone(),
 							product_id: variant.id.clone(),
 							subscription_product_id: Some(product.id),
 						}
@@ -187,8 +270,6 @@ pub async fn subscribe(
 			});
 
 			params.metadata = Some(CheckoutSessionMetadata::Gift.to_stripe());
-
-			receiving_user.id
 		} else {
 			let is_subscribed = global
 				.active_subscription_period_by_user_id_loader
@@ -216,8 +297,6 @@ pub async fn subscribe(
 			});
 
 			params.metadata = Some(CheckoutSessionMetadata::Subscription.to_stripe());
-
-			authed_user.id
 		};
 
 		// We don't need the safe client here because this won't be retried
@@ -234,7 +313,7 @@ pub async fn subscribe(
 
 		Ok(Json(SubscribeResponse {
 			url: session_url,
-			user_id: receiving_user,
+			user_ids: recipients.into_iter().map(|(id, _)| id).collect(),
 		}))
 	})
 	.await

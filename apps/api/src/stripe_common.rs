@@ -29,9 +29,36 @@ impl std::fmt::Display for EgVaultMutexKey {
 	}
 }
 
+pub const MAX_MONTHS: u32 = 24;
+
+pub fn resolve_months(months: u32, kind: &shared::database::product::SubscriptionProductKind) -> Result<u32, ApiError> {
+	use shared::database::product::SubscriptionProductKind;
+
+	match kind {
+		SubscriptionProductKind::Yearly => {
+			if months != 1 {
+				return Err(ApiError::bad_request(
+					ApiErrorCode::BadRequest,
+					"months can only be customized for the monthly plan; yearly is always a 12 month bundle",
+				));
+			}
+			Ok(12)
+		}
+		SubscriptionProductKind::Monthly => {
+			if months == 0 || months > MAX_MONTHS {
+				return Err(ApiError::bad_request(
+					ApiErrorCode::BadRequest,
+					format!("months must be between 1 and {MAX_MONTHS}"),
+				));
+			}
+			Ok(months)
+		}
+	}
+}
+
 pub enum CheckoutProduct {
-	Price(stripe::PriceId),
-	Gift(StripeProductId),
+	Price(stripe::PriceId, u64),
+	Gift(StripeProductId, Vec<u64>),
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -55,26 +82,29 @@ pub async fn create_checkout_session_params<'a>(
 		}
 	}
 
-	let line = match product_id {
-		CheckoutProduct::Gift(gift_id) => stripe::CreateCheckoutSessionLineItems {
-			price_data: Some(stripe::CreateCheckoutSessionLineItemsPriceData {
-				product: Some(gift_id.to_string()),
-				unit_amount: currency_prices.get(&currency).copied(),
-				currency,
+	let lines = match product_id {
+		CheckoutProduct::Gift(gift_id, quantities) => quantities
+			.into_iter()
+			.map(|quantity| stripe::CreateCheckoutSessionLineItems {
+				price_data: Some(stripe::CreateCheckoutSessionLineItemsPriceData {
+					product: Some(gift_id.to_string()),
+					unit_amount: currency_prices.get(&currency).copied(),
+					currency,
+					..Default::default()
+				}),
+				quantity: Some(quantity),
 				..Default::default()
-			}),
-			quantity: Some(1),
-			..Default::default()
-		},
-		CheckoutProduct::Price(price_id) => stripe::CreateCheckoutSessionLineItems {
+			})
+			.collect::<Vec<_>>(),
+		CheckoutProduct::Price(price_id, quantity) => vec![stripe::CreateCheckoutSessionLineItems {
 			price: Some(price_id.to_string()),
-			quantity: Some(1),
+			quantity: Some(quantity),
 			..Default::default()
-		},
+		}],
 	};
 
 	stripe::CreateCheckoutSession {
-		line_items: Some(vec![line]),
+		line_items: Some(lines),
 		customer_update: Some(stripe::CreateCheckoutSessionCustomerUpdate {
 			address: Some(stripe::CreateCheckoutSessionCustomerUpdateAddress::Auto),
 			..Default::default()

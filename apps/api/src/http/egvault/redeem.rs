@@ -47,17 +47,16 @@ pub async fn redeem_code_inner(
 
 	let stripe_client = global.stripe_client.safe(Id::<()>::new()).await;
 
-
-	// check if cpatcha token wasn't passed then return API error
+	// check if captcha token wasn't passed then return API error
 	if captcha_token.is_empty() {
 		return Err(ApiError::bad_request(ApiErrorCode::BadRequest, "captcha token is required. use new website"));
 	}
 
 	// reCAPTCHA verification
-    let secret_key = &global.config.api.recaptcha_secret_key;
-	    let client = reqwest::Client::new();
-    
-    let verify_res: serde_json::Value = client
+	let secret_key = &global.config.api.recaptcha_secret_key;
+		let client = reqwest::Client::new();
+
+	let verify_res: serde_json::Value = client
         .post("https://www.google.com/recaptcha/api/siteverify")
         .form(&[
             ("secret", secret_key),
@@ -70,10 +69,10 @@ pub async fn redeem_code_inner(
         .await
         .map_err(|_| ApiError::internal_server_error(ApiErrorCode::BadRequest, "captcha parse failed"))?;
 
-    let score = verify_res["score"].as_f64().unwrap_or(0.0);
-    let success = verify_res["success"].as_bool().unwrap_or(false);
+	let score = verify_res["score"].as_f64().unwrap_or(0.0);
+	let success = verify_res["success"].as_bool().unwrap_or(false);
 
-    // Block if it's a bot (aka score < 0.5)
+	// Block if it's a bot (aka score < 0.5)
     if !success || score < 0.5 {
         return Err(ApiError::bad_request(
             ApiErrorCode::BadRequest,
@@ -186,7 +185,7 @@ pub async fn redeem_code_inner(
 			global,
 			session.ip(),
 			customer_id,
-			CheckoutProduct::Price(variant.id.0.clone()),
+			CheckoutProduct::Price(variant.id.0.clone(), 1),
 			product.default_currency,
 			&variant.currency_prices,
 			&success_url,
