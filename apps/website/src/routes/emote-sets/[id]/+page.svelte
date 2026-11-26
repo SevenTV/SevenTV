@@ -155,7 +155,7 @@
 														# animated
 														approvedPersonal
 														defaultZeroWidth
-														# deniedPersonal
+														deniedPersonal
 														# nsfw
 														private
 														publicListed

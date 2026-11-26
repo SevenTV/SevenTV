@@ -9,7 +9,7 @@
 		overlaying: StackSimple,
 		private: LockSimple,
 		unlisted: EyeSlash,
-		personal_use_denied: EyeSlash,
+		personal_use_denied: Prohibit,
 		deleted: Trash,
 		renamed: PencilSimple,
 		personal_use_pending: ClockUser,
@@ -105,7 +105,8 @@
 
 		if (!emote.flags.publicListed) flags.push("unlisted");
 
-		if (emote.flags.deniedPersonal) flags.push("personal_use_denied");
+		if (emote.flags.deniedPersonal && (!setKind || setKind == EmoteSetKind.Personal))
+			flags.push("personal_use_denied");
 
 		if (emote.ranking && emote.ranking < 200) flags.push("trending");
 
@@ -114,6 +115,7 @@
 		if (
 			typeof emote?.flags?.approvedPersonal != "undefined" &&
 			!emote.flags.approvedPersonal &&
+			!emote.flags.deniedPersonal &&
 			setKind == EmoteSetKind.Personal
 		)
 			flags.push("personal_use_pending");
