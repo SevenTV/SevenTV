@@ -110,7 +110,9 @@
 	class="emote"
 	class:emote-only={emoteOnly}
 	class:selected={selectionMode && selected}
-	class:grayedOut={!data.flags.approvedPersonal && setKind == EmoteSetKind.Personal}
+	class:grayedOut={(!data.flags.approvedPersonal ||
+		data.flags.deniedPersonal) &&
+		setKind == EmoteSetKind.Personal}
 	draggable={!selected}
 	style={highlight
 		? `--highlight: ${highlight}80; --highlight-active: ${highlight};`
